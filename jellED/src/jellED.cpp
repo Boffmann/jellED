@@ -1,29 +1,45 @@
-#include "WS2812.h"
+#include "INMP441.h"
+#include <Arduino.h>
 
 constexpr uint8_t LED_PIN = 13;
 constexpr uint8_t LED_ENABLE = 14;
 constexpr uint16_t NUM_LEDS = 2;
 
-WS2812 strip = WS2812(LED_PIN, NUM_LEDS);
+constexpr uint8_t MIC_WS_PIN = 25;
+constexpr uint8_t MIC_SD_PIN = 32;
+constexpr uint8_t MIC_SCK_PIN = 33;
+
+INMP441 mic(MIC_WS_PIN, MIC_SD_PIN, MIC_SCK_PIN);
  
 void setup() {
-   pinMode(LED_ENABLE, OUTPUT);
-   strip.initialize();
-   strip.setBrightness(128);
-   digitalWrite(LED_ENABLE, LOW);
+   Serial.begin(115200);
+   Serial.println(" ");
+
+   mic.initialize();
+   
+   Serial.println("ready");
 }
  
 void loop() {
-   for (int i = 0; i < NUM_LEDS; ++i) {
-      strip.setColorChannelsFor(i, 255, 0, 0);
-   }
-   strip.show();
-   delay(1000);
+   int rangelimit = 2000;
+   Serial.print(rangelimit*-1);
+   Serial.print(" ");
+   Serial.print(rangelimit);
+   Serial.print(" ");
 
-   for (int i = 0; i < NUM_LEDS; ++i) {
-      strip.setColorChannelsFor(i, 255, 0, 255);
+   size_t bytesIn;
+   bool buffer_ready;
+   int16_t* buffer = mic.read(&bytesIn, &buffer_ready);
+   if (buffer_ready) {
+      int16_t samples_read = bytesIn / 8;
+      if (samples_read > 0) {
+         float mean = 0;
+         for (int16_t i = 0; i < samples_read; ++i) {
+            mean += buffer[i];
+         }
+
+         mean /= samples_read;
+         Serial.println(mean);
+      }
    }
-   
-   strip.show();
-   delay(1000);
 }

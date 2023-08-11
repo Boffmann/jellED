@@ -1,5 +1,7 @@
 #include "WS2812.h"
 
+#include <Arduino.h>
+
 WS2812::WS2812(uint8_t pin_gpio, uint16_t led_count) {
     led_data = new rmt_data_t[24*led_count];
 	ledCounts = led_count;

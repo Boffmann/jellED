@@ -1,4 +1,5 @@
 EESchema Schematic File Version 4
+LIBS:jellED-cache
 EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
@@ -146,21 +147,13 @@ Wire Wire Line
 Wire Wire Line
 	5200 2200 5200 2400
 Wire Wire Line
-	3200 2200 3750 2200
-Wire Wire Line
-	3200 2300 3750 2300
-Wire Wire Line
 	5400 2100 4750 2100
 Wire Wire Line
 	5200 2200 4750 2200
-Text Label 3400 2200 0    50   ~ 0
-LevelShifter1A
-Text Label 3400 2300 0    50   ~ 0
-LevelShifterOA
 Text Label 4650 2100 0    50   ~ 0
 LevelShifter1A
 Text Label 4650 2200 0    50   ~ 0
-LevelShifterOA
+LevelShifterOE
 $Comp
 L Device:C C?
 U 1 1 64CFE257
@@ -250,4 +243,92 @@ Wire Wire Line
 Connection ~ 7200 2550
 Wire Wire Line
 	7200 2550 7200 2350
+Wire Wire Line
+	3200 2000 3750 2000
+Text Label 3400 2000 0    50   ~ 0
+LevelShifter1A
+Wire Wire Line
+	3200 2100 3750 2100
+Text Label 3400 2100 0    50   ~ 0
+LevelShifterOE
+$Comp
+L INMP441:INMP441 U?
+U 1 1 64D11D1A
+P 5950 4750
+F 0 "U?" H 6227 4771 50  0000 L CNN
+F 1 "INMP441" H 6227 4680 50  0000 L CNN
+F 2 "" H 5950 4750 50  0001 C CNN
+F 3 "" H 5950 4750 50  0001 C CNN
+	1    5950 4750
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 64D12791
+P 5950 5350
+F 0 "#PWR?" H 5950 5100 50  0001 C CNN
+F 1 "GND" H 5955 5177 50  0000 C CNN
+F 2 "" H 5950 5350 50  0001 C CNN
+F 3 "" H 5950 5350 50  0001 C CNN
+	1    5950 5350
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3.3V #PWR?
+U 1 1 64D12869
+P 5950 4200
+F 0 "#PWR?" H 5950 4050 50  0001 C CNN
+F 1 "+3.3V" H 5965 4373 50  0000 C CNN
+F 2 "" H 5950 4200 50  0001 C CNN
+F 3 "" H 5950 4200 50  0001 C CNN
+	1    5950 4200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5950 4350 5950 4300
+Wire Wire Line
+	5950 5350 5950 5250
+Wire Wire Line
+	5600 4950 5500 4950
+Wire Wire Line
+	5500 4950 5500 5250
+Wire Wire Line
+	5500 5250 5950 5250
+Connection ~ 5950 5250
+Wire Wire Line
+	5950 5250 5950 5200
+Wire Wire Line
+	5600 4600 4950 4600
+Wire Wire Line
+	5600 4700 4950 4700
+Wire Wire Line
+	5600 4850 4950 4850
+Text Label 4950 4600 0    50   ~ 0
+INMP_WS
+Text Label 4950 4700 0    50   ~ 0
+INMP_SD
+Text Label 4950 4850 0    50   ~ 0
+INMP_SCK
+$Comp
+L Device:C C?
+U 1 1 64D16128
+P 6750 4800
+F 0 "C?" V 6498 4800 50  0000 C CNN
+F 1 "100 nF" V 6589 4800 50  0000 C CNN
+F 2 "" H 6788 4650 50  0001 C CNN
+F 3 "~" H 6750 4800 50  0001 C CNN
+	1    6750 4800
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	5950 4300 6750 4300
+Wire Wire Line
+	6750 4300 6750 4650
+Connection ~ 5950 4300
+Wire Wire Line
+	5950 4300 5950 4200
+Wire Wire Line
+	6750 4950 6750 5250
+Wire Wire Line
+	6750 5250 5950 5250
 $EndSCHEMATC

@@ -1,12 +1,7 @@
 #ifndef _WS2812_ESP32_LIB_h
 #define _WS2812_ESP32_LIB_h
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "Arduino.h"
 #include <stdint.h>
-
 #include "esp32-hal.h"
 
 typedef uint8_t ColorChannel;
@@ -29,7 +24,6 @@ private:
 
 public:
 	WS2812(uint8_t output_pin, uint16_t led_count);
-
     ~WS2812();
 
 	bool initialize();
