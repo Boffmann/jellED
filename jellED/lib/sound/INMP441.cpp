@@ -38,8 +38,9 @@ void INMP441::initialize() {
     i2s_start(I2S_PORT);
 }
 
-int16_t* INMP441::read(size_t* buffer_length, bool* buffer_ready) {
-    esp_err_t result = i2s_read(I2S_PORT, &this->buffer, I2S_DMA_BUF_LEN, buffer_length, portMAX_DELAY);
-    *buffer_ready = result == ESP_OK;
-    return this->buffer;
+bool INMP441::read(AudioBuffer* buffer) {
+    esp_err_t result = i2s_read(I2S_PORT, &buffer->buffer, I2S_DMA_BUF_LEN, &buffer->buffer_bytes, portMAX_DELAY);
+    buffer->num_samples = buffer->buffer_bytes / I2S_DMA_BUF_COUNT;
+    buffer->samplingFrequency = SOUND_SAMPLE_RATE;
+    return result == ESP_OK;
 }
