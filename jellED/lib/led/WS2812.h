@@ -1,5 +1,5 @@
-#ifndef _WS2812_ESP32_LIB_h
-#define _WS2812_ESP32_LIB_h
+#ifndef _WS2812_ESP32_LIB_H_
+#define _WS2812_ESP32_LIB_H_
 
 #include <stdint.h>
 #include "esp32-hal.h"
