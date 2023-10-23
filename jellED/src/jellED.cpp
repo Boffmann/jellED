@@ -1,5 +1,6 @@
-#include "BluetoothInterface.h"
 #include <Arduino.h>
+#include "musicPiece.h"
+#include "speaker.h"
 
 constexpr uint8_t LED_PIN = 13;
 constexpr uint8_t LED_ENABLE = 14;
@@ -9,21 +10,28 @@ constexpr uint8_t MIC_WS_PIN = 25;
 constexpr uint8_t MIC_SD_PIN = 32;
 constexpr uint8_t MIC_SCK_PIN = 33;
 
-void onBlePackageReceived(t_bluetooth_package *package) {
-   Serial.println("On Package Received");
-   Serial.println(package->isOn);
-}
+constexpr uint8_t SPEAKER_OUT_PIN = 26;
 
-BluetoothInterface bli(onBlePackageReceived);
+MusicPiece piece;
+Speaker speaker(8000);
+
+long lastMillis = 0;
+long loops = 0;
  
 void setup() {
    Serial.begin(115200);
    Serial.println(" ");
 
    Serial.println("ready");
-   bli.initialize();
+   piece.initialize();
+   speaker.initialize();
 }
  
 void loop() {
-   delay(200);
+   AudioBuffer audio;
+   bool buffer_ready = piece.read(&audio);
+   for (size_t sample = 0; sample < audio.num_samples;++sample) {
+      uint8_t audio_value = audio.buffer[sample];
+      speaker.play(audio_value);
+   }
 }

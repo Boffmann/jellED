@@ -4,8 +4,15 @@
 #include "SPIFFS.h"
 
 MusicPiece::MusicPiece()
-    : buffer_ptr{0} {
+    : buffer_ptr{0} {}
 
+MusicPiece::~MusicPiece() {
+    if (this->buffer != nullptr) {
+        free(this->buffer);
+    }
+}
+
+void MusicPiece::initialize() {
     if (!SPIFFS.begin(true)) {
         Serial.println("An Error has occurred while mounting SPIFFS");
         return;
@@ -18,40 +25,39 @@ MusicPiece::MusicPiece()
     }
 
     size_t currlen = 0;
-    this->buffer_size = file.size() / sizeof(int16_t);
-    Serial.println(this->buffer_size);
-    this->buffer = (int16_t*) malloc(sizeof(int16_t) * this->buffer_size + 1);
-    Serial.println(sizeof(int16_t) * this->buffer_size + 1);
+    this->num_samples_in_file = file.size() / this->BYTES_PER_SAMPLE;
     
-    while(currlen < this->buffer_size -1) {
+    Serial.println(this->num_samples_in_file);
+    this->buffer = (int16_t*) malloc(sizeof(int16_t) * this->num_samples_in_file + 1);
+    Serial.println(sizeof(int16_t) * this->num_samples_in_file + 1);
+    
+    while(currlen < this->num_samples_in_file) {
         int16_t sample = 0;
-        sample |= ((int16_t) file.read() << 8);
+        // sample |= ((int16_t) file.read() << 8);
         sample |= ((int16_t) file.read());
         this->buffer[currlen] = sample;
         currlen++;
     }
     buffer[currlen] = '\0';
+    Serial.println(currlen);
+    Serial.println(this->buffer[39999]);
 
     file.close();
 }
 
-MusicPiece::~MusicPiece() {
-    if (this->buffer != nullptr) {
-        free(this->buffer);
-    }
-}
-
 bool MusicPiece::read(AudioBuffer* buffer) {
-    for (int i = 0; i < 8; ++i) {
+    size_t num_samples = 0;
+    for (int i = 0; i < this->MAX_BUFFER_SIZE; ++i) {
         buffer->buffer[i] = this->buffer[this->buffer_ptr];
+        num_samples++;
         buffer_ptr++;
-        if (buffer_ptr >= buffer_size) {
+        if (buffer_ptr >= num_samples_in_file) {
             buffer_ptr = 0;
         }
     }
     buffer->buffer_bytes = 64;
-    buffer->num_samples = 8;
-    buffer->samplingFrequency = 44100;
+    buffer->num_samples = num_samples;
+    buffer->samplingRate = this->SAMPLE_RATE;
     
     return true;
 }

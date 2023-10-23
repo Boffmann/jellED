@@ -1,0 +1,15 @@
+This describes the metadata for the sound sample in jellED/data
+
+Byte 1-4 - Marks File as riff file
+5-8 - File Size: 40036
+9-12 - File Type Header: WAVE
+13-16 - Format Chunk Marker: "fmt "
+17-20 - Length of format data as listed below: 16
+21-22 - Type of Format: 1
+23-24 - Number of Channels: 1
+25-28 - Sample Rate: 8000
+29-32 - (Sample Rate * BitsPerSample * Channels) / 8: 8000
+33-34 - (BitsPerSample * Channels) / 8: 8 Bit Mono
+35-36 - Bits per sample: 8
+37-40 - “data” chunk header. Marks the beginning of the data section.
+41-44: Size of the data section
