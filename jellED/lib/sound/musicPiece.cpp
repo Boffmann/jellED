@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include "SPIFFS.h"
+#include "soundconfig.h"
 
 MusicPiece::MusicPiece()
     : buffer_ptr{0} {}
@@ -57,7 +58,7 @@ bool MusicPiece::read(AudioBuffer* buffer) {
     }
     buffer->buffer_bytes = 64;
     buffer->num_samples = num_samples;
-    buffer->samplingRate = this->SAMPLE_RATE;
+    buffer->samplingRate = SAMPLE_RATE;
     
     return true;
 }
