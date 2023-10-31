@@ -1,8 +1,11 @@
-#ifndef _MUSIC_PIECE_JELLED_TEST_H_
-#define _MUSIC_PIECE_JELLED_TEST_H_
+#ifndef _BEAT_DETECTION_JELLED_H_
+#define _BEAT_DETECTION_JELLED_H_
 
 #include <stdint.h>
-#include <arduinoFFT.h>
+
+extern "C" {
+#include "fft.h"
+}
 
 class BeatDetector {
 private:
@@ -15,12 +18,15 @@ private:
     static constexpr double BEAT_SPAN_MILLIS = 60.0 / MAX_BPM * 1000;
     uint16_t fft_sample_index, fft_mag_sampling_count;
 
-    double vReal[NUM_FFT_SAMPLES];
-    double vImag[NUM_FFT_SAMPLES];
+    float input_buffer[NUM_FFT_SAMPLES];
+    float output_buffer[NUM_FFT_SAMPLES];
+    //float vImag[NUM_FFT_SAMPLES];
     double fft_frequency, fft_magnitude, fft_avg_magnitude;
     unsigned long last_beat_time;
 
-    arduinoFFT FFT;
+    //arduinoFFT FFT;
+    fft_config_t *fft_analysis;
+
     bool is_beat_possible();
 
 public:
