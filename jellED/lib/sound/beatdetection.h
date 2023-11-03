@@ -2,6 +2,7 @@
 #define _BEAT_DETECTION_JELLED_H_
 
 #include <stdint.h>
+#include "peakdetection.h"
 
 extern "C" {
 #include "fft.h"
@@ -20,14 +21,13 @@ private:
 
     float input_buffer[NUM_FFT_SAMPLES];
     float output_buffer[NUM_FFT_SAMPLES];
-    //float vImag[NUM_FFT_SAMPLES];
     double fft_frequency, fft_magnitude, fft_avg_magnitude;
     unsigned long last_beat_time;
 
-    //arduinoFFT FFT;
     fft_config_t *fft_analysis;
 
-    bool is_beat_possible();
+    int previous_peak;
+    PeakDetection peakDetector;
 
 public:
     BeatDetector();
