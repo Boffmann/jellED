@@ -2,6 +2,7 @@
 #include "musicPiece.h"
 #include "soundconfig.h"
 #include "speaker.h"
+#include "INMP441.h"
 #include "beatdetection.h"
 
 constexpr uint8_t LED_PIN = 13;
@@ -15,7 +16,8 @@ constexpr uint8_t MIC_SCK_PIN = 33;
 constexpr uint8_t SPEAKER_OUT_PIN = 26;
 
 MusicPiece piece;
-Speaker speaker(SAMPLE_RATE);
+//Speaker speaker(SAMPLE_RATE);
+INMP441 mic(MIC_WS_PIN, MIC_SD_PIN, MIC_SCK_PIN);
 BeatDetector detector;
 
 long lastMillis = 0;
@@ -27,12 +29,32 @@ void setup() {
 
    Serial.println("ready");
    piece.initialize();
-   speaker.initialize();
+   mic.initialize();
+   //speaker.initialize();
+
+}
+
+uint16_t convert(int16_t in) {
+    return (uint16_t) 32768 + (uint16_t) in;
 }
 
 void loop() {
+
    AudioBuffer audio;
-   bool buffer_ready = piece.read(&audio);
+   if (mic.read(&audio)) {
+      if (audio.num_samples > 0) {
+         //float mean = 0.f;
+         for (size_t i = 0; i < audio.num_samples; i++) {
+            //mean += audio.buffer[i];
+            if (detector.is_beat(audio.buffer[i])) {
+               Serial.print("Beat ");
+               Serial.println(++loops);
+            }
+         }
+         //Serial.println(mean / audio.num_samples);
+      }
+   }
+   /*bool buffer_ready = piece.read(&audio);
    for (size_t sample = 0; sample < audio.num_samples;++sample) {
       uint8_t audio_value = audio.buffer[sample];
       speaker.play(audio_value);
@@ -40,5 +62,5 @@ void loop() {
          Serial.print("Beat ");
          Serial.println(++loops);
       }
-   }
+   }*/
 }

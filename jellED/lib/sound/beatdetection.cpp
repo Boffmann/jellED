@@ -35,13 +35,14 @@ bool BeatDetector::is_beat(const int sample) {
         if (k < 20) {
             mean_magnitude += mag;
         }
-        float freq = (float) k / ((float) NUM_FFT_SAMPLES /  (float) SAMPLE_RATE);
+        float freq = (float) k / ((float) NUM_FFT_SAMPLES / (float) SAMPLE_RATE);
 
         if (mag > fft_magnitude) {
             fft_magnitude = mag;
             fft_frequency = freq;
         }
     }
+
     //mean_magnitude /= fft_analysis->size;
     mean_magnitude /= 20;
     peakDetector.add(mean_magnitude);
