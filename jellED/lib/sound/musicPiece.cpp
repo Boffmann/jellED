@@ -34,14 +34,19 @@ void MusicPiece::initialize() {
     
     while(currlen < this->num_samples_in_file) {
         int16_t sample = 0;
-        // sample |= ((int16_t) file.read() << 8);
         sample |= ((int16_t) file.read());
+        sample |= ((int16_t) file.read() << 8);
         this->buffer[currlen] = sample;
         currlen++;
     }
     buffer[currlen] = '\0';
-    Serial.println(currlen);
-    Serial.println(this->buffer[39999]);
+    Serial.println("");
+    Serial.println(this->buffer[0]);
+    Serial.println(this->buffer[1]);
+    Serial.println(this->buffer[2]);
+    Serial.println(this->buffer[currlen - 1]);
+    Serial.println(this->buffer[currlen - 2]);
+    Serial.println("");
 
     file.close();
 }
