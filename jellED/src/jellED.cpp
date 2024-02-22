@@ -28,14 +28,19 @@ void setup() {
    Serial.println(" ");
 
    Serial.println("ready");
+   pinMode(2, OUTPUT);
    piece.initialize();
    //mic.initialize();
    speaker.initialize();
 }
 
-uint8_t convert(int16_t in) {
+uint8_t convert8Bit(int16_t in) {
    float intermediate = 32768.0f + (float) in;
    return (uint8_t) (intermediate * 0.00389105058);
+}
+
+uint16_t convertUnsigned(int16_t in) {
+   return (uint16_t) 32768 + in;
 }
 
 void loop() {
@@ -58,10 +63,11 @@ void loop() {
    bool buffer_ready = piece.read(&audio);
    for (size_t sample = 0; sample < audio.num_samples;++sample) {
       int16_t audio_value = audio.buffer[sample];
-      speaker.play(convert(audio_value));
+      speaker.play(convert8Bit(audio_value));
       if (detector.is_beat(audio_value)) {
-         Serial.print("Beat ");
-         Serial.println(++loops);
+         digitalWrite(2,HIGH);
+      } else {
+         digitalWrite(2,LOW);
       }
    }
 }

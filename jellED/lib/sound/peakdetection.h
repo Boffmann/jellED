@@ -35,7 +35,7 @@ class PeakDetection {
     PeakDetection();
     ~PeakDetection();
     void begin();
-    void begin(int, int, double); //lag, threshold, influence
+    void begin(int, double, double); //lag, threshold, influence
     double add(double);
     double getFilt();
     int getPeak();
@@ -44,7 +44,8 @@ class PeakDetection {
     double getEpsilon();
 
   private:
-    int index, lag, threshold, peak;
+    int index, lag, peak;
+    double threshold;
     double influence, EPSILON, *data, *avg, *std;
     double getAvg(int, int);
     double getPoint(int, int);
