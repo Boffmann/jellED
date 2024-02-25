@@ -4,6 +4,7 @@
 #include "speaker.h"
 #include "INMP441.h"
 #include "beatdetection.h"
+#include "patternEngine.h"
 
 constexpr uint8_t LED_PIN = 13;
 constexpr uint8_t LED_ENABLE = 14;
@@ -19,6 +20,7 @@ MusicPiece piece;
 Speaker speaker(SAMPLE_RATE);
 //INMP441 mic(MIC_WS_PIN, MIC_SD_PIN, MIC_SCK_PIN);
 BeatDetector detector;
+PatternEngine patternEngine(NUM_LEDS, PatternType::COLORED_AMPLITUDE);
 
 long lastMillis = 0;
 long loops = 0;
@@ -32,6 +34,7 @@ void setup() {
    piece.initialize();
    //mic.initialize();
    speaker.initialize();
+   patternEngine.start();
 }
 
 uint8_t convert8Bit(int16_t in) {
@@ -44,30 +47,21 @@ uint16_t convertUnsigned(int16_t in) {
 }
 
 void loop() {
-
    AudioBuffer audio;
-   /*if (mic.read(&audio)) {
-      if (audio.num_samples > 0) {
-         //float mean = 0.f;
-         for (size_t i = 0; i < audio.num_samples; i++) {
-            //mean += audio.buffer[i];
-            if (detector.is_beat(audio.buffer[i])) {
-               Serial.print("Beat ");
-               Serial.println(++loops);
-            }
-         }
-         //Serial.println(mean / audio.num_samples);
-      }
-   }*/
 
    bool buffer_ready = piece.read(&audio);
    for (size_t sample = 0; sample < audio.num_samples;++sample) {
       int16_t audio_value = audio.buffer[sample];
       speaker.play(convert8Bit(audio_value));
-      if (detector.is_beat(audio_value)) {
-         digitalWrite(2,HIGH);
-      } else {
-         digitalWrite(2,LOW);
+      Pattern *pattern = patternEngine.generate_pattern(detector.is_beat(audio_value));
+      for (int i = 0; i < pattern->get_length(); ++i) {
+         const pattern_color *color = pattern->get_color(i);
+         Serial.print("Red ");
+         Serial.print(color->red);
+         Serial.print(" Green: ");
+         Serial.print(color->green);
+         Serial.print(" Blue: ");
+         Serial.println(color-> blue);
       }
    }
 }
