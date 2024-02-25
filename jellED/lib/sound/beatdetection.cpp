@@ -10,7 +10,7 @@ BeatDetector::BeatDetector() :
     previous_peak{0},
     last_beat_time{millis()} {
     fft_analysis = fft_init(NUM_FFT_SAMPLES, FFT_REAL, FFT_FORWARD, input_buffer, output_buffer);
-    peakDetector.begin(10, 2, 0.9);
+    peakDetector.begin(20, 1.3, 0.5);
 }
 
 bool BeatDetector::is_beat(const int sample) {
@@ -29,13 +29,16 @@ bool BeatDetector::is_beat(const int sample) {
 
     fft_magnitude = 0;
     float mean_magnitude = 0;
+    int mean_counter = 0;
     for (int k = 1 ; k < fft_analysis->size / 2 ; k++) {
-        float mag = sqrt(pow(fft_analysis->output[2*k],2) + pow(fft_analysis->output[2*k+1],2))/1;
+        float mag = sqrt(pow(fft_analysis->output[2*k], 2) + pow(fft_analysis->output[2*k+1], 2));
 
-        if (k < 20) {
-            mean_magnitude += mag;
-        }
         float freq = (float) k / ((float) NUM_FFT_SAMPLES / (float) SAMPLE_RATE);
+
+        if (freq < BEAT_MAX_FREQ) {
+            mean_magnitude += mag;
+            mean_counter++;
+        }
 
         if (mag > fft_magnitude) {
             fft_magnitude = mag;
@@ -43,15 +46,16 @@ bool BeatDetector::is_beat(const int sample) {
         }
     }
 
-    //mean_magnitude /= fft_analysis->size;
-    mean_magnitude /= 20;
+    mean_magnitude /= mean_counter;
+    //mean_magnitude /= (fft_analysis->size / 2);
+    //mean_magnitude /= 20;
     peakDetector.add(mean_magnitude);
     int peak = peakDetector.getPeak();
     bool is_peak_rising_edge = peak == 1 && previous_peak != 1;
 
     bool isBeat = fft_frequency < BEAT_MAX_FREQ
-    && is_peak_rising_edge
-    && peakDetector.isPeak(fft_magnitude);
+    && is_peak_rising_edge;
+    //&& peakDetector.isPeak(fft_magnitude);
 
     previous_peak = peak;
 

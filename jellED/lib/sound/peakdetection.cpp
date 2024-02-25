@@ -28,7 +28,7 @@
 
 using namespace std;
 const int DEFAULT_LAG = 32;
-const int DEFAULT_THRESHOLD = 2;
+const double DEFAULT_THRESHOLD = 2.0;
 const double DEFAULT_INFLUENCE = 0.5;
 const double DEFAULT_EPSILON = 0.01;
 
@@ -58,7 +58,7 @@ void PeakDetection::begin() {
   }
 }
 
-void PeakDetection::begin(int lag, int threshold, double influence) {
+void PeakDetection::begin(int lag, double threshold, double influence) {
   this->lag = lag;
   this->threshold = threshold;
   this->influence = influence;
