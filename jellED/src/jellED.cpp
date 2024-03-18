@@ -20,7 +20,7 @@ MusicPiece piece;
 Speaker speaker(SAMPLE_RATE);
 //INMP441 mic(MIC_WS_PIN, MIC_SD_PIN, MIC_SCK_PIN);
 BeatDetector detector;
-PatternEngine patternEngine(NUM_LEDS, PatternType::COLORED_AMPLITUDE);
+PatternEngine patternEngine(NUM_LEDS);
 
 long lastMillis = 0;
 long loops = 0;
@@ -34,7 +34,7 @@ void setup() {
    piece.initialize();
    //mic.initialize();
    speaker.initialize();
-   patternEngine.start();
+   patternEngine.start(PatternType::COLORED_AMPLITUDE);
 }
 
 uint8_t convert8Bit(int16_t in) {
@@ -53,15 +53,15 @@ void loop() {
    for (size_t sample = 0; sample < audio.num_samples;++sample) {
       int16_t audio_value = audio.buffer[sample];
       speaker.play(convert8Bit(audio_value));
-      Pattern *pattern = patternEngine.generate_pattern(detector.is_beat(audio_value));
-      for (int i = 0; i < pattern->get_length(); ++i) {
-         const pattern_color *color = pattern->get_color(i);
+      const Pattern& pattern = patternEngine.generate_pattern(detector.is_beat(audio_value));
+      for (int i = 0; i < pattern.get_length(); ++i) {
+         const pattern_color& color = pattern.get_color(i);
          Serial.print("Red ");
-         Serial.print(color->red);
+         Serial.print(color.red);
          Serial.print(" Green: ");
-         Serial.print(color->green);
+         Serial.print(color.green);
          Serial.print(" Blue: ");
-         Serial.println(color-> blue);
+         Serial.println(color.blue);
       }
    }
 }
