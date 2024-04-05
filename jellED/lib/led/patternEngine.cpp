@@ -11,14 +11,14 @@ PatternEngine::PatternEngine(const int num_leds)
         currentPatternBlueprint{nullptr},
         allPatternBlueprints{nullptr},
         last_beat_time{micros()},
-        time_since_last_beat{0} {};
+        time_since_last_beat{-1} {};
 
 PatternEngine::~PatternEngine() {};
 
 void PatternEngine::start(PatternType patternType) {
     this->time_since_last_beat = micros();
     this->allPatternBlueprints = (PatternBlueprint**) malloc(sizeof(PatternBlueprint) * NUM_PATTERNS);
-    this->allPatternBlueprints[COLORED_AMPLITUDE_INDEX] = new ColoredAmplitude(RenderingType::INTERPOLATION, num_leds);
+    this->allPatternBlueprints[COLORED_AMPLITUDE_INDEX] = new ColoredAmplitude(num_leds);
     this->currentPatternBlueprint = type_to_blueprint(patternType);
 }
 
@@ -40,7 +40,7 @@ PatternBlueprint* PatternEngine::type_to_blueprint(PatternType patternType) {
 }
 
 const Pattern& PatternEngine::generate_pattern(bool is_beat) {
-    if (this->time_since_last_beat == 0) {
+    if (this->time_since_last_beat == -1) {
         generate_error_pattern("Pattern Engine must be started before generating pattern.");
         return this->current_pattern;
     }
@@ -62,7 +62,3 @@ void PatternEngine::set_pattern_type(const PatternType patternType) {
     // delete this->patternBlueprint;
     this->currentPatternBlueprint = type_to_blueprint(patternType);
 }
-
-// const PatternType PatternEngine::get_pattern_type() {
-//     return this->patternType;
-// }

@@ -1,9 +1,9 @@
 #include "patternBlueprint.h"
 
-PatternBlueprint::PatternBlueprint(PatternType patternType, RenderingType renderingType, int num_leds)
+PatternBlueprint::PatternBlueprint(PatternType patternType, int num_leds)
     : pattern_type{patternType},
-    rendering_type{renderingType},
     num_leds{num_leds},
+    tracked_time_since_last_beat{0},
     colors{nullptr} {}
 
 PatternBlueprint::~PatternBlueprint() {
@@ -14,10 +14,6 @@ PatternBlueprint::~PatternBlueprint() {
 
 PatternType PatternBlueprint::get_pattern_type() {
     return this->pattern_type;
-}
-
-RenderingType PatternBlueprint::get_rendering_type() {
-    return this->rendering_type;
 }
 
 int PatternBlueprint::get_num_leds() {
