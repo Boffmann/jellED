@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include "test_patternEngine.hpp"
 #include "test_coloredAmplitude.hpp"
+#include "test_alternatingColors.hpp"
 
 void setUp(void) {
   // set stuff up here
@@ -15,7 +16,7 @@ int runUnityTests(void) {
   UNITY_BEGIN();
   RUN_TEST(test_pe_error_when_not_started);
   RUN_TEST(test_pe_6_leds_on_beat);
-  // TODO Add test that switches pattern Blueprints on the fly
+  RUN_TEST(test_pe_6_leds_switch_pattern);
 
   RUN_TEST(test_pca_5_leds_on_beat);
   RUN_TEST(test_pca_5_leds_cycle_update);
@@ -23,6 +24,8 @@ int runUnityTests(void) {
   RUN_TEST(test_pca_6_leds_on_beat);
   RUN_TEST(test_pca_6_leds_cycle_update);
   RUN_TEST(test_pca_6_leds_cycle_reset);
+
+  RUN_TEST(test_ac_6_leds);
   return UNITY_END();
 }
 

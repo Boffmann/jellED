@@ -12,8 +12,8 @@ private:
     const int num_leds;
     PatternBlueprint** allPatternBlueprints;
     PatternBlueprint* currentPatternBlueprint;
-    unsigned long int last_beat_time;
-    long time_since_last_beat;
+    unsigned long int last_beat_time_micros;
+    long time_since_last_beat_micros;
 
     PatternBlueprint* type_to_blueprint(PatternType patternType);
 

@@ -1,7 +1,6 @@
 #include "unity.h"
 #include "pattern/coloredAmplitude.h"
 
-
 void test_pca_5_leds_on_beat(void) {
     constexpr int NUM_LEDS = 5;
     ColoredAmplitude coloredAmplitude(NUM_LEDS);
@@ -37,7 +36,7 @@ void test_pca_5_leds_cycle_update(void) {
     expected_pattern.set_color(pattern_color{0, 0, 0}, 3);
     expected_pattern.set_color(pattern_color{0, 0, 0}, 4);
 
-    coloredAmplitude.update_pattern(250);
+    coloredAmplitude.update_pattern(250000);
     // // TODO This can be better, right?
     char str[15];
     for (int i = 0; i < NUM_LEDS; ++i) {
@@ -55,7 +54,7 @@ void test_pca_5_leds_cycle_update(void) {
     expected_pattern.set_color(pattern_color{0, 0, 0}, 3);
     expected_pattern.set_color(pattern_color{0, 0, 0}, 4);
 
-    coloredAmplitude.update_pattern(375);
+    coloredAmplitude.update_pattern(375000);
     for (int i = 0; i < NUM_LEDS; ++i) {
         sprintf(str, "red i: %d", i);
         TEST_ASSERT_EQUAL_MESSAGE(expected_pattern.get_color(i).red, coloredAmplitude.get_color(i).red, str);
@@ -71,7 +70,7 @@ void test_pca_5_leds_cycle_update(void) {
     expected_pattern.set_color(pattern_color{0, 0, 0}, 3);
     expected_pattern.set_color(pattern_color{0, 0, 0}, 4);
 
-    coloredAmplitude.update_pattern(500);
+    coloredAmplitude.update_pattern(500000);
     for (int i = 0; i < NUM_LEDS; ++i) {
         sprintf(str, "red i: %d", i);
         TEST_ASSERT_EQUAL_MESSAGE(expected_pattern.get_color(i).red, coloredAmplitude.get_color(i).red, str);
@@ -93,7 +92,7 @@ void test_pca_5_leds_cycle_reset(void) {
     expected_pattern.set_color(pattern_color{0, 0, 0}, 3);
     expected_pattern.set_color(pattern_color{0, 0, 0}, 4);
 
-    coloredAmplitude.update_pattern(250);
+    coloredAmplitude.update_pattern(250000);
     // TODO This can be better, right?
     char str[15];
     for (int i = 0; i < NUM_LEDS; ++i) {
@@ -161,7 +160,7 @@ void test_pca_6_leds_cycle_update(void) {
     expected_pattern.set_color(pattern_color{0, 0, 0}, 4);
     expected_pattern.set_color(pattern_color{0, 0, 0},   5);
 
-    coloredAmplitude.update_pattern(250);
+    coloredAmplitude.update_pattern(250000);
     // TODO This can be better, right?
     char str[15];
     for (int i = 0; i < NUM_LEDS; ++i) {
@@ -180,7 +179,7 @@ void test_pca_6_leds_cycle_update(void) {
     expected_pattern.set_color(pattern_color{0, 0, 0}, 4);
     expected_pattern.set_color(pattern_color{0, 0, 0},   5);
 
-    coloredAmplitude.update_pattern(375);
+    coloredAmplitude.update_pattern(375000);
     for (int i = 0; i < NUM_LEDS; ++i) {
         sprintf(str, "red i: %d", i);
         TEST_ASSERT_EQUAL_MESSAGE(expected_pattern.get_color(i).red, coloredAmplitude.get_color(i).red, str);
@@ -197,7 +196,7 @@ void test_pca_6_leds_cycle_update(void) {
     expected_pattern.set_color(pattern_color{0, 0, 0}, 4);
     expected_pattern.set_color(pattern_color{0, 0, 0},   5);
 
-    coloredAmplitude.update_pattern(500);
+    coloredAmplitude.update_pattern(500000);
     for (int i = 0; i < NUM_LEDS; ++i) {
         sprintf(str, "red i: %d", i);
         TEST_ASSERT_EQUAL_MESSAGE(expected_pattern.get_color(i).red, coloredAmplitude.get_color(i).red, str);
@@ -220,7 +219,7 @@ void test_pca_6_leds_cycle_reset(void) {
     expected_pattern.set_color(pattern_color{0, 0, 0}, 4);
     expected_pattern.set_color(pattern_color{0, 0, 0},   5);
 
-    coloredAmplitude.update_pattern(250);
+    coloredAmplitude.update_pattern(250000);
     // TODO This can be better, right?
     char str[15];
     for (int i = 0; i < NUM_LEDS; ++i) {

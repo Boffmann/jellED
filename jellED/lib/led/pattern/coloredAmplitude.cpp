@@ -5,7 +5,6 @@
 
 ColoredAmplitude::ColoredAmplitude(int num_leds)
  : PatternBlueprint(PatternType::COLORED_AMPLITUDE, num_leds) {
-    this->colors = (pattern_color*) malloc(sizeof(pattern_color) * num_leds);
     this->init();
 }
 
@@ -37,25 +36,17 @@ void ColoredAmplitude::init() {
     }
 }
 
-void ColoredAmplitude::update_pattern(long time_since_beat_millis) {
-    const long millis_until_off = 500;
-    if (this->tracked_time_since_last_beat >= time_since_beat_millis) {
-        this->tracked_time_since_last_beat = time_since_beat_millis;
+void ColoredAmplitude::update_pattern(long time_since_beat_micros) {
+    const long micros_until_off = 500000;
+    if (this->tracked_time_since_last_beat_micros >= time_since_beat_micros) {
+        this->tracked_time_since_last_beat_micros = time_since_beat_micros;
         init();
         return;
     }
-    this->tracked_time_since_last_beat = time_since_beat_millis;
-    const int turn_off_amount = (double)num_leds * std::min(1.0, (double)time_since_beat_millis / (double)millis_until_off);
+    this->tracked_time_since_last_beat_micros = time_since_beat_micros;
+    const int turn_off_amount = (double)num_leds * std::min(1.0, (double)time_since_beat_micros / (double)micros_until_off);
     
     for (int turn_off = 1; turn_off <= turn_off_amount; ++turn_off) {
         this->colors[num_leds - turn_off] = pattern_color{0, 0, 0};
     }
-}
-
-const pattern_color& ColoredAmplitude::get_color(int index) {
-    if (index >= this->num_leds) {
-        Serial.println("Error: Colored Amplitude Index out of bounds");
-        return colors[0];
-    }
-    return colors[index];
 }
