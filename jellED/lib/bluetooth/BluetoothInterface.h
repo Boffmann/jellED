@@ -23,7 +23,7 @@ public:
 
     void initialize();
 
-    friend class DeviceStateCallback;
+    // friend class DeviceStateCallback;
 };
 
 #endif

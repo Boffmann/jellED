@@ -5,6 +5,7 @@
 #include "INMP441.h"
 #include "beatdetection.h"
 #include "patternEngine.h"
+#include "BluetoothInterface.h"
 
 constexpr uint8_t LED_PIN = 13;
 constexpr uint8_t LED_ENABLE = 14;
@@ -24,6 +25,13 @@ PatternEngine patternEngine(NUM_LEDS);
 
 long lastMillis = 0;
 long loops = 0;
+
+void onBlePackageReceived(t_bluetooth_package *package) {
+   Serial.println("On Package Received");
+   Serial.println(package->isOn);
+}
+
+BluetoothInterface bli(onBlePackageReceived);
  
 void setup() {
    Serial.begin(115200);
@@ -31,10 +39,11 @@ void setup() {
 
    Serial.println("ready");
    pinMode(2, OUTPUT);
-   piece.initialize();
+   //piece.initialize();
    //mic.initialize();
-   speaker.initialize();
-   patternEngine.start(PatternType::COLORED_AMPLITUDE);
+   //speaker.initialize();
+   //patternEngine.start(PatternType::COLORED_AMPLITUDE);
+   bli.initialize();
 }
 
 uint8_t convert8Bit(int16_t in) {
@@ -47,21 +56,5 @@ uint16_t convertUnsigned(int16_t in) {
 }
 
 void loop() {
-   AudioBuffer audio;
-
-   bool buffer_ready = piece.read(&audio);
-   for (size_t sample = 0; sample < audio.num_samples;++sample) {
-      int16_t audio_value = audio.buffer[sample];
-      speaker.play(convert8Bit(audio_value));
-      const Pattern& pattern = patternEngine.generate_pattern(detector.is_beat(audio_value));
-      for (int i = 0; i < pattern.get_length(); ++i) {
-         const pattern_color& color = pattern.get_color(i);
-         Serial.print("Red ");
-         Serial.print(color.red);
-         Serial.print(" Green: ");
-         Serial.print(color.green);
-         Serial.print(" Blue: ");
-         Serial.println(color.blue);
-      }
-   }
+   delay(200);
 }
