@@ -18,6 +18,11 @@ PatternType PatternBlueprint::get_pattern_type() {
     return this->pattern_type;
 }
 
+void PatternBlueprint::update_config(const pattern_config& config) {
+    this->config = config;
+    this->init();
+}
+
 int PatternBlueprint::get_num_leds() {
     return this->num_leds;
 };

@@ -5,34 +5,38 @@
 
 ColoredAmplitude::ColoredAmplitude(int num_leds)
  : PatternBlueprint(PatternType::COLORED_AMPLITUDE, num_leds) {
+    this->config.palette_color1 = pattern_color{0, 255, 0}; // Green
+    this->config.palette_color2 = pattern_color{255, 255, 0}; // Yellow
+    this->config.palette_color3 = pattern_color{255, 0, 0}; // Red
     this->init();
 }
 
 void ColoredAmplitude::init() {
+        Serial.println("Init");
     if (num_leds == 1) {
-        this->colors[0] = pattern_color{0, 255, 0};
+        this->colors[0] = this->config.palette_color1;
         return;
     }
     if (num_leds == 2) {
-        this->colors[0] = pattern_color{0, 255, 0};
-        this->colors[1] = pattern_color{255, 0, 0};
+        this->colors[0] = this->config.palette_color1;
+        this->colors[1] = this->config.palette_color3;
         return;
     }
     if (num_leds == 3) {
-        this->colors[0] = pattern_color{0, 255, 0};
-        this->colors[1] = pattern_color{255, 255, 0};;
-        this->colors[2] = pattern_color{255, 0, 0};
+        this->colors[0] = this->config.palette_color1;
+        this->colors[1] = this->config.palette_color2;
+        this->colors[2] = this->config.palette_color3;
         return;
     }
 
     for (int color_index = 0; color_index < num_leds / 2; ++color_index) {
-        this->colors[color_index] = pattern_color{0, 255, 0};
+        this->colors[color_index] = this->config.palette_color1;
     }
     for (int color_index = num_leds / 2; color_index < num_leds / 2 + std::ceil((double)num_leds / 4); ++color_index) {
-        this->colors[color_index] = pattern_color{255, 255, 0};
+        this->colors[color_index] = this->config.palette_color2;
     }
     for (int color_index = num_leds / 2 + std::ceil((double)num_leds / 4); color_index < num_leds; ++color_index) {
-        this->colors[color_index] = pattern_color{255, 0, 0};
+        this->colors[color_index] = this->config.palette_color3;
     }
 }
 

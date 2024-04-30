@@ -3,15 +3,18 @@
 
 AlternatingColors::AlternatingColors(int num_leds) 
  : PatternBlueprint(PatternType::ALTERNATING_COLORS, num_leds) {
+    this->config.palette_color1 = pattern_color{255, 0, 0}; // Red
+    this->config.palette_color2 = pattern_color{0, 255, 0}; // Green
+    this->config.palette_color3 = pattern_color{0, 0, 0}; // Ignored
     this->init();
 }
 
 void AlternatingColors::init() {
     for (int color_index = 0; color_index < this->num_leds; ++color_index) {
         if (color_index % 2 == 0) {
-            this->colors[color_index] = pattern_color{255, 0, 0};
+            this->colors[color_index] = this->config.palette_color1;
         } else {
-            this->colors[color_index] = pattern_color{0, 255, 0};
+            this->colors[color_index] = this->config.palette_color2;
         }
     }
 }

@@ -9,7 +9,7 @@ public:
     ~ColoredAmplitude() {};
     void update_pattern(long time_since_beat_micros);
 
-private:
+protected:
     void init();
 };
 
