@@ -3,7 +3,7 @@
 
 #include "pattern.h"
 #include "pattern/patternType.h"
-#include "pattern/patternConfig.h"
+#include "config/patternConfig.h"
 
 class PatternBlueprint {
 protected:

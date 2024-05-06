@@ -4,10 +4,6 @@
 #include <BLEUtils.h>
 #include <BLEServer.h>
 
-typedef struct t_bluetooth_package {
-    bool isOn;
-} t_bluetooth_package;
-
 class DeviceStateCallback;
 
 class BluetoothInterface {
@@ -16,14 +12,14 @@ private:
     BLEService *bleService;
     BLECharacteristic *deviceStateCharacteristic;
     BLEAdvertising *bleAdvertising;
-    void (*on_package_received) (t_bluetooth_package*);
+    void (*on_package_received) (std::string&);
 
 public:
-    BluetoothInterface(void (*on_package_received) (t_bluetooth_package*));
+    BluetoothInterface(void (*on_package_received) (std::string&));
 
     void initialize();
 
-    // friend class DeviceStateCallback;
+    friend class DeviceStateCallback;
 };
 
 #endif

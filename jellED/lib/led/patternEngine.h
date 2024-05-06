@@ -2,7 +2,7 @@
 #define _PATTERN_ENGINE_H_
 
 #include "pattern/patternType.h"
-#include "patternEngineConfig.h"
+#include "config/patternEngineConfig.h"
 #include "pattern/pattern_colors.h"
 #include "pattern/patternBlueprint.h"
 #include "pattern.h"

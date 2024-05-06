@@ -26,21 +26,17 @@ class DeviceStateCallback: public BLECharacteristicCallbacks {
 private:
     BluetoothInterface *bluetoothInterface;
 public:
-
     DeviceStateCallback(BluetoothInterface *bluetoothInterface) {
         this->bluetoothInterface = bluetoothInterface;
     }
 
 	void onWrite(BLECharacteristic* characteristic, esp_ble_gatts_cb_param_t* param) {
         Serial.println("Value Write Value");
-        t_bluetooth_package package;
         std::string readValue = characteristic->getValue();
-        Serial.println(readValue.c_str());
-        // if (readValue.length() > 0) {
-        //     bool isOn = readValue[0] == 1;
-        //     package.isOn = isOn;
-        //     this->bluetoothInterface->on_package_received(&package);
-        // }
+        // Serial.println(readValue.c_str());
+        if (readValue.length() > 0) {
+            this->bluetoothInterface->on_package_received(readValue);
+        }
     }
 
     void onWrite(BLECharacteristic * characteristic) {
@@ -61,7 +57,7 @@ public:
     }
 };
 
-BluetoothInterface::BluetoothInterface(void (*on_package_received) (t_bluetooth_package*)) {
+BluetoothInterface::BluetoothInterface(void (*on_package_received) (std::string&)) {
     this->on_package_received = on_package_received;
 }
 

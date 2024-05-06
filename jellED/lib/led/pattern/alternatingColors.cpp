@@ -1,5 +1,5 @@
 #include "alternatingColors.h"
-#include "../pattern.h"
+#include "pattern.h"
 
 AlternatingColors::AlternatingColors(int num_leds) 
  : PatternBlueprint(PatternType::ALTERNATING_COLORS, num_leds) {
