@@ -1,5 +1,5 @@
 #include "unity.h"
-#include "pattern/alternatingColors.h"
+#include "alternatingColors.h"
 
 void test_ac_6_leds(void) {
     constexpr int NUM_LEDS = 6;

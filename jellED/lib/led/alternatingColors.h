@@ -8,6 +8,7 @@ public:
     AlternatingColors(int num_leds);
     ~AlternatingColors() {};
     void update_pattern(long time_since_beat_micros);
+    pattern_color& get_counterpart_for(const pattern_color& color);
 
 protected:
     void init();

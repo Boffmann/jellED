@@ -19,19 +19,19 @@ void AlternatingColors::init() {
     }
 }
 
+pattern_color& AlternatingColors::get_counterpart_for(const pattern_color& color) {
+    if (color.red == this->config.palette_color1.red &&
+        color.green == this->config.palette_color1.green &&
+        color.blue == this->config.palette_color1.blue) {
+            return this->config.palette_color2;
+        }
+    return this->config.palette_color1;
+}
+
 void AlternatingColors::update_pattern(long time_since_beat_micros) {
     if (time_since_beat_micros < this->tracked_time_since_last_beat_micros) {
-        pattern_color buffered_first = this->colors[0];
         for (int color_index = 0; color_index < this->num_leds; ++color_index) {
-            if (color_index == 0) {
-                this->colors[color_index] = this->colors[num_leds - 1];
-                continue;
-            }
-            if (color_index == num_leds - 1) {
-                this->colors[color_index] = buffered_first;
-                continue;
-            }
-            this->colors[color_index] = this->colors[color_index + 1];
+            this->colors[color_index] = this->get_counterpart_for(this->colors[color_index]);
         }
     }
     this->tracked_time_since_last_beat_micros = time_since_beat_micros;

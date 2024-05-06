@@ -1,5 +1,5 @@
 #include "configParser.h"
-#include "pattern/pattern_colors.h"
+#include "pattern_colors.h"
 
 #include "jsonlib.h"
 

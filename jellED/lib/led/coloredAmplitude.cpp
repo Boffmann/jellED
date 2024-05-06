@@ -1,5 +1,5 @@
 #include "coloredAmplitude.h"
-#include "../pattern.h"
+#include "pattern.h"
 #include <algorithm>
 #include <cmath>
 
@@ -12,7 +12,6 @@ ColoredAmplitude::ColoredAmplitude(int num_leds)
 }
 
 void ColoredAmplitude::init() {
-        Serial.println("Init");
     if (num_leds == 1) {
         this->colors[0] = this->config.palette_color1;
         return;
@@ -41,7 +40,7 @@ void ColoredAmplitude::init() {
 }
 
 void ColoredAmplitude::update_pattern(long time_since_beat_micros) {
-    const long micros_until_off = 500000;
+    const long micros_until_off = 1000000;
     if (this->tracked_time_since_last_beat_micros >= time_since_beat_micros) {
         this->tracked_time_since_last_beat_micros = time_since_beat_micros;
         init();

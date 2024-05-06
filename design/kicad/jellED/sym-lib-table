@@ -1,4 +1,6 @@
 (sym_lib_table
-  (lib (name 74hct125)(type Legacy)(uri C:/Users/Hendrik/Documents/Repositories/jellED/design/kicad/lib/74hct125.lib)(options "")(descr ""))
-  (lib (name INMP441)(type Legacy)(uri C:/Users/Hendrik/Documents/Repositories/jellED/design/kicad/lib/INMP441.lib)(options "")(descr ""))
+  (version 7)
+  (lib (name "74hct125")(type "Legacy")(uri "C:/Users/Hendrik/Documents/Repositories/jellED/design/kicad/lib/74hct125.lib")(options "")(descr ""))
+  (lib (name "INMP441")(type "Legacy")(uri "C:/Users/Hendrik/Documents/Repositories/jellED/design/kicad/lib/INMP441.lib")(options "")(descr ""))
+  (lib (name "jellED-rescue")(type "KiCad")(uri "${KIPRJMOD}/jellED-rescue.kicad_sym")(options "")(descr ""))
 )

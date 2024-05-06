@@ -1,10 +1,10 @@
 #ifndef _PATTERN_ENGINE_H_
 #define _PATTERN_ENGINE_H_
 
-#include "pattern/patternType.h"
-#include "config/patternEngineConfig.h"
-#include "pattern/pattern_colors.h"
-#include "pattern/patternBlueprint.h"
+#include "patternType.h"
+#include "patternEngineConfig.h"
+#include "pattern_colors.h"
+#include "patternBlueprint.h"
 #include "pattern.h"
 
 class PatternEngine {

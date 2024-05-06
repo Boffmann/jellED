@@ -2,7 +2,7 @@
 #define _PATTERN_ENGINE_PATTERN_H_
 
 #include <Arduino.h>
-#include "pattern/pattern_colors.h"
+#include "pattern_colors.h"
 
 class Pattern {
 private:

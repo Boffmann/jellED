@@ -1,5 +1,5 @@
 #include "unity.h"
-#include "pattern/coloredAmplitude.h"
+#include "coloredAmplitude.h"
 
 void test_pca_5_leds_on_beat(void) {
     constexpr int NUM_LEDS = 5;

@@ -1,7 +1,7 @@
 #ifndef _JELLED_PATTERN_ENGINE_CONFIG_H_
 #define _JELLED_PATTERN_ENGINE_CONFIG_H_
 
-#include "pattern/patternType.h"
+#include "patternType.h"
 
 constexpr int NUM_PATTERN_TYPES = 4;
 

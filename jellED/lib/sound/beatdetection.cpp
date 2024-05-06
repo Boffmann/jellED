@@ -52,12 +52,12 @@ bool BeatDetector::is_beat(const int sample) {
     peakDetector.add(mean_magnitude);
     int peak = peakDetector.getPeak();
     bool is_peak_rising_edge = peak == 1 && previous_peak != 1;
+    previous_peak = peak;
 
     bool isBeat = fft_frequency < BEAT_MAX_FREQ
     && is_peak_rising_edge;
-    //&& peakDetector.isPeak(fft_magnitude);
+    // && peakDetector.isPeak(fft_magnitude);
 
-    previous_peak = peak;
 
     if (isBeat) {
         last_beat_time = millis();

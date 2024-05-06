@@ -1,7 +1,7 @@
 #include "patternEngine.h"
 #include <Arduino.h>
-#include "pattern/coloredAmplitude.h"
-#include "pattern/alternatingColors.h"
+#include "coloredAmplitude.h"
+#include "alternatingColors.h"
 
 constexpr int NUM_PATTERNS = 2;
 

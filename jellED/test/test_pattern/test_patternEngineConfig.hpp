@@ -1,5 +1,5 @@
 #include "unity.h"
-#include "config/patternEngineConfig.h"
+#include "patternEngineConfig.h"
 
 void test_set_and_override_pattern_types(void) {
     PatternEngineConfig config;
