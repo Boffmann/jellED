@@ -6,7 +6,7 @@
 #include "beatdetection.h"
 #include "patternEngine.h"
 #include "BluetoothInterface.h"
-#include "config/configParser.h"
+#include "configParser.h"
 
 constexpr uint8_t LED_PIN = 13;
 constexpr uint8_t LED_ENABLE = 14;
@@ -21,7 +21,7 @@ constexpr uint8_t SPEAKER_OUT_PIN = 26;
 MusicPiece piece;
 Speaker speaker(SAMPLE_RATE);
 //INMP441 mic(MIC_WS_PIN, MIC_SD_PIN, MIC_SCK_PIN);
-BeatDetector detector;
+BeatDetector detector(SAMPLE_RATE);
 PatternEngine patternEngine(NUM_LEDS);
 JellEDConfigParser configParser;
 

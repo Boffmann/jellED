@@ -17,6 +17,7 @@ private:
     static const uint8_t AVG_COUNT_LOWER  = 100;
     static const uint8_t MAX_BPM = 180;
     static constexpr double BEAT_SPAN_MILLIS = 60.0 / MAX_BPM * 1000;
+    uint32_t sample_rate;
     uint16_t fft_sample_index, fft_mag_sampling_count;
 
     float input_buffer[NUM_FFT_SAMPLES];
@@ -30,7 +31,7 @@ private:
     PeakDetection peakDetector;
 
 public:
-    BeatDetector();
+    BeatDetector(uint32_t sample_rate);
     bool is_beat(const int sample);
 };
 

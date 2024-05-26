@@ -1,9 +1,9 @@
 #include "beatdetection.h"
 
-#include "soundconfig.h"
 #include <Arduino.h>
 
-BeatDetector::BeatDetector() :
+BeatDetector::BeatDetector(uint32_t sample_rate) :
+    sample_rate{sample_rate},
     fft_sample_index{0},
     fft_mag_sampling_count{1},
     fft_magnitude{0},
@@ -33,7 +33,7 @@ bool BeatDetector::is_beat(const int sample) {
     for (int k = 1 ; k < fft_analysis->size / 2 ; k++) {
         float mag = sqrt(pow(fft_analysis->output[2*k], 2) + pow(fft_analysis->output[2*k+1], 2));
 
-        float freq = (float) k / ((float) NUM_FFT_SAMPLES / (float) SAMPLE_RATE);
+        float freq = (float) k / ((float) NUM_FFT_SAMPLES / (float) sample_rate);
 
         if (freq < BEAT_MAX_FREQ) {
             mean_magnitude += mag;
