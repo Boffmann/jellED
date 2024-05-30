@@ -16,8 +16,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.plot_graph.setLabel("bottom", "Time (min)", **styles)
         self.plot_graph.addLegend()
         self.plot_graph.showGrid(x=True, y=True)
-        self.plot_graph.setYRange(-2, 2)
-        self.plot_graph.setXRange(0, 110)
+        self.plot_graph.setYRange(-40000, 40000)
+        self.plot_graph.setXRange(0, 17)
 
     def plot(self, x, y):
         print("Plot")
