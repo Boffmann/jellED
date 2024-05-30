@@ -5,4 +5,5 @@ jellED/.pio
 **/.vscode/ipch
 jellED/sdkconfig*
 jellED/data/*
+design/kicad/jellED/jellED-backups
 resources/*.wav
