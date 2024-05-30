@@ -7,3 +7,4 @@ jellED/sdkconfig*
 jellED/data/*
 design/kicad/jellED/jellED-backups
 resources/*.wav
+soundalyzer/__pycache__/*
