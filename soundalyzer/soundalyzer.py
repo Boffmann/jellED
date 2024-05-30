@@ -7,8 +7,12 @@ import time
 
 
 def soundalyzer_main():
-    wave = read_wave("/Users/tjabben/Documents/techno-drums-loop-120-bpm-1-131243.wav")
+    # wave = read_wave("/Users/tjabben/Documents/techno-drums-loop-120-bpm-1-131243.wav")
+    wave = read_wave("/Users/tjabben/Documents/techno-drums-loop-120-bpm-monno.wav")
+    # wave = read_wave("/Users/tjabben/repos/jellED/soundalyzer/sound.wav")
     main.plot(wave.ts, wave.ys)
+    main.start_playing_wave()
+    wave.play()
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])

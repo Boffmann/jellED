@@ -1,5 +1,50 @@
 import numpy as np
 from wave import open as open_wave
+import subprocess
+import warnings
+import datetime
+
+class WavFileWriter:
+    """Writes wav files."""
+
+    def __init__(self, filename="sound.wav", framerate=11025):
+        """Opens the file and sets parameters.
+
+        filename: string
+        framerate: samples per second
+        """
+        self.filename = filename
+        self.framerate = framerate
+        self.nchannels = 1
+        self.sampwidth = 2
+        self.bits = self.sampwidth * 8
+        self.bound = 2 ** (self.bits - 1) - 1
+
+        self.fmt = "h"
+        self.dtype = np.int16
+
+        self.fp = open_wave(self.filename, "w")
+        self.fp.setnchannels(self.nchannels)
+        self.fp.setsampwidth(self.sampwidth)
+        self.fp.setframerate(self.framerate)
+
+    def write(self, wave):
+        """Writes a wave.
+
+        wave: Wave
+        """
+        zs = wave.quantize(self.bound, self.dtype)
+        self.fp.writeframes(zs.tostring())
+
+    def close(self, duration=0):
+        """Closes the file.
+
+        duration: how many seconds of silence to append
+        """
+        if duration:
+            self.write(rest(duration))
+
+        self.fp.close()
 
 class Wave():
     """Represents a discrete-time waveform"""
@@ -24,8 +69,49 @@ class Wave():
         amp: float amplitude
         """
         high, low = abs(max(self.ys)), abs(min(self.ys))
-        return amp * self.ys / max(high, low)
-        # self.ys = normalize(self.ys, amp=amp)
+        self.ys = amp * self.ys / max(high, low)
+
+    def quantize(self, bound, dtype):
+        """Maps the waveform to quanta.
+
+        bound: maximum amplitude
+        dtype: numpy data type or string
+
+        returns: quantized signal
+        """
+        if max(self.ys) > 1 or min(self.ys) < -1:
+            warnings.warn("Warning: normalizing before quantizing.")
+            self.normalize(self.ys)
+
+        zs = (self.ys * bound).astype(dtype)
+        return zs
+
+    def write(self, filename="sound.wav"):
+        """Write a wave file.
+
+        filename: string
+        """
+        print("Writing", filename)
+        wfile = WavFileWriter(filename, self.framerate)
+        wfile.write(self)
+        wfile.close()
+
+    def play(self, filename="sound.wav"):
+        now = datetime.datetime.now()
+        self.write(filename)
+        print("passed:")
+        print(datetime.datetime.now() - now)
+        self.play_wave(filename)
+
+    def play_wave(self, filename="sound.wav", player="afplay"):
+        """Plays a wave file.
+
+        filename: string
+        player: string name of executable that plays wav files
+        """
+        cmd = "%s %s" % (player, filename)
+        popen = subprocess.Popen(cmd, shell=True)
+        popen.communicate()
 
 
 def read_wave(filepath):
