@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <cmath>
 #include "musicPiece.h"
 #include "soundconfig.h"
 #include "speaker.h"
@@ -20,7 +21,7 @@ constexpr uint8_t SPEAKER_OUT_PIN = 26;
 
 MusicPiece piece;
 Speaker speaker(SAMPLE_RATE);
-//INMP441 mic(MIC_WS_PIN, MIC_SD_PIN, MIC_SCK_PIN);
+INMP441 mic(MIC_WS_PIN, MIC_SD_PIN, MIC_SCK_PIN);
 BeatDetector detector(SAMPLE_RATE);
 PatternEngine patternEngine(NUM_LEDS);
 JellEDConfigParser configParser;
@@ -72,9 +73,10 @@ void setup() {
    Serial.println(" ");
 
    Serial.println("ready");
+   Serial.println(esp_get_idf_version());
    pinMode(2, OUTPUT);
    //piece.initialize();
-   //mic.initialize();
+   mic.initialize();
    //speaker.initialize();
    //patternEngine.start(PatternType::COLORED_AMPLITUDE);
    bli.initialize();
@@ -89,6 +91,42 @@ uint16_t convertUnsigned(int16_t in) {
    return (uint16_t) 32768 + in;
 }
 
+AudioBuffer audio;
+float bibabuffer[16000];
+size_t sample_counter = 0;
+size_t sample_counter_2 = 0;
+bool streamed = false;
 void loop() {
-   delay(200);
+   //int rangelimit = 1;
+   //Serial.println(rangelimit*-1);
+   //Serial.print(" ");
+   //Serial.println(rangelimit);
+   //Serial.print(" ");
+
+   bool buffer_ready = mic.read(&audio);
+   // for (int i = 0; i < audio.num_samples; i++) {
+   //    float audio_value = ((float)audio.buffer[i]) / pow(2, 15);
+   //    // Serial.println(audio_value);
+   // }
+   // return;
+
+
+   if (sample_counter < 24000) {
+      for (size_t sample = 0; sample < audio.num_samples; ++sample) {
+         sample_counter++;
+      }
+   } else if (sample_counter_2 < 16000) {
+      for (size_t sample = 0; sample < audio.num_samples; ++sample) {
+         float audio_value = ((float)audio.buffer[sample]) / pow(2, 15);
+         bibabuffer[sample_counter_2] = audio_value;
+         sample_counter_2++;
+      }
+   } else {
+      if (!streamed) {
+         for (size_t sample = 0; sample < 16000; sample++) {
+            Serial.println(bibabuffer[sample]);
+         }
+         streamed = true;
+      }
+   }
 }
