@@ -3,12 +3,9 @@ from random import randint
 from PyQt5 import QtCore, QtWidgets
 import datetime
 
-class MainWindow(QtWidgets.QMainWindow):
+class WavePlot:
     def __init__(self, title):
-        super().__init__()
-
         self.plot_graph = pg.PlotWidget()
-        self.setCentralWidget(self.plot_graph)
         self.plot_graph.setBackground("w")
         self.pen = pg.mkPen(color=(255, 0, 0))
         self.plot_graph.setTitle(title, color="b", size="20pt")
@@ -19,17 +16,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.plot_graph.showGrid(x=True, y=True)
         self.plot_graph.setYRange(-1, 1)
         self.plot_graph.setXRange(0, 17)
+        # self.plot_graph.setXRange(0.25, 0.35)
         self.begin_vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('g', width=4, style=QtCore.Qt.SolidLine))
         self.plot_graph.addItem(self.begin_vLine, ignoreBounds=True)
 
-        self.start_time = None
-        self.timer = QtCore.QTimer()
-        self.timer.setInterval(15)
-        self.timer.timeout.connect(self.update_plot_periodically)
-        self.timer.start()
-
     def plot(self, x, y):
-        print("Plot")
         self.line = self.plot_graph.plot(
             x,
             y,
@@ -37,6 +28,35 @@ class MainWindow(QtWidgets.QMainWindow):
             pen=self.pen,
         )
 
+    def get_plot_graph(self):
+        return self.plot_graph
+
+class MainWindow(QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self.plots = []
+
+        self.start_time = None
+        # self.timer = QtCore.QTimer()
+        # self.timer.setInterval(15)
+        # self.timer.timeout.connect(self.update_plot_periodically)
+        # self.timer.start()
+
+    def add_wave_plot(self, title):
+        """
+            Adds a new wave plot and returns its index
+        """
+        plot = WavePlot(title)
+        self.plots.append(plot)
+        self.setCentralWidget(plot.get_plot_graph())
+        return len(self.plots) - 1
+
+    def plot(self, plot_index, x, y):
+        if plot_index >= len(self.plots):
+            print(f"Plot index {plot_index} is larger than plot length {len(self.plots)}")
+            return
+        self.plots[plot_index].plot(x,y)
 
     def update_plot(self, x, y):
         self.line.setData(x, y)
