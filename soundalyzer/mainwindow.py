@@ -16,13 +16,14 @@ class WavePlot:
         self.plot_graph.addLegend()
         self.plot_graph.showGrid(x=True, y=True)
         self.plot_graph.setYRange(-1, 1)
-        # self.plot_graph.setXRange(0, 17)
-        self.plot_graph.setXRange(0.25, 0.35)
+        self.plot_graph.setXRange(0, 17)
+        # self.plot_graph.setXRange(0.25, 0.35)
         self.begin_vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('g', width=4, style=QtCore.Qt.SolidLine))
         self.plot_graph.addItem(self.begin_vLine, ignoreBounds=True)
 
         # self.commands = Queue()
 
+        self.start_time = None
         # self.timer = QtCore.QTimer()
         # self.timer.setInterval(15)
         # self.timer.timeout.connect(self.process_command_queue)
@@ -39,6 +40,18 @@ class WavePlot:
     def get_plot_graph(self):
         return self.plot_graph
 
+    def start_playing_wave(self):
+        print("Start playint")
+        self.start_time = datetime.datetime.now() + datetime.timedelta(microseconds=200000)
+
+    def process_command_queue(self):
+        if self.start_time == None:
+            print("Not Started yet")
+            return
+        time_passed = datetime.datetime.now() - self.start_time
+        self.begin_vLine.pos = time_passed.seconds
+        self.begin_vLine.setValue(float(time_passed.seconds) + (float(time_passed.microseconds) / 1000000.0))
+
     # def process_command_queue(self):
     #     time_start = datetime.datetime.now()
     #     time_run = 0
@@ -50,9 +63,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.h_layout = QtWidgets.QVBoxLayout()
-        self.centralWidget = QtWidgets.QWidget()
-        self.centralWidget.setLayout(self.h_layout)
-        self.setCentralWidget(self.centralWidget)
+        centralWidget = QtWidgets.QWidget()
+        centralWidget.setLayout(self.h_layout)
+        self.setCentralWidget(centralWidget)
+
+        self.resize(2000, 1000)
 
         self.plots = []
 
@@ -63,7 +78,6 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         plot = WavePlot(title)
         self.plots.append(plot)
-        # self.setCentralWidget(plot.get_plot_graph())
         self.h_layout.addWidget(plot.get_plot_graph())
         return len(self.plots) - 1
 
@@ -77,15 +91,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.line.setData(x, y)
 
     def start_playing_wave(self):
-        self.start_time = datetime.datetime.now() + datetime.timedelta(microseconds=200000)
-
-    def update_plot_periodically(self):
-        if self.start_time == None:
-            print("Not Started yet")
-            return
-        time_passed = datetime.datetime.now() - self.start_time
-        self.begin_vLine.pos = time_passed.seconds
-        # self.begin_vLine.setValue((time_passed.seconds + ((float)time_passed.microseconds / 1000000.0)))
-        self.begin_vLine.setValue(float(time_passed.seconds) + (float(time_passed.microseconds) / 1000000.0))
-        # print (float(time_passed.seconds) + (float(time_passed.microseconds) / 1000000.0))
+        for plot in self.plots:
+            plot.start_playing_wave()
 
