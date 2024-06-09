@@ -2,6 +2,7 @@ import pyqtgraph as pg
 from random import randint
 from PyQt5 import QtCore, QtWidgets
 import datetime
+from multiprocessing import Queue
 
 class WavePlot:
     def __init__(self, title):
@@ -15,10 +16,17 @@ class WavePlot:
         self.plot_graph.addLegend()
         self.plot_graph.showGrid(x=True, y=True)
         self.plot_graph.setYRange(-1, 1)
-        self.plot_graph.setXRange(0, 17)
-        # self.plot_graph.setXRange(0.25, 0.35)
+        # self.plot_graph.setXRange(0, 17)
+        self.plot_graph.setXRange(0.25, 0.35)
         self.begin_vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('g', width=4, style=QtCore.Qt.SolidLine))
         self.plot_graph.addItem(self.begin_vLine, ignoreBounds=True)
+
+        # self.commands = Queue()
+
+        # self.timer = QtCore.QTimer()
+        # self.timer.setInterval(15)
+        # self.timer.timeout.connect(self.process_command_queue)
+        # self.timer.start()
 
     def plot(self, x, y):
         self.line = self.plot_graph.plot(
@@ -31,17 +39,23 @@ class WavePlot:
     def get_plot_graph(self):
         return self.plot_graph
 
+    # def process_command_queue(self):
+    #     time_start = datetime.datetime.now()
+    #     time_run = 0
+    #     while time_run < 14:
+    #         command = self.commands.get()
+
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
+        self.h_layout = QtWidgets.QVBoxLayout()
+        self.centralWidget = QtWidgets.QWidget()
+        self.centralWidget.setLayout(self.h_layout)
+        self.setCentralWidget(self.centralWidget)
 
         self.plots = []
 
-        self.start_time = None
-        # self.timer = QtCore.QTimer()
-        # self.timer.setInterval(15)
-        # self.timer.timeout.connect(self.update_plot_periodically)
-        # self.timer.start()
 
     def add_wave_plot(self, title):
         """
@@ -49,7 +63,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         plot = WavePlot(title)
         self.plots.append(plot)
-        self.setCentralWidget(plot.get_plot_graph())
+        # self.setCentralWidget(plot.get_plot_graph())
+        self.h_layout.addWidget(plot.get_plot_graph())
         return len(self.plots) - 1
 
     def plot(self, plot_index, x, y):
