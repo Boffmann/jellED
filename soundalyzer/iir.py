@@ -19,22 +19,47 @@ def filter_lowpass_ab_scipy(wave: Wave):
     filtered = signal.filtfilt(b, a, wave.ys)
     return Wave(filtered, wave.ts, wave.framerate)
 
+
+prev_filtered = [0] * 3
+prev_samples = [0] * 3
+def iir_filter_sample_order_2(b, a, sample):
+    prev_samples[0] = prev_samples[1]
+    prev_samples[1] = prev_samples[2]
+    prev_samples[2] = sample
+    prev_filtered[0] = prev_filtered[1]
+    prev_filtered[1] = prev_filtered[2]
+
+    filtered_signal = 0
+    filtered_signal += b[0] * prev_samples[2]
+    filtered_signal += b[1] * prev_samples[1]
+    filtered_signal += b[2] * prev_samples[0]
+
+    filtered_signal -= a[1] * prev_filtered[1]
+    filtered_signal -= a[2] * prev_filtered[0]
+
+    prev_filtered[2] = filtered_signal
+
+    return filtered_signal
+
+
 def iir_filter(b, a, sig):
     filtered_signal = [0] * len(sig)
     order = len(b)
     for n in range(len(sig)):
-        sum_b = 0
-        sum_a = 0
-        for i in range(order):
-            sig_value = 0.0 if n - i < 0 else sig[n - i]
-            sum_b += b[i] * sig_value
-        for j in range(1, order):
-            sig_value = 0.0 if n - j < 0 else filtered_signal[n - j]
-            sum_a += a[j] * sig_value
-
-        filtered_signal[n] = sum_b - sum_a
-        filtered_signal[n] *= (1.0 / a[0])
+        filtered_signal[n] = iir_filter_sample_order_2(b, a, sig[n])
     return filtered_signal
+        # sum_b = 0
+        # sum_a = 0
+        # for i in range(order):
+        #     sig_value = 0.0 if n - i < 0 else sig[n - i]
+        #     sum_b += b[i] * sig_value
+        # for j in range(1, order):
+        #     sig_value = 0.0 if n - j < 0 else filtered_signal[n - j]
+        #     sum_a += a[j] * sig_value
+
+        # filtered_signal[n] = sum_b - sum_a
+        # filtered_signal[n] *= (1.0 / a[0])
+    # return filtered_signal
 
 
 def filter_lowpass_ab_own(wave: Wave):
