@@ -7,6 +7,20 @@ lowcut = 100
 # highcut = X.X
 order = 4
 
+def filter_lowpass_fir(wave: Wave):
+    ys = np.absolute(wave.ys)
+    order=4
+    sos = signal.butter(order, 100, 'low', fs=sample_rate, output='sos')
+    filtered = signal.sosfilt(sos, ys)
+    return Wave(filtered, wave.ts, wave.framerate)
+    # nyq_rate = wave.framerate / 2.0
+    # width = 5.0/nyq_rate
+    # ripple_db = 60.0
+    # N, beta = signal.kaiserord(ripple_db, width)
+    # cutoff_hz = 30.0
+    # taps = signal.firwin(N, cutoff_hz/nyq_rate, window=('kaiser', beta))
+    # filtered = signal.lfilter(taps, 1.0, wave.ys)
+    # return Wave(filtered, wave.ts, wave.framerate)
 
 def filter_lowpass_scipy(wave: Wave):
     sos = signal.butter(order, lowcut, 'low', fs=sample_rate, output='sos')

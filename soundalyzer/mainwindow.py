@@ -8,11 +8,10 @@ class WavePlot:
     def __init__(self, title):
         self.plot_graph = pg.PlotWidget()
         self.plot_graph.setBackground("w")
-        self.pen = pg.mkPen(color=(255, 0, 0))
         self.plot_graph.setTitle(title, color="b", size="20pt")
         styles = {"color": "red", "font-size": "18px"}
         self.plot_graph.setLabel("left", "Y", **styles)
-        self.plot_graph.setLabel("bottom", "Time (min)", **styles)
+        # self.plot_graph.setLabel("bottom", "Time (min)", **styles)
         self.plot_graph.addLegend()
         self.plot_graph.showGrid(x=True, y=True)
         self.plot_graph.setYRange(-1, 1)
@@ -29,12 +28,12 @@ class WavePlot:
         # self.timer.timeout.connect(self.process_command_queue)
         # self.timer.start()
 
-    def plot(self, x, y):
+    def plot(self, x, y, color):
+        pen = pg.mkPen(color=color)
         self.line = self.plot_graph.plot(
             x,
             y,
-            name="Temperature Sensor",
-            pen=self.pen,
+            pen=pen,
         )
 
     def get_plot_graph(self):
@@ -81,11 +80,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.h_layout.addWidget(plot.get_plot_graph())
         return len(self.plots) - 1
 
-    def plot(self, plot_index, x, y):
+    def plot(self, plot_index, x, y, color=(255, 0, 0)):
         if plot_index >= len(self.plots):
             print(f"Plot index {plot_index} is larger than plot length {len(self.plots)}")
             return
-        self.plots[plot_index].plot(x,y)
+        self.plots[plot_index].plot(x,y, color)
 
     def update_plot(self, x, y):
         self.line.setData(x, y)
