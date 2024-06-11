@@ -3,7 +3,7 @@ import threading
 from mainwindow import MainWindow
 from wav import Wave, read_wave
 import math
-import iir
+import filter
 from PyQt5 import QtCore, QtWidgets
 import time
 import datetime
@@ -33,17 +33,23 @@ def filter_envelope_backward(wave: Wave):
     ts = np.arange(0, wave.ts[-1], wave.ts[-1] / len(result))
     return ts, result
 
+def apply_bandpass_filter(sample):
+    return filter.filter_bandpass_sample(sample)
+
 def soundalyzer_main():
     wave = read_wave("/Users/tjabben/Documents/techno-drums-loop-120-bpm-monno.wav")
     main.plot(plot_index, wave.ts, wave.ys, color=(0, 0, 0))
-    filtered_own = iir.filter_bandpass_own(wave)
-    main.plot(plot_index, filtered_own.ts, filtered_own.ys, color=(0, 255, 0))
-    now = datetime.datetime.now()
-    ts, lmax = filter_envelope(filtered_own)
-    print("Envelope calculation took: " + str(datetime.datetime.now() - now))
-    main.plot(plot_index_2, ts, lmax, color=(255, 0, 0))
-    ts, lmax = filter_envelope_backward(filtered_own)
-    main.plot(plot_index_2, ts, lmax, color=(0, 255, 0))
+    bandpass_filtered = []
+    for sample in wave.ys:
+        bandpass_filtered.append(apply_bandpass_filter(sample))
+    main.plot(plot_index_2, wave.ts, bandpass_filtered)
+    # main.plot(plot_index, filtered_own.ts, filtered_own.ys, color=(0, 255, 0))
+    # now = datetime.datetime.now()
+    # ts, lmax = filter_envelope(filtered_own)
+    # print("Envelope calculation took: " + str(datetime.datetime.now() - now))
+    # main.plot(plot_index_2, ts, lmax, color=(255, 0, 0))
+    # ts, lmax = filter_envelope_backward(filtered_own)
+    # main.plot(plot_index_2, ts, lmax, color=(0, 255, 0))
     # main.plot(plot_index, ts, lmax, color=(255, 0, 0))
     # lowpassed = iir.filter_lowpass_fir(filtered_own)
     # main.plot(plot_index, lowpassed.ts, lowpassed.ys, color=(255, 0, 0))
