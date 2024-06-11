@@ -54,6 +54,8 @@ def iir_filter_sample_order_2(b, a, sample):
     a: denominator
     sample: a single sample
     """
+    global prev_filtered
+    global prev_samples
     prev_samples[0] = prev_samples[1]
     prev_samples[1] = prev_samples[2]
     prev_samples[2] = sample
@@ -70,7 +72,7 @@ def iir_filter_sample_order_2(b, a, sample):
 
     prev_filtered[2] = filtered_sample
 
-    return filtered_signal
+    return filtered_sample
 
 
 def iir_filter(b, a, sig):
@@ -78,6 +80,10 @@ def iir_filter(b, a, sig):
     Convenience function to apply an iir filter to a signal with given numerator/denominator.
     The filter is of order 2 because second order section is applied
     """
+    # global prev_filtered
+    # global prev_samples
+    # prev_filtered = [0] * 3
+    # prev_samples = [0] * 3
     filtered_signal = [0] * len(sig)
     for n in range(len(sig)):
         filtered_signal[n] = iir_filter_sample_order_2(b, a, sig[n])
@@ -104,20 +110,20 @@ def filter_bandpass(wave: Wave, lowcut=20, highcut=100, order=4):
         filtered_signal = iir_filter(b, a, filtered_signal)
     return Wave(filtered_signal, wave.ts, wave.framerate)
 
-def filter_bandpass_sample(sample):
+def filter_bandpass_sample(sample, sos):
     """
     Applies a bandpass filter to a sample using second order sections
 
     This implementation is in the end used in the ESP32 firmware
     """
-    sos = [[ 7.41426642e-10, 1.48285328e-09, 7.41426642e-10, 1.00000000e+00,
-  -1.98596111e+00, 9.86051254e-01],
- [ 1.00000000e+00, 2.00000000e+00, 1.00000000e+00, 1.00000000e+00,
-  -1.99324771e+00, 9.93408841e-01],
- [ 1.00000000e+00, -2.00000000e+00, 1.00000000e+00, 1.00000000e+00,
-  -1.99469814e+00, 9.94711042e-01],
- [ 1.00000000e+00, -2.00000000e+00, 1.00000000e+00, 1.00000000e+00,
-  -1.99859190e+00, 9.98599159e-01]]
+    # sos = [[ 7.41426642e-10, 1.48285328e-09, 7.41426642e-10, 1.00000000e+00,
+  # -1.98596111e+00, 9.86051254e-01],
+ # [ 1.00000000e+00, 2.00000000e+00, 1.00000000e+00, 1.00000000e+00,
+  # -1.99324771e+00, 9.93408841e-01],
+ # [ 1.00000000e+00, -2.00000000e+00, 1.00000000e+00, 1.00000000e+00,
+  # -1.99469814e+00, 9.94711042e-01],
+ # [ 1.00000000e+00, -2.00000000e+00, 1.00000000e+00, 1.00000000e+00,
+  # -1.99859190e+00, 9.98599159e-01]]
     filtered_sample = sample
     for section in range(len(sos) - 1):
         b = [sos[section][0], sos[section][1], sos[section][2]]
