@@ -1,4 +1,5 @@
 import scipy.signal as signal
+import collections
 
 class BandpassFilter:
     def __init__(self, order, lowcut, highcut, framerate):
@@ -6,9 +7,11 @@ class BandpassFilter:
         self.prev_samples_per_section = {}
         self.prev_filtered_per_section = {}
         for section in range(len(self.sos)):
-            self.prev_samples_per_section[section] = [0] * 3
-            self.prev_filtered_per_section[section] = [0] * 3
-
+            self.prev_samples_per_section[section] = collections.deque(maxlen=3)
+            self.prev_filtered_per_section[section] = collections.deque(maxlen=3)
+            for i in range(3):
+                self.prev_samples_per_section[section].append(0)
+                self.prev_filtered_per_section[section].append(0)
 
     def _filter_sample_sos(self, sample, section):
         """
@@ -23,12 +26,13 @@ class BandpassFilter:
         b = [self.sos[section][0], self.sos[section][1], self.sos[section][2]]
         a = [self.sos[section][3], self.sos[section][4], self.sos[section][5]]
 
-        self.prev_samples_per_section[section][0] = self.prev_samples_per_section[section][1]
-        self.prev_samples_per_section[section][1] = self.prev_samples_per_section[section][2]
-        self.prev_samples_per_section[section][2] = sample
+        # self.prev_samples_per_section[section][0] = self.prev_samples_per_section[section][1]
+        # self.prev_samples_per_section[section][1] = self.prev_samples_per_section[section][2]
+        # self.prev_samples_per_section[section][2] = sample
+        self.prev_samples_per_section[section].append(sample)
 
-        self.prev_filtered_per_section[section][0] = self.prev_filtered_per_section[section][1]
-        self.prev_filtered_per_section[section][1] = self.prev_filtered_per_section[section][2]
+        # self.prev_filtered_per_section[section][0] = self.prev_filtered_per_section[section][1]
+        # self.prev_filtered_per_section[section][1] = self.prev_filtered_per_section[section][2]
 
         filtered_sample = 0
 
@@ -36,10 +40,12 @@ class BandpassFilter:
         filtered_sample += b[1] * self.prev_samples_per_section[section][1]
         filtered_sample += b[2] * self.prev_samples_per_section[section][0]
 
-        filtered_sample -= a[1] * self.prev_filtered_per_section[section][1]
-        filtered_sample -= a[2] * self.prev_filtered_per_section[section][0]
+        # filtered_sample -= a[1] * self.prev_filtered_per_section[section][1]
+        # filtered_sample -= a[2] * self.prev_filtered_per_section[section][0]
+        filtered_sample -= a[1] * self.prev_filtered_per_section[section][2]
+        filtered_sample -= a[2] * self.prev_filtered_per_section[section][1]
 
-        self.prev_filtered_per_section[section][2] = filtered_sample
+        self.prev_filtered_per_section[section].append(filtered_sample)
 
         return filtered_sample
 
