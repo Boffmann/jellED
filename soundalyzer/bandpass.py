@@ -11,6 +11,15 @@ class BandpassFilter:
 
 
     def _filter_sample_sos(self, sample, section):
+        """
+        Applies a second order section iir convelution filter to a sample
+
+        It works by tracking both previous samples as well as previously filtered samples
+        per section. This is required because the samples come in one after another.
+        Each section must not be conveluted with samples/filtered samples from other sections
+
+        This method should not be called directly. Instead, use "iir_filter_sos"
+        """
         b = [self.sos[section][0], self.sos[section][1], self.sos[section][2]]
         a = [self.sos[section][3], self.sos[section][4], self.sos[section][5]]
 
