@@ -16,14 +16,14 @@ def filter_lowpass_scipy(wave: Wave, lowcut=100, order=4):
     filtered = signal.sosfilt(sos, ys)
     return Wave(filtered, wave.ts, wave.framerate)
 
-def filter_bandpass_scipy(wave: Wave, lowpass=20, highpass=100, order=4):
+def filter_bandpass_scipy(wave: Wave, lowcut=20, highcut=100, order=4):
     """
     Applies a butterworth bandpass filter to a wave signal with the second order sections algorithm.
     lowcut: lower frequency to cut off
     highcut: higher frequency to cut off
     order: Order of the filter
     """
-    sos = signal.butter(order, [lowcut, highcut], 'band', fs=wave.frequency, output='sos')
+    sos = signal.butter(order, [lowcut, highcut], 'band', fs=wave.framerate, output='sos')
     ys = wave.ys
     filtered = signal.sosfilt(sos, ys)
     return Wave(filtered, wave.ts, wave.framerate)
@@ -104,7 +104,7 @@ def filter_bandpass(wave: Wave, lowcut=20, highcut=100, order=4):
     """
     sos = signal.butter(order, [lowcut, highcut], 'band', fs=wave.framerate, output='sos')
     filtered_signal = wave.ys
-    for section in range(len(sos) - 1):
+    for section in range(len(sos)):
         b = [sos[section][0], sos[section][1], sos[section][2]]
         a = [sos[section][3], sos[section][4], sos[section][5]]
         filtered_signal = iir_filter(b, a, filtered_signal)

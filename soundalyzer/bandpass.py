@@ -1,0 +1,43 @@
+import scipy.signal as signal
+
+class BandpassFilter:
+    def __init__(self, order, lowcut, highcut, framerate):
+        self.sos = signal.butter(order, [lowcut, highcut], 'band', fs=framerate, output='sos')
+        self.prev_samples_per_section = {}
+        self.prev_filtered_per_section = {}
+        for section in range(len(self.sos)):
+            self.prev_samples_per_section[section] = [0] * 3
+            self.prev_filtered_per_section[section] = [0] * 3
+
+
+    def _filter_sample_sos(self, sample, section):
+        b = [self.sos[section][0], self.sos[section][1], self.sos[section][2]]
+        a = [self.sos[section][3], self.sos[section][4], self.sos[section][5]]
+
+        self.prev_samples_per_section[section][0] = self.prev_samples_per_section[section][1]
+        self.prev_samples_per_section[section][1] = self.prev_samples_per_section[section][2]
+        self.prev_samples_per_section[section][2] = sample
+
+        self.prev_filtered_per_section[section][0] = self.prev_filtered_per_section[section][1]
+        self.prev_filtered_per_section[section][1] = self.prev_filtered_per_section[section][2]
+
+        filtered_sample = 0
+
+        filtered_sample += b[0] * self.prev_samples_per_section[section][2]
+        filtered_sample += b[1] * self.prev_samples_per_section[section][1]
+        filtered_sample += b[2] * self.prev_samples_per_section[section][0]
+
+        filtered_sample -= a[1] * self.prev_filtered_per_section[section][1]
+        filtered_sample -= a[2] * self.prev_filtered_per_section[section][0]
+
+        self.prev_filtered_per_section[section][2] = filtered_sample
+
+        return filtered_sample
+
+    def iir_filter_sos(self, sample):
+        filtered_sample = sample
+        for section in range(len(self.sos)):
+            filtered_sample = self._filter_sample_sos(filtered_sample, section)
+
+        return filtered_sample
+

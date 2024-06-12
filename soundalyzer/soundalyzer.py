@@ -3,6 +3,7 @@ import scipy.signal as signal
 import threading
 from mainwindow import MainWindow
 from wav import Wave, read_wave
+from bandpass import BandpassFilter
 import math
 import filter
 from PyQt5 import QtCore, QtWidgets
@@ -41,9 +42,11 @@ def soundalyzer_main():
     wave = read_wave("/Users/tjabben/Documents/techno-drums-loop-120-bpm-monno.wav")
     main.plot(plot_index, wave.ts, wave.ys, color=(0, 0, 0))
     bandpass_filtered = []
-    sos = signal.butter(2, [20, 100], 'band', fs=48000, output='sos')
+    # sos = signal.butter(2, [20, 100], 'band', fs=48000, output='sos')
+    bandpass = BandpassFilter(4, 20, 100, wave.framerate)
     for sample in wave.ys:
-        filtered_sample = apply_bandpass_filter(sample, sos)
+        # filtered_sample = apply_bandpass_filter(sample, sos)
+        filtered_sample = bandpass.iir_filter_sos(sample)
         bandpass_filtered.append(filtered_sample)
     main.plot(plot_index_2, wave.ts, bandpass_filtered)
     # main.plot(plot_index, filtered_own.ts, filtered_own.ys, color=(0, 255, 0))
@@ -54,7 +57,7 @@ def soundalyzer_main():
     # ts, lmax = filter_envelope_backward(filtered_own)
     # main.plot(plot_index_2, ts, lmax, color=(0, 255, 0))
     # main.plot(plot_index, ts, lmax, color=(255, 0, 0))
-    filtered = filter.filter_bandpass(wave, lowcut=20, highcut=1000, order=2)
+    filtered = filter.filter_bandpass(wave, lowcut=20, highcut=100, order=4)
     main.plot(plot_index_3, filtered.ts, filtered.ys, color=(0, 0, 255))
     # main.start_playing_wave()
     # filtered_own.play()
