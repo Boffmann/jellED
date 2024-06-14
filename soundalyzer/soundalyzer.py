@@ -16,28 +16,35 @@ def soundalyzer_main():
     wave = read_wave("/Users/tjabben/Documents/techno-drums-loop-120-bpm-monno.wav")
     main.plot(plot_index, wave.ts, wave.ys, color=(0, 0, 0))
     bandpass = BandpassFilter(4, 20, 100, wave.framerate)
-    envelopeDetector = EnvelopeDetector(1024, 512)
-    peakDetector = PeakDetector(10, 2, 0.5)
+    bandpass.activate_downsampling(wave.framerate, 1000)
+    envelopeDetector = EnvelopeDetector(32, 16)
+    peakDetector = PeakDetector(256, 3, 0.3)
 
+    print("Wave FPS: " + str(wave.framerate))
     bandpass_filtered = []
     envelope = []
     peaks = []
     now = datetime.datetime.now()
     prev_env_value = -1
     first = True
-    for sample in wave.ys:
+    for index in range(len(wave.ys)):
+        sample = wave.ys[index]
+        ts = wave.ts[index]
         filtered_sample = bandpass.iir_filter_sos(sample)
-        bandpass_filtered.append(filtered_sample)
-        enveloped_sample = envelopeDetector.envelope_sample(filtered_sample)
-        if prev_env_value != enveloped_sample or first:
+        if filtered_sample != None:
+            bandpass_filtered.append(filtered_sample)
+            enveloped_sample = envelopeDetector.envelope_sample(filtered_sample)
+            # if prev_env_value != enveloped_sample or first:
             prev_env_value = enveloped_sample
             envelope.append(enveloped_sample)
             first = False
-            peaks.append(peakDetector.thresholding_algo(enveloped_sample))
+            is_peak = peakDetector.thresholding_algo(enveloped_sample, ts)
+            peaks.append(is_peak)
 
+    # print("Length of filtered: " + str(len(bandpass_filtered)))
     print("Calculating with custom implementation took: " + str(datetime.datetime.now() - now))
-    main.plot(plot_index_2, wave.ts, bandpass_filtered)
-    ts = np.arange(0, wave.ts[-1], wave.ts[-1] / len(peaks))
+    ts = np.arange(0, wave.ts[-1], wave.ts[-1] / len(bandpass_filtered))
+    main.plot(plot_index_2, ts, bandpass_filtered)
     # main.plot(plot_index_2, wave.ts, envelope, color=(0, 0, 255))
     # main.plot(plot_index_3, wave.ts, envelope, color=(0, 255, 0))
     # main.plot(plot_index_3, wave.ts, peaks, color=(255, 0, 255))

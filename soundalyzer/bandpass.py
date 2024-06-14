@@ -13,6 +13,10 @@ class BandpassFilter:
                 self.prev_samples_per_section[section].append(0)
                 self.prev_filtered_per_section[section].append(0)
 
+        self.should_downsample = False
+        self.downsampling_counter = 0
+        self.downsampling_threshold = None
+
     def _filter_sample_sos(self, sample, section):
         """
         Applies a second order section iir convelution filter to a sample
@@ -54,5 +58,21 @@ class BandpassFilter:
         for section in range(len(self.sos)):
             filtered_sample = self._filter_sample_sos(filtered_sample, section)
 
+        # In case of downsampling, all samples must be filtered to get accurate results but only after a certain
+        # number of samples is filtered, a new value is returned to get a downsampling effect
+        if self.should_downsample:
+            self.downsampling_counter += 1
+            if self.downsampling_counter > self.downsampling_threshold:
+                self.downsampling_counter = 0
+                return filtered_sample
+            else:
+                return None
         return filtered_sample
+
+    def activate_downsampling(self, fps, desired_fps):
+        if fps < desired_fps:
+            print("Cannot activate downsampling if desired_fps is larger")
+            return
+        self.should_downsample = True
+        self.downsampling_threshold = fps / desired_fps
 

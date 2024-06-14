@@ -12,10 +12,15 @@ class PeakDetector:
         self.filteredY = np.array(self.y).tolist()
         self.avgFilter = [0] * len(self.y)
         self.stdFilter = [0] * len(self.y)
+
+        max_bpm = 180.0
+        self.min_time_between_beats_seconds = 60.0 / max_bpm
+        self.last_beat_time = 0
+
         # self.avgFilter[self.lag - 1] = np.mean(self.y[0:self.lag]).tolist()
         # self.stdFilter[self.lag - 1] = np.std(self.y[0:self.lag]).tolist()
 
-    def thresholding_algo(self, new_value):
+    def thresholding_algo(self, new_value, sampling_time):
         self.y.append(new_value)
         i = len(self.y) - 1
         self.length = len(self.y)
@@ -40,7 +45,8 @@ class PeakDetector:
 
         if abs(self.y[i] - self.avgFilter[i - 1]) > (self.threshold * self.stdFilter[i - 1]):
 
-            if self.y[i] > self.avgFilter[i - 1]:
+            if self.y[i] > self.avgFilter[i - 1] and sampling_time - self.last_beat_time > self.min_time_between_beats_seconds:
+                self.last_beat_time = sampling_time
                 self.signals[i] = 1
             else:
                 self.signals[i] = 0 # -1
