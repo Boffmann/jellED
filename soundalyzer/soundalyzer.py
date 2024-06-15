@@ -6,6 +6,7 @@ from wav import Wave, read_wave
 from bandpass import BandpassFilter
 from envelope import EnvelopeDetector
 from peakdetection import PeakDetector
+from serial_reader import SerialReader
 import math
 import filter
 from PyQt5 import QtCore, QtWidgets
@@ -19,6 +20,26 @@ def soundalyzer_main():
     bandpass.activate_downsampling(wave.framerate, 1000)
     envelopeDetector = EnvelopeDetector(32, 16)
     peakDetector = PeakDetector(256, 3, 0.3)
+    serialReader = SerialReader()
+
+    # REGION: Read data samples from serial port
+
+    readTimeSpan = 10
+    serialData = serialReader.read_samples(readTimeSpan)
+    print(serialData[0:20])
+    print(len(serialData))
+    step_size = readTimeSpan / len(serialData)
+    ts = np.arange(0, readTimeSpan, step_size)
+    ys_ts_delta = len(serialData) - len(ts)
+    if ys_ts_delta < 0:
+        ts = ts[:len(ts) - abs(ys_ts_delta)]
+    elif ys_ts_delta > 0:
+        for i in range(ys_ts_delta):
+            ts.append(ts[-1] + step_size)
+    main.plot(plot_index_2, ts, serialData)
+
+    # END REGION: Read data samples from serial port
+    return
 
     print("Wave FPS: " + str(wave.framerate))
     bandpass_filtered = []

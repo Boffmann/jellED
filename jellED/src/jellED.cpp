@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <cmath>
 #include "musicPiece.h"
 #include "soundconfig.h"
 #include "speaker.h"
@@ -20,7 +21,7 @@ constexpr uint8_t SPEAKER_OUT_PIN = 26;
 
 MusicPiece piece;
 Speaker speaker(SAMPLE_RATE);
-//INMP441 mic(MIC_WS_PIN, MIC_SD_PIN, MIC_SCK_PIN);
+INMP441 mic(MIC_WS_PIN, MIC_SD_PIN, MIC_SCK_PIN);
 BeatDetector detector(SAMPLE_RATE);
 PatternEngine patternEngine(NUM_LEDS);
 JellEDConfigParser configParser;
@@ -74,7 +75,7 @@ void setup() {
    Serial.println("ready");
    pinMode(2, OUTPUT);
    //piece.initialize();
-   //mic.initialize();
+   mic.initialize();
    //speaker.initialize();
    //patternEngine.start(PatternType::COLORED_AMPLITUDE);
    bli.initialize();
@@ -89,6 +90,17 @@ uint16_t convertUnsigned(int16_t in) {
    return (uint16_t) 32768 + in;
 }
 
+AudioBuffer audio;
 void loop() {
-   delay(200);
+   //int rangelimit = 1;
+   //Serial.println(rangelimit*-1);
+   //Serial.print(" ");
+   //Serial.println(rangelimit);
+   //Serial.print(" ");
+
+   bool buffer_ready = mic.read(&audio);
+   for (size_t sample = 0; sample < audio.num_samples; ++sample) {
+      float audio_value = ((float)audio.buffer[sample]) / pow(2, 13);
+      Serial.println(audio_value);
+   }
 }
