@@ -3,6 +3,7 @@ import scipy.signal as signal
 import threading
 from mainwindow import MainWindow
 from wav import Wave, read_wave
+import wave
 from bandpass import BandpassFilter
 from envelope import EnvelopeDetector
 from peakdetection import PeakDetector
@@ -12,6 +13,20 @@ import filter
 from PyQt5 import QtCore, QtWidgets
 import time
 import datetime
+
+def write_wav_file(data):
+    with wave.open("output.wav", mode="wb") as wav_file:
+        sampwidth = 2
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(sampwidth)
+        wav_file.setframerate(len(data) / 10)
+        # output = np.array(wa)
+        bits = sampwidth * 8
+        bound = 2 ** (bits - 1) - 1
+        ys = np.array(data)
+        zs = (ys * bound).astype(np.int16)
+        wav_file.writeframes(zs.tobytes())
+        # wav_file.writeframes(bytes(int(data * 32768)))
 
 def soundalyzer_main():
     wave = read_wave("/Users/tjabben/Documents/techno-drums-loop-120-bpm-monno.wav")
@@ -37,6 +52,7 @@ def soundalyzer_main():
         for i in range(ys_ts_delta):
             ts.append(ts[-1] + step_size)
     main.plot(plot_index_2, ts, serialData)
+    write_wav_file(serialData)
 
     # END REGION: Read data samples from serial port
     return
