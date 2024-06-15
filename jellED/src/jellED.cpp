@@ -100,7 +100,7 @@ void loop() {
 
    bool buffer_ready = mic.read(&audio);
    for (size_t sample = 0; sample < audio.num_samples; ++sample) {
-      float audio_value = ((float)audio.buffer[sample]) / pow(2, 13);
+      float audio_value = ((float)audio.buffer[sample]) / pow(2, 15);
       Serial.println(audio_value);
    }
 }

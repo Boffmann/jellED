@@ -12,6 +12,13 @@ class SerialReader:
 
 
     def read_samples(self, time_span_seconds):
+        # Somehow the first ~3 seconds of the input are blurry.
+        # It looks like the ESP gets ready for Serial transfer somehow and
+        # outputs random data. Therefore, the first two seconds are dropped
+        started = datetime.datetime.now()
+        while (datetime.datetime.now() - started).seconds < 3:
+            self.ser.readline()
+
         result = []
         started = datetime.datetime.now()
         now = started

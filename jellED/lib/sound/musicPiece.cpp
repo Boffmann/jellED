@@ -62,7 +62,7 @@ bool MusicPiece::read(AudioBuffer* buffer) {
             buffer_ptr = 0;
         }
     }
-    buffer->buffer_bytes = 64;
+    buffer->bytes_read = 64;
     buffer->num_samples = num_samples;
     buffer->samplingRate = SAMPLE_RATE;
     

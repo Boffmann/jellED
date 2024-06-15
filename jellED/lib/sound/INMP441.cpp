@@ -6,7 +6,8 @@
 #define I2S_PORT I2S_NUM_0
 
 INMP441::INMP441(uint8_t ws_pin, uint8_t sd_pin, uint8_t sck_pin) 
-: pin_ws{ws_pin}, pin_sd{sd_pin}, pin_sck{sck_pin} {}
+: pin_ws{ws_pin}, pin_sd{sd_pin}, pin_sck{sck_pin}, buffer32{0} {
+}
 
 INMP441::~INMP441() {
     i2s_driver_uninstall(I2S_PORT);
@@ -24,7 +25,10 @@ void INMP441::initialize() {
         .dma_buf_len = I2S_DMA_BUF_LEN,
         .use_apll = false
     };
-    i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL);
+    
+    if (ESP_OK != i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL)) {
+        Serial.println("i2s_driver_install: error");
+    }
 
     const i2s_pin_config_t pin_config = {
         .bck_io_num = pin_sck,
@@ -32,15 +36,43 @@ void INMP441::initialize() {
         .data_out_num = -1,
         .data_in_num = pin_sd
     };
-    i2s_set_pin(I2S_PORT, &pin_config);
+
+    if (ESP_OK != i2s_set_pin(I2S_PORT, &pin_config)) {
+        Serial.println("i2s_set_pin: error");
+    }
 
     i2s_zero_dma_buffer(I2S_PORT);
     i2s_start(I2S_PORT);
 }
 
 bool INMP441::read(AudioBuffer* buffer) {
-    esp_err_t result = i2s_read(I2S_PORT, &buffer->buffer, sizeof(int16_t) * I2S_DMA_BUF_LEN, &buffer->buffer_bytes, portMAX_DELAY);
-    buffer->num_samples = buffer->buffer_bytes / sizeof(int16_t);
+    esp_err_t result = i2s_read(I2S_PORT, &buffer32, sizeof(uint8_t) * I2S_DMA_BUF_LEN * 2, &buffer->bytes_read, portMAX_DELAY);
+
+    //Serial.print("Bytes read: ");
+    // Serial.print(buffer->bytes_read);
+    buffer->num_samples = buffer->bytes_read / 2;
     buffer->samplingRate = SAMPLE_RATE;
+    for (int i = 0; i < buffer->num_samples; i++) {
+        // Serial.println("");
+        // Serial.println(this->buffer32[i * 2]);
+        // Serial.println(this->buffer32[i * 2+1]);
+        // Serial.println(this->buffer32[i * 3+2]);
+        // Serial.println(this->buffer32[i * 4+3]);
+
+        uint8_t lsb = buffer32[i * 2];
+        uint8_t msb = buffer32[i * 2 + 1];
+        uint16_t raw = (((uint32_t)lsb) << 8) + ((uint32_t)msb);
+        memcpy(&buffer->buffer[i], &raw, sizeof(raw));
+        // Serial.println(buffer->buffer[i]);
+        // Serial.println("");
+    }
+
+    // https://esp32.com/viewtopic.php?t=15185
+    // for (int i = 0; i < buffer->num_samples; i++) {
+    //     uint8_t mid = buffer32[i * 4 + 2];
+    //     uint8_t msb = buffer32[i * 4 + 3];
+    //     buffer->buffer[i] = (((uint32_t)msb) << 8) + ((uint32_t)mid);
+    // }
+
     return result == ESP_OK;
 }
