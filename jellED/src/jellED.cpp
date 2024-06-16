@@ -91,6 +91,10 @@ uint16_t convertUnsigned(int16_t in) {
 }
 
 AudioBuffer audio;
+float bibabuffer[16000];
+size_t sample_counter = 0;
+size_t sample_counter_2 = 0;
+bool streamed = false;
 void loop() {
    //int rangelimit = 1;
    //Serial.println(rangelimit*-1);
@@ -99,8 +103,22 @@ void loop() {
    //Serial.print(" ");
 
    bool buffer_ready = mic.read(&audio);
-   for (size_t sample = 0; sample < audio.num_samples; ++sample) {
-      float audio_value = ((float)audio.buffer[sample]) / pow(2, 15);
-      Serial.println(audio_value);
+   if (sample_counter < 24000) {
+      for (size_t sample = 0; sample < audio.num_samples; ++sample) {
+         sample_counter++;
+      }
+   } else if (sample_counter_2 < 16000) {
+      for (size_t sample = 0; sample < audio.num_samples; ++sample) {
+         float audio_value = ((float)audio.buffer[sample]) / pow(2, 15);
+         bibabuffer[sample_counter_2] = audio_value;
+         sample_counter_2++;
+      }
+   } else {
+      if (!streamed) {
+         for (size_t sample = 0; sample < 16000; sample++) {
+            Serial.println(bibabuffer[sample]);
+         }
+         streamed = true;
+      }
    }
 }

@@ -14,29 +14,73 @@ from PyQt5 import QtCore, QtWidgets
 import time
 import datetime
 
-def write_wav_file(data):
+def write_wav_file(data, framerate):
     with wave.open("output.wav", mode="wb") as wav_file:
         sampwidth = 2
         wav_file.setnchannels(1)
         wav_file.setsampwidth(sampwidth)
-        wav_file.setframerate(len(data) / 10)
+        wav_file.setframerate(framerate)
         # output = np.array(wa)
         bits = sampwidth * 8
         bound = 2 ** (bits - 1) - 1
         ys = np.array(data)
         zs = (ys * bound).astype(np.int16)
         wav_file.writeframes(zs.tobytes())
-        # wav_file.writeframes(bytes(int(data * 32768)))
+
+def read_sound_input():
+    ys = []
+    with open("/Users/tjabben/repos/jellED/jellED/soundinput.txt", mode="r") as input_file:
+        for line in input_file.readlines():
+            ys.append(float(line.strip('\n')))
+
+    for i in range(4):
+        for j in range(16000):
+            ys.append(ys[j])
+    return ys
 
 def soundalyzer_main():
     wave = read_wave("/Users/tjabben/Documents/techno-drums-loop-120-bpm-monno.wav")
-    main.plot(plot_index, wave.ts, wave.ys, color=(0, 0, 0))
-    bandpass = BandpassFilter(4, 20, 100, wave.framerate)
-    bandpass.activate_downsampling(wave.framerate, 1000)
-    envelopeDetector = EnvelopeDetector(32, 16)
-    peakDetector = PeakDetector(256, 3, 0.3)
-    serialReader = SerialReader()
+    # main.plot(plot_index, wave.ts, wave.ys, color=(0, 0, 0))
+    mic_framerate = 8000
+    bandpass = BandpassFilter(4, 20, 500, mic_framerate)
+    # bandpass.activate_downsampling(mic_framerate, 1000)
+    envelopeDetector = EnvelopeDetector(128, 64)
+    peakDetector = PeakDetector(512, 3, 0.3)
+    # serialReader = SerialReader()
 
+    wave_ys = read_sound_input()
+    step_size = 10.0 / len(wave_ys)
+    wave_ts = np.arange(0, 10, step_size)
+    bandpass_filtered = []
+    envelope = []
+    peaks = []
+    now = datetime.datetime.now()
+    prev_env_value = -1
+    first = True
+    for index in range(len(wave_ys)):
+        sample = wave_ys[index]
+        ts = wave_ts[index]
+        filtered_sample = bandpass.iir_filter_sos(sample)
+        if filtered_sample != None:
+            bandpass_filtered.append(filtered_sample)
+            enveloped_sample = envelopeDetector.envelope_sample(filtered_sample)
+            # if prev_env_value != enveloped_sample or first:
+            prev_env_value = enveloped_sample
+            envelope.append(enveloped_sample)
+            first = False
+            is_peak = peakDetector.thresholding_algo(enveloped_sample, ts)
+            peaks.append(is_peak)
+    write_wav_file(bandpass_filtered, len(bandpass_filtered) / 10)
+    # write_wav_file(wave_ys, len(wave_ys) / 10)
+    downsampled_ts = np.arange(0, wave_ts[-1], wave_ts[-1] / len(bandpass_filtered))
+    print(len(downsampled_ts))
+    main.plot(plot_index, wave_ts, wave_ys)
+    main.plot(plot_index_2, downsampled_ts, bandpass_filtered)
+    main.plot(plot_index_2, downsampled_ts, envelope, color=(0, 0, 255))
+    # main.plot(plot_index_3, wave_ts, wave_ys, color=(0, 255, 0))
+    main.plot(plot_index_3, downsampled_ts, envelope, color=(0, 255, 0))
+    main.plot(plot_index_3, downsampled_ts, peaks, color=(255, 0, 255))
+    return
     # REGION: Read data samples from serial port
 
     readTimeSpan = 10
@@ -54,8 +98,8 @@ def soundalyzer_main():
     main.plot(plot_index_2, ts, serialData)
     write_wav_file(serialData)
 
-    # END REGION: Read data samples from serial port
     return
+    # END REGION: Read data samples from serial port
 
     print("Wave FPS: " + str(wave.framerate))
     bandpass_filtered = []
