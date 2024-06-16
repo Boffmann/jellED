@@ -73,6 +73,7 @@ void setup() {
    Serial.println(" ");
 
    Serial.println("ready");
+   Serial.println(esp_get_idf_version());
    pinMode(2, OUTPUT);
    //piece.initialize();
    mic.initialize();
@@ -103,6 +104,13 @@ void loop() {
    //Serial.print(" ");
 
    bool buffer_ready = mic.read(&audio);
+   // for (int i = 0; i < audio.num_samples; i++) {
+   //    float audio_value = ((float)audio.buffer[i]) / pow(2, 15);
+   //    // Serial.println(audio_value);
+   // }
+   // return;
+
+
    if (sample_counter < 24000) {
       for (size_t sample = 0; sample < audio.num_samples; ++sample) {
          sample_counter++;

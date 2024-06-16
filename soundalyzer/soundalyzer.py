@@ -42,7 +42,7 @@ def soundalyzer_main():
     wave = read_wave("/Users/tjabben/Documents/techno-drums-loop-120-bpm-monno.wav")
     # main.plot(plot_index, wave.ts, wave.ys, color=(0, 0, 0))
     mic_framerate = 8000
-    bandpass = BandpassFilter(4, 20, 500, mic_framerate)
+    bandpass = BandpassFilter(4, 20, 100, mic_framerate)
     # bandpass.activate_downsampling(mic_framerate, 1000)
     envelopeDetector = EnvelopeDetector(128, 64)
     peakDetector = PeakDetector(512, 3, 0.3)
@@ -70,16 +70,18 @@ def soundalyzer_main():
             first = False
             is_peak = peakDetector.thresholding_algo(enveloped_sample, ts)
             peaks.append(is_peak)
-    write_wav_file(bandpass_filtered, len(bandpass_filtered) / 10)
+    # write_wav_file(bandpass_filtered, len(bandpass_filtered) / 10)
+    # write_wav_file(bandpass_filtered, len(bandpass_filtered) / 10)
+    write_wav_file(wave_ys, mic_framerate)
     # write_wav_file(wave_ys, len(wave_ys) / 10)
-    downsampled_ts = np.arange(0, wave_ts[-1], wave_ts[-1] / len(bandpass_filtered))
-    print(len(downsampled_ts))
+    # downsampled_ts = np.arange(0, wave_ts[-1], wave_ts[-1] / len(bandpass_filtered))
+    # print(len(downsampled_ts))
     main.plot(plot_index, wave_ts, wave_ys)
-    main.plot(plot_index_2, downsampled_ts, bandpass_filtered)
-    main.plot(plot_index_2, downsampled_ts, envelope, color=(0, 0, 255))
+    main.plot(plot_index_2, wave_ts, bandpass_filtered)
+    # main.plot(plot_index_2, downsampled_ts, envelope, color=(0, 0, 255))
     # main.plot(plot_index_3, wave_ts, wave_ys, color=(0, 255, 0))
-    main.plot(plot_index_3, downsampled_ts, envelope, color=(0, 255, 0))
-    main.plot(plot_index_3, downsampled_ts, peaks, color=(255, 0, 255))
+    # main.plot(plot_index_3, downsampled_ts, envelope, color=(0, 255, 0))
+    # main.plot(plot_index_3, downsampled_ts, peaks, color=(255, 0, 255))
     return
     # REGION: Read data samples from serial port
 
@@ -96,7 +98,7 @@ def soundalyzer_main():
         for i in range(ys_ts_delta):
             ts.append(ts[-1] + step_size)
     main.plot(plot_index_2, ts, serialData)
-    write_wav_file(serialData)
+    write_wav_file(serialData, len(serialData) / readTimeSpan)
 
     return
     # END REGION: Read data samples from serial port
