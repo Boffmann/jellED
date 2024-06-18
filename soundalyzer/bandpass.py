@@ -63,7 +63,7 @@ class BandpassFilter:
         # number of samples is filtered, a new value is returned to get a downsampling effect
         if self.should_downsample:
             self.downsampling_counter += 1
-            if self.downsampling_counter > self.downsampling_threshold:
+            if self.downsampling_counter >= self.downsampling_threshold:
                 self.downsampling_counter = 0
                 return filtered_sample
             else:

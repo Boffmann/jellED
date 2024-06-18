@@ -65,12 +65,13 @@ bool INMP441::read(AudioBuffer* buffer) {
         // Serial.println(this->buffer32[i * 3+2]);
         // Serial.println(this->buffer32[i * 4+3]);
 
-        int8_t lsb = buffer32[i * 4];
-        int8_t lower_mid = buffer32[i * 4 + 1];
-        int8_t upper_mid = buffer32[i * 4 + 2];
-        int8_t msb = buffer32[i * 4 + 3];
-        int16_t raw = (((int32_t)upper_mid) << 8) + (((int32_t)lower_mid));// + (((int32_t)lower_mid));// + ((int32_t)msb);
+        int8_t msb = buffer32[i * 4];
+        int8_t upper_mid = buffer32[i * 4 + 1];
+        int8_t lower_mid = buffer32[i * 4 + 2];
+        int8_t lsb = buffer32[i * 4 + 3];
+        int16_t raw = (((int32_t)lower_mid) << 8) + (((int32_t)upper_mid));// + (((int32_t)lower_mid));// + ((int32_t)msb);
         memcpy(&buffer->buffer[i], &raw, sizeof(raw));
+
         // buffer->buffer[i] = (int16_t) buffer32[i] >> 11;
         // Serial.println(buffer->buffer[i]);
         // Serial.println("");

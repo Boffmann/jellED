@@ -3,12 +3,12 @@ import argparse
 import scipy.signal as signal
 import threading
 from mainwindow import MainWindow
-from wav import Wave, wave_from_wav, wave_from_recorded_file
+from wav import Wave, WavFileWriter, wave_from_wav, wave_from_recorded_file
 import wave
 from bandpass import BandpassFilter
 from envelope import EnvelopeDetector
 from peakdetection import PeakDetector
-from serial_reader import SerialReader
+from serialreader import SerialReader
 import math
 import filter
 from PyQt5 import QtCore, QtWidgets
@@ -30,22 +30,22 @@ def calculate_ts(start, end, step_size, desired_length):
             ts.append(ts[-1] + step_size)
     return ts
 
-def read_from_serial():
-    # REGION: Read data samples from serial port
+def read_from_serial(should_store):
     serialReader = SerialReader()
 
-    readTimeSpan = 10
-    serialData = serialReader.read_samples(readTimeSpan)
+    readTimeSpan = 2
+    framerate = 8000
+    serialData = serialReader.read_samples(framerate, readTimeSpan)
     print(serialData[0:20])
     print(len(serialData))
     step_size = readTimeSpan / len(serialData)
     ts = calculate_ts(0, readTimeSpan, step_size, len(serialData))
-    main.plot(plot_index_2, ts, serialData)
-    write_wav_file(serialData, len(serialData) / readTimeSpan)
-
-    return
-    # END REGION: Read data samples from serial port
-
+    wave = Wave(serialData, ts=ts, framerate=framerate)
+    if should_store:
+        fileWriter = WavFileWriter(filename="output.wav", framerate=wave.framerate)
+        fileWriter.write(wave)
+        fileWriter.close()
+    return wave
 
 def soundalyzer_main(mode):
 
@@ -55,14 +55,22 @@ def soundalyzer_main(mode):
     global main
 
     if mode == "WAV":
-        wave = wave_from_wav("/Users/tjabben/Documents/techno-drums-loop-120-bpm-monno.wav")
-        bandpass = BandpassFilter(4, 20, 100, wave.framerate)
+        # wave = wave_from_wav("/Users/tjabben/Documents/techno-drums-loop-120-bpm-monno.wav")
+        wave = wave_from_wav("/Users/tjabben/repos/jellED/soundalyzer/output.wav")
+        # bandpass = BandpassFilter(4, 20, 100, wave.framerate)
+        # Experiment: Bass übersteuert das Mikro komplett. Kann man Beats durch einen Workaround besser an den hohen Frquenzen erkennen?
+        bandpass = BandpassFilter(4, 2999, 3999, wave.framerate)
         bandpass.activate_downsampling(8000)
     elif mode == "RECORDED":
+        # wave = wave_from_recorded_file("/Users/tjabben/repos/jellED/jellED/soundinput.txt", 8000, 2, 10)
         wave = wave_from_recorded_file("/Users/tjabben/repos/jellED/jellED/soundinput.txt", 8000, 2, 10)
         bandpass = BandpassFilter(4, 20, 100, wave.framerate)
     elif mode == "RECORD":
-        wave = read_from_serial()
+        wave = read_from_serial(False)
+        bandpass = BandpassFilter(4, 20, 100, wave.framerate)
+    elif mode == "RECORD_STORE":
+        wave = read_from_serial(True)
+        bandpass = BandpassFilter(4, 2500, 3500, wave.framerate)
     else:
         print("Mode " + mode + " is not known")
         return
@@ -100,14 +108,17 @@ def soundalyzer_main(mode):
     main.plot(plot_index_3, downsampled_ts, envelope, color=(0, 255, 0))
     main.plot(plot_index_3, downsampled_ts, peaks, color=(255, 0, 255))
 
-    # main.start_playing_wave()
-    # filtered_own.play()
+    # print(len(bandpass_filtered))
+    filtered_own = Wave(bandpass_filtered, downsampled_ts, 8000)
+    main.start_playing_wave()
+    filtered_own.play()
     # wave.play()
 
 def show_help():
     print("Mode WAV: Reads a Wave from a wav file and performs filtering, envelope, and peak detection")
     print("Mode RECORDED: Reads a Wave from a recorded file that was read from the ESP prior execution. Performs filtering, envelope, and peak detection")
     print("Mode RECORD: Records Sample from connected ESP. Performs filtering, envelope, and peak detection on the recorded sample")
+    print("Mode RECORD_STORE: Records Sample from connected ESP and stores it in output file. Performs filtering, envelope, and peak detection on the recorded sample")
 
 def run(args):
     global plot_index
@@ -136,7 +147,7 @@ def run(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("soundalyzer")
-    parser.add_argument("--mode", help="Run Soundalyzer with mode. Select one of ('WAV'|'RECORDED')", required=True)
+    parser.add_argument("--mode", help="Run Soundalyzer with mode. Select one of ('WAV'|'RECORDED'|RECORD|RECORD_STORE)", required=True)
     parser.add_argument("--explain", help="Show more detailled help text with mode description", action="store_true")
     parser.add_argument("--no_gui", help="Do not show gui", action="store_true")
 
