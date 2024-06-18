@@ -6,6 +6,7 @@ class BandpassFilter:
         self.sos = signal.butter(order, [lowcut, highcut], 'band', fs=framerate, output='sos')
         self.prev_samples_per_section = {}
         self.prev_filtered_per_section = {}
+        self.fps = framerate
         for section in range(len(self.sos)):
             self.prev_samples_per_section[section] = collections.deque(maxlen=3)
             self.prev_filtered_per_section[section] = collections.deque(maxlen=3)
@@ -69,10 +70,10 @@ class BandpassFilter:
                 return None
         return filtered_sample
 
-    def activate_downsampling(self, fps, desired_fps):
-        if fps < desired_fps:
+    def activate_downsampling(self, desired_fps):
+        if self.fps < desired_fps:
             print("Cannot activate downsampling if desired_fps is larger")
             return
         self.should_downsample = True
-        self.downsampling_threshold = fps / desired_fps
+        self.downsampling_threshold = self.fps / desired_fps
 

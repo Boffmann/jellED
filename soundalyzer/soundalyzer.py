@@ -1,8 +1,9 @@
 import numpy as np
+import argparse
 import scipy.signal as signal
 import threading
 from mainwindow import MainWindow
-from wav import Wave, read_wave
+from wav import Wave, wave_from_wav, wave_from_recorded_file
 import wave
 from bandpass import BandpassFilter
 from envelope import EnvelopeDetector
@@ -14,96 +15,64 @@ from PyQt5 import QtCore, QtWidgets
 import time
 import datetime
 
-def write_wav_file(data, framerate):
-    with wave.open("output.wav", mode="wb") as wav_file:
-        sampwidth = 2
-        wav_file.setnchannels(1)
-        wav_file.setsampwidth(sampwidth)
-        wav_file.setframerate(framerate)
-        # output = np.array(wa)
-        bits = sampwidth * 8
-        bound = 2 ** (bits - 1) - 1
-        ys = np.array(data)
-        zs = (ys * bound).astype(np.int16)
-        wav_file.writeframes(zs.tobytes())
+plot_index = None
+plot_index_2 = None
+plot_index_3 = None
+main = None
 
-def read_sound_input():
-    ys = []
-    with open("/Users/tjabben/repos/jellED/jellED/soundinput.txt", mode="r") as input_file:
-        for line in input_file.readlines():
-            ys.append(float(line.strip('\n')))
+def calculate_ts(start, end, step_size, desired_length):
+    ts = np.arange(start, end, step_size)
+    ys_ts_delta = desired_length - len(ts)
+    if ys_ts_delta < 0:
+        ts = ts[:len(ts) - abs(ys_ts_delta)]
+    elif ys_ts_delta > 0:
+        for i in range(ys_ts_delta):
+            ts.append(ts[-1] + step_size)
+    return ts
 
-    for i in range(4):
-        for j in range(16000):
-            ys.append(ys[j])
-    return ys
-
-def soundalyzer_main():
-    wave = read_wave("/Users/tjabben/Documents/techno-drums-loop-120-bpm-monno.wav")
-    # main.plot(plot_index, wave.ts, wave.ys, color=(0, 0, 0))
-    mic_framerate = 8000
-    bandpass = BandpassFilter(4, 20, 100, mic_framerate)
-    # bandpass.activate_downsampling(mic_framerate, 1000)
-    envelopeDetector = EnvelopeDetector(128, 64)
-    peakDetector = PeakDetector(512, 3, 0.3)
-    # serialReader = SerialReader()
-
-    wave_ys = read_sound_input()
-    step_size = 10.0 / len(wave_ys)
-    wave_ts = np.arange(0, 10, step_size)
-    bandpass_filtered = []
-    envelope = []
-    peaks = []
-    now = datetime.datetime.now()
-    prev_env_value = -1
-    first = True
-    for index in range(len(wave_ys)):
-        sample = wave_ys[index]
-        ts = wave_ts[index]
-        filtered_sample = bandpass.iir_filter_sos(sample)
-        if filtered_sample != None:
-            bandpass_filtered.append(filtered_sample)
-            enveloped_sample = envelopeDetector.envelope_sample(filtered_sample)
-            # if prev_env_value != enveloped_sample or first:
-            prev_env_value = enveloped_sample
-            envelope.append(enveloped_sample)
-            first = False
-            is_peak = peakDetector.thresholding_algo(enveloped_sample, ts)
-            peaks.append(is_peak)
-    # write_wav_file(bandpass_filtered, len(bandpass_filtered) / 10)
-    # write_wav_file(bandpass_filtered, len(bandpass_filtered) / 10)
-    write_wav_file(wave_ys, mic_framerate)
-    # write_wav_file(wave_ys, len(wave_ys) / 10)
-    # downsampled_ts = np.arange(0, wave_ts[-1], wave_ts[-1] / len(bandpass_filtered))
-    # print(len(downsampled_ts))
-    main.plot(plot_index, wave_ts, wave_ys)
-    main.plot(plot_index_2, wave_ts, bandpass_filtered)
-    # main.plot(plot_index_2, downsampled_ts, envelope, color=(0, 0, 255))
-    # main.plot(plot_index_3, wave_ts, wave_ys, color=(0, 255, 0))
-    # main.plot(plot_index_3, downsampled_ts, envelope, color=(0, 255, 0))
-    # main.plot(plot_index_3, downsampled_ts, peaks, color=(255, 0, 255))
-    return
+def read_from_serial():
     # REGION: Read data samples from serial port
+    serialReader = SerialReader()
 
     readTimeSpan = 10
     serialData = serialReader.read_samples(readTimeSpan)
     print(serialData[0:20])
     print(len(serialData))
     step_size = readTimeSpan / len(serialData)
-    ts = np.arange(0, readTimeSpan, step_size)
-    ys_ts_delta = len(serialData) - len(ts)
-    if ys_ts_delta < 0:
-        ts = ts[:len(ts) - abs(ys_ts_delta)]
-    elif ys_ts_delta > 0:
-        for i in range(ys_ts_delta):
-            ts.append(ts[-1] + step_size)
+    ts = calculate_ts(0, readTimeSpan, step_size, len(serialData))
     main.plot(plot_index_2, ts, serialData)
     write_wav_file(serialData, len(serialData) / readTimeSpan)
 
     return
     # END REGION: Read data samples from serial port
 
-    print("Wave FPS: " + str(wave.framerate))
+
+def soundalyzer_main(mode):
+
+    global plot_index
+    global plot_index_2
+    global plot_index_3
+    global main
+
+    if mode == "WAV":
+        wave = wave_from_wav("/Users/tjabben/Documents/techno-drums-loop-120-bpm-monno.wav")
+        bandpass = BandpassFilter(4, 20, 100, wave.framerate)
+        bandpass.activate_downsampling(8000)
+    elif mode == "RECORDED":
+        wave = wave_from_recorded_file("/Users/tjabben/repos/jellED/jellED/soundinput.txt", 8000, 2, 10)
+        bandpass = BandpassFilter(4, 20, 100, wave.framerate)
+    elif mode == "RECORD":
+        wave = read_from_serial()
+    else:
+        print("Mode " + mode + " is not known")
+        return
+
+
+    main.plot(plot_index, wave.ts, wave.ys)
+    envelope_size = 128
+    envelopeDetector = EnvelopeDetector(envelope_size, envelope_size / 2)
+    peakDetector = PeakDetector(2048, 3, 0.3)
+
     bandpass_filtered = []
     envelope = []
     peaks = []
@@ -118,44 +87,60 @@ def soundalyzer_main():
             bandpass_filtered.append(filtered_sample)
             enveloped_sample = envelopeDetector.envelope_sample(filtered_sample)
             # if prev_env_value != enveloped_sample or first:
-            prev_env_value = enveloped_sample
+            # prev_env_value = enveloped_sample
             envelope.append(enveloped_sample)
-            first = False
+            # first = False
             is_peak = peakDetector.thresholding_algo(enveloped_sample, ts)
             peaks.append(is_peak)
-
-    # print("Length of filtered: " + str(len(bandpass_filtered)))
     print("Calculating with custom implementation took: " + str(datetime.datetime.now() - now))
-    ts = np.arange(0, wave.ts[-1], wave.ts[-1] / len(bandpass_filtered))
-    main.plot(plot_index_2, ts, bandpass_filtered)
-    # main.plot(plot_index_2, wave.ts, envelope, color=(0, 0, 255))
-    # main.plot(plot_index_3, wave.ts, envelope, color=(0, 255, 0))
-    # main.plot(plot_index_3, wave.ts, peaks, color=(255, 0, 255))
-    main.plot(plot_index_2, ts, envelope, color=(0, 0, 255))
-    main.plot(plot_index_3, ts, envelope, color=(0, 255, 0))
-    main.plot(plot_index_3, ts, peaks, color=(255, 0, 255))
-
-    # now = datetime.datetime.now()
-    # filtered = filter.filter_bandpass(wave, lowcut=20, highcut=100, order=4)
-    # ts, ys = envelopeDetector.filter_envelope_backward(filtered)
-    # print("Calculating with scipy+numpy took: " + str(datetime.datetime.now() - now))
-    # main.plot(plot_index_3, filtered.ts, filtered.ys, color=(0, 0, 255))
-    # main.plot(plot_index_3, ts, ys, color=(255, 0, 0))
+    downsampled_ts = calculate_ts(0, wave.ts[-1], wave.ts[-1] / len(bandpass_filtered), len(bandpass_filtered))
+    main.plot(plot_index_2, downsampled_ts, bandpass_filtered)
+    main.plot(plot_index_2, downsampled_ts, envelope, color=(0, 0, 255))
+    # main.plot(plot_index_3, wave_ts, wave_ys, color=(0, 255, 0))
+    main.plot(plot_index_3, downsampled_ts, envelope, color=(0, 255, 0))
+    main.plot(plot_index_3, downsampled_ts, peaks, color=(255, 0, 255))
 
     # main.start_playing_wave()
     # filtered_own.play()
     # wave.play()
 
-if __name__ == "__main__":
+def show_help():
+    print("Mode WAV: Reads a Wave from a wav file and performs filtering, envelope, and peak detection")
+    print("Mode RECORDED: Reads a Wave from a recorded file that was read from the ESP prior execution. Performs filtering, envelope, and peak detection")
+    print("Mode RECORD: Records Sample from connected ESP. Performs filtering, envelope, and peak detection on the recorded sample")
+
+def run(args):
+    global plot_index
+    global plot_index_2
+    global plot_index_3
+    global main
+    if args.explain:
+        show_help()
+        return
+
+    if args.no_gui:
+        soundalyzer_main(args.mode)
+        return
+
     app = QtWidgets.QApplication([])
     main = MainWindow()
     plot_index = main.add_wave_plot("1")
     plot_index_2 = main.add_wave_plot("2")
     plot_index_3 = main.add_wave_plot("3")
 
-    x = threading.Thread(target=soundalyzer_main)
+    x = threading.Thread(target=soundalyzer_main, args=(args.mode,))
     x.start()
     # soundalyzer_main()
     main.show()
     app.exec()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser("soundalyzer")
+    parser.add_argument("--mode", help="Run Soundalyzer with mode. Select one of ('WAV'|'RECORDED')", required=True)
+    parser.add_argument("--explain", help="Show more detailled help text with mode description", action="store_true")
+    parser.add_argument("--no_gui", help="Do not show gui", action="store_true")
+
+    args = parser.parse_args()
+
+    run(args)
 

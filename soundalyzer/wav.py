@@ -114,7 +114,7 @@ class Wave():
         popen.communicate()
 
 
-def read_wave(filepath):
+def wave_from_wav(filepath):
         fp = open_wave(filepath, 'r')
 
         nchannels = fp.getnchannels()
@@ -145,4 +145,16 @@ def read_wave(filepath):
         wave.normalize()
         return wave
 
+def wave_from_recorded_file(filepath, framerate, recorded_seconds, span_to_seconds):
+    ys = []
+    with open(filepath, mode="r") as input_file:
+        for line in input_file.readlines():
+            ys.append(float(line.strip('\n')))
+
+    repeat_count = int(span_to_seconds / recorded_seconds)
+    total_samples = framerate * recorded_seconds
+    for i in range(repeat_count):
+        for j in range(total_samples):
+            ys.append(ys[j])
+    return Wave(ys, framerate=framerate)
 
