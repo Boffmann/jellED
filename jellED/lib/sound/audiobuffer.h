@@ -4,11 +4,11 @@
 #include <stdint.h>
 #include <cstddef>
 
-#define I2S_DMA_BUF_LEN 32
+#define I2S_DMA_BUF_LEN 64
 
 typedef struct AudioBuffer {
     int16_t buffer[I2S_DMA_BUF_LEN];
-    size_t buffer_bytes;
+    size_t bytes_read;
     size_t num_samples;
     uint16_t samplingRate;
 } AudioBuffer;

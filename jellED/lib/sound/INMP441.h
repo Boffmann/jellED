@@ -13,6 +13,8 @@ private:
     const uint8_t pin_ws;
     const uint8_t pin_sd;
 
+    int8_t buffer32[I2S_DMA_BUF_LEN * 4];
+
 public:
     INMP441(uint8_t ws_pin, uint8_t sd_pin, uint8_t sck_pin);
     ~INMP441();
