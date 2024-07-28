@@ -23,10 +23,10 @@ class WavePlot:
         # self.commands = Queue()
 
         self.start_time = None
-        # self.timer = QtCore.QTimer()
-        # self.timer.setInterval(15)
-        # self.timer.timeout.connect(self.process_command_queue)
-        # self.timer.start()
+        self.timer = QtCore.QTimer()
+        self.timer.setInterval(15)
+        self.timer.timeout.connect(self.process_command_queue)
+        self.timer.start()
 
     def plot(self, x, y, color):
         pen = pg.mkPen(color=color)

@@ -5,7 +5,12 @@ jellED/.pio
 **/.vscode/ipch
 jellED/sdkconfig*
 jellED/data/*
+jellED/soundinput.txt
 design/kicad/jellED/jellED-backups
 resources/*.wav
 soundalyzer/__pycache__/*
 soundalyzer/sound.wav
+**/build
+**/*.wav
+**/esp.code-workspace
+jellED/core/beatDetection/test/resources/beatDetection/*
