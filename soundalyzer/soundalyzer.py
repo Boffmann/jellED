@@ -47,6 +47,19 @@ def read_from_serial(should_store):
         fileWriter.close()
     return wave
 
+def generate_butterworth():
+    order = 4
+    lowcut = 50
+    highcut = 100
+    framerate = 41000
+    sos = signal.butter(order, [lowcut, highcut], 'band', fs=framerate, output='sos')
+    print(sos)
+    for o in range(0, order):
+        for i in range (0, 3):
+            print("this->numerator[{order}][{place}] = {result};".format(order=o, place=i%3, result=sos[o][i]))
+        for i in range (3, 6):
+            print("this->denominator[{order}][{place}] = {result};".format(order=o, place=i%3, result=sos[o][i]))
+
 def soundalyzer_main(mode):
 
     global plot_index
@@ -71,6 +84,9 @@ def soundalyzer_main(mode):
     elif mode == "RECORD_STORE":
         wave = read_from_serial(True)
         bandpass = BandpassFilter(4, 2500, 3500, wave.framerate)
+    elif mode == "GEN_BUTTERWORTH":
+        generate_butterworth()
+        return
     else:
         print("Mode " + mode + " is not known")
         return
