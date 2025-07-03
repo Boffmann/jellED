@@ -69,7 +69,6 @@ TEST_F(BandpassFilterTest, TestApplyBandpass) {
   std::for_each(samples.begin(), samples.end(),
                 [&actual_result, &filter](double &sample) {
                   actual_result.push_back(filter.apply(sample));
-                  /* actual_result.push_back(5); */
                 });
 
   ASSERT_EQ(actual_result.size(), expected_result.size());

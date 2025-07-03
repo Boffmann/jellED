@@ -6,6 +6,7 @@
 
 class IPlatformUtils {
 public:
+    virtual ~IPlatformUtils() = default;
     virtual ILogger& logger() = 0;
     virtual ICrono& crono() = 0;
 };

@@ -23,7 +23,7 @@ set(sources
 )
 
 # Option to build tests (disabled by default)
-option(BUILD_BEATDETECTION_TESTS "Build BeatDetection tests" OFF)
+option(BUILD_BEATDETECTION_TESTS "Build BeatDetection tests" ON)
 
 # Only build tests if explicitly requested
 if(BUILD_BEATDETECTION_TESTS)

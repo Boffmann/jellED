@@ -6,9 +6,8 @@ BandpassFilter::BandpassFilter()
 : prev_samples_per_section{nullptr},
   prev_filtered_per_section{nullptr}
  {
-    this->prev_samples_per_section = (Ringbuffer**) malloc(sizeof(Ringbuffer) * NUM_SECTIONS);
-    this->prev_filtered_per_section = (Ringbuffer**) malloc(sizeof(Ringbuffer) * NUM_SECTIONS);
-
+    this->prev_samples_per_section = (Ringbuffer**) malloc(sizeof(Ringbuffer*) * NUM_SECTIONS);
+    this->prev_filtered_per_section = (Ringbuffer**) malloc(sizeof(Ringbuffer*) * NUM_SECTIONS);
 
     for (int ring_buffer_index = 0; ring_buffer_index < NUM_SECTIONS; ring_buffer_index++) {
         this->prev_samples_per_section[ring_buffer_index] = new Ringbuffer(3);
@@ -56,7 +55,6 @@ BandpassFilter::~BandpassFilter() {
 }
 
 double BandpassFilter::applyBandpass(double sample, uint8_t section) {
-
     this->prev_samples_per_section[section]->append(sample);
 
     double filteredSample = 0.0;

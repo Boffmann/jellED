@@ -7,19 +7,20 @@
 #include <iostream>
 
 constexpr int NUM_FILTER_STAGES = 2;
+constexpr int ENVELOPE_DOWNSAMPLE_RATIO = 8;
 
 BeatDetector::BeatDetector(IPlatformUtils& platformUtils, uint32_t sample_rate)
     : platformUtils(platformUtils),
-      peakDetection{0.01, 0.1, 0.1, 0.4, 180.0, sample_rate},
+      peakDetection(0.01, 0.1, 0.1, 0.4, 180.0, sample_rate / ENVELOPE_DOWNSAMPLE_RATIO),
       filterChain{nullptr},
       previous_filtered_sample{UNFILTERED},
       was_beat{false},
       sample_rate{sample_rate},
       sample_count{0}
 {
-    this->filterChain = (FilterStage**) malloc(sizeof(FilterStage) * NUM_FILTER_STAGES);
+    this->filterChain = (FilterStage**) malloc(sizeof(FilterStage*) * NUM_FILTER_STAGES);
     this->filterChain[0] = new BandpassFilter();
-    this->filterChain[1] = new EnvelopeDetector(sample_rate, 1);
+    this->filterChain[1] = new EnvelopeDetector(sample_rate, ENVELOPE_DOWNSAMPLE_RATIO);
 }
 
 BeatDetector::~BeatDetector() {
@@ -36,23 +37,17 @@ bool BeatDetector::is_beat(const double sample) {
         filteredSample = this->filterChain[filterIndex]->apply(filteredSample);
     }
     
-    // Calculate current time in seconds
-    // This can be done better I guess
-    double current_time = static_cast<double>(sample_count) / sample_rate;
     sample_count++;
+    double current_time = static_cast<double>(sample_count) / (sample_rate / ENVELOPE_DOWNSAMPLE_RATIO);
     
-    if (this->previous_filtered_sample == UNFILTERED || this->previous_filtered_sample != filteredSample) {
-        this->previous_filtered_sample = filteredSample;
-        
-        bool is_beat_detected = peakDetection.is_peak(filteredSample, current_time);
-        
-        if (is_beat_detected && !this->was_beat) {
-            std::cout << "BEAT DETECTED at " << current_time << "s" << std::endl;
-            this->was_beat = true;
-            return true;
-        } else if (!is_beat_detected) {
-            this->was_beat = false;
-        }
+    if (!std::isfinite(filteredSample)) {
+        std::cerr << "Warning: filteredSample is not finite: " << filteredSample << std::endl;
     }
-    return false;
+
+    // Only process time and peak detection if the envelope detector actually processed the sample
+    if (filteredSample == -1.0) {
+        return false;
+    }
+
+    return peakDetection.is_peak(filteredSample, current_time);
 }

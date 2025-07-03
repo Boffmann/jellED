@@ -1,4 +1,9 @@
 include(GoogleTest)
+
+add_library(TestUtils 
+    utils/TestPlatformUtils.cpp
+)
+
 # Ringbuffer Tests Executable
 add_executable(ringbuffer_test
     ringbuffer_test.cpp
@@ -7,6 +12,7 @@ add_executable(ringbuffer_test
 target_link_libraries(ringbuffer_test
     GTest::gtest_main
     BeatDetection
+    TestUtils
 )
 
 gtest_discover_tests(ringbuffer_test)
@@ -19,6 +25,7 @@ add_executable(bandpass_test
 target_link_libraries(bandpass_test
     GTest::gtest_main
     BeatDetection
+    TestUtils
 )
 
 gtest_discover_tests(bandpass_test)
@@ -31,6 +38,7 @@ add_executable(envelope_test
 target_link_libraries(envelope_test
     GTest::gtest_main
     BeatDetection
+    TestUtils
 )
 
 gtest_discover_tests(envelope_test)
@@ -43,6 +51,20 @@ add_executable(peakdetection_test
 target_link_libraries(peakdetection_test
     GTest::gtest_main
     BeatDetection
+    TestUtils
 )
 
 gtest_discover_tests(peakdetection_test)
+
+# Beat Detection Tests Executable
+add_executable(beatdetection_test
+    beatdetection_test.cpp
+)
+
+target_link_libraries(beatdetection_test
+    GTest::gtest_main
+    BeatDetection
+    TestUtils
+)
+
+gtest_discover_tests(beatdetection_test)

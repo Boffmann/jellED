@@ -3,6 +3,7 @@
 
 class ICrono {
 public:
+    virtual ~ICrono() = default;
     virtual unsigned long currentTimeMicros() = 0;
 };
 

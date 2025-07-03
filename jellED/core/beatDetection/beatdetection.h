@@ -2,9 +2,9 @@
 #define _BEAT_DETECTOR_JELLED_H_
 
 #include <stdint.h>
-#include "filterStage.h"
-#include "peakdetection.h"
-#include "IPlatformUtils.h"
+#include "include/filterStage.h"
+#include "include/peakdetection.h"
+#include "../IPlatformUtils.h"
 
 class BeatDetector {
 private:

@@ -17,9 +17,9 @@ PeakDetector::PeakDetector(double attack, double release, double threshold_rel,
       is_rising(false),
       last_peak_time(-min_peak_distance)
 {
-    this->local_min_buffer = new Ringbuffer(((uint16_t) 0.5 * sample_rate));  // 0.5s window
-    this->sample_times_buffer = new Ringbuffer(((uint16_t) 1.0 * sample_rate));   // 1s window
-    this->envelope_buffer = new Ringbuffer(((uint16_t) 0.1 * sample_rate));  // 0.1s window
+    this->local_min_buffer = new Ringbuffer((uint16_t) (0.5 * sample_rate));  // 0.5s window
+    this->sample_times_buffer = new Ringbuffer((uint16_t) (1.0 * sample_rate));   // 1s window
+    this->envelope_buffer = new Ringbuffer((uint16_t) (0.1 * sample_rate));  // 0.1s window
 }
 
 PeakDetector::~PeakDetector() {
