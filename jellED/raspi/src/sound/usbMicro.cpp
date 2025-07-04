@@ -262,15 +262,15 @@ bool UsbMicro::read(AudioBuffer* buffer) {
     static int consecutive_empty_reads = 0;
     
     if (fill_bytes == 0) {
-        consecutive_empty_reads++;
-        
-        // If we've had too many consecutive empty reads, the stream might be dead
-        if (consecutive_empty_reads > 10) {
-            std::cout << "Stream appears to be dead. Attempting to restart..." << std::endl;
-            // Try to restart the stream
-            soundio_instream_start(mic_in_stream);
-            consecutive_empty_reads = 0;
-        }
+        /*consecutive_empty_reads++;*/
+        /**/
+        /*// If we've had too many consecutive empty reads, the stream might be dead*/
+        /*if (consecutive_empty_reads > 10) {*/
+        /*    std::cout << "Stream appears to be dead. Attempting to restart..." << std::endl;*/
+        /*    // Try to restart the stream*/
+        /*    soundio_instream_start(mic_in_stream);*/
+        /*    consecutive_empty_reads = 0;*/
+        /*}*/
         
         return false;
     }

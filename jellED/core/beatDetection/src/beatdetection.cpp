@@ -40,9 +40,9 @@ bool BeatDetector::is_beat(const double sample) {
     sample_count++;
     double current_time = static_cast<double>(sample_count) / (sample_rate / ENVELOPE_DOWNSAMPLE_RATIO);
     
-    if (!std::isfinite(filteredSample)) {
-        std::cerr << "Warning: filteredSample is not finite: " << filteredSample << std::endl;
-    }
+    /*if (!std::isfinite(filteredSample)) {*/
+    /*    std::cerr << "Warning: filteredSample is not finite: " << filteredSample << std::endl;*/
+    /*}*/
 
     // Only process time and peak detection if the envelope detector actually processed the sample
     if (filteredSample == -1.0) {

@@ -10,7 +10,8 @@
 #include <vector>
 #include <fstream>
 
-std::string microphone_device_id = "BuiltInMicrophoneDevice";
+/*std::string microphone_device_id = "BuiltInMicrophoneDevice";*/
+std::string microphone_device_id = "plughw:CARD=Device,DEV=0";
 
 // Function to write audio samples to a file for debugging
 void write_samples_to_file(const std::vector<float>& samples, const std::string& filename) {
@@ -71,7 +72,7 @@ int main () {
     
     // For debugging: collect first 5 seconds of samples in a separate thread
     std::vector<float> debug_samples;
-    const int samples_per_second = 48000; // Assuming 48kHz sample rate
+    const int samples_per_second = 44100; // Assuming 48kHz sample rate
     const int max_debug_samples = 5 * samples_per_second;
     std::atomic<bool> debug_complete(false);
     std::atomic<bool> debug_running(true);
