@@ -2,6 +2,8 @@
 #include "pattern/coloredAmplitude.h"
 #include "pattern/alternatingColors.h"
 
+namespace jellED {
+
 constexpr int NUM_PATTERNS = 2;
 
 PatternEngine::PatternEngine(IPlatformUtils& pUtils, const int num_leds)
@@ -70,3 +72,5 @@ void PatternEngine::update_pattern_color_config(const pattern_config& pattern_co
         this->allPatternBlueprints[pattern_index]->update_config(pattern_config);
     }
 }
+
+} // end namespace jellED

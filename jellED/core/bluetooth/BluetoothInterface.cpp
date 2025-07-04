@@ -10,6 +10,8 @@
 #define SERVICE_UUID "665aa768-49c8-11ee-be56-0242ac120002"
 #define CHARACTERISTIC_UUID "d0756476-49c8-11ee-be56-0242ac120002"
 
+namespace jellED {
+
 class BleServerCallbacks: public BLEServerCallbacks {
 
     void onConnect(BLEServer* pServer) {
@@ -84,3 +86,5 @@ void BluetoothInterface::initialize() {
     Serial.println("Characteristic defined! Now you can read it in your phone!");
     deviceStateCharacteristic->setValue("Moin");
 }
+
+} // namespace jellED

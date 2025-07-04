@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+namespace jellED {
+
 class Speaker {
 private:
     uint16_t sample_rate;
@@ -16,5 +18,7 @@ public:
     void initialize();
     void play(const uint8_t audio);
 };
+
+} // namespace jellED
 
 #endif

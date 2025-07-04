@@ -1,6 +1,8 @@
 #include "pattern.h"
 #include <stdlib.h>
 
+namespace jellED {
+
 Pattern::Pattern(IPlatformUtils& pUtils, const int length)
     : max_length{length},
     pUtils(pUtils) {
@@ -34,3 +36,5 @@ const pattern_color& Pattern::get_color(const int color_index) const {
     pUtils.logger().log("Added too many colors");
     return rainbow_colors[RED_INDEX];
 }
+
+} // end namespace jellED

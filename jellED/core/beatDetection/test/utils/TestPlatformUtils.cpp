@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+namespace jellED {
+
 class TestCrono : public ICrono {
 public:
     unsigned long currentTimeMicros() {
@@ -28,3 +30,5 @@ ILogger& TestPlatformUtils::logger() {
 ICrono& TestPlatformUtils::crono() {
     return *this->_crono.get();
 }
+
+} // namespace jellED

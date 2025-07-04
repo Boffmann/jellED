@@ -3,8 +3,13 @@
 
 #include "ICrono.h"
 
+namespace jellED {
+
 class EspCrono : public ICrono {
 public:
     virtual unsigned long currentTimeMicros();
 };
+
+} // namespace jellED
+
 #endif

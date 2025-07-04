@@ -1,0 +1,57 @@
+#ifndef __JELLED_RASPI_UART_H__
+#define __JELLED_RASPI_UART_H__
+
+#include "uart.h"
+#include <string>
+#include <termios.h>
+
+namespace jellED {
+
+/**
+ * @brief RaspberryPi-specific UART implementation
+ */
+class RaspiUart : public IUart {
+private:
+    int fileDescriptor;
+    std::string portName;
+    int uartNumber;
+    uint32_t baudRate;
+    bool initialized;
+    SerialConfig config;
+    struct termios originalTios;
+    struct termios currentTios;
+    
+    // Convert baud rate to Linux format
+    speed_t getLinuxBaudRate(uint32_t baudRate) const;
+    
+    // Configure termios structure
+    bool configureTermios();
+    
+    // Restore original terminal settings
+    void restoreTermios();
+    
+public:
+    RaspiUart(const std::string portName, const int portNumber);
+    virtual ~RaspiUart();
+    
+    // ISerial interface implementation
+    bool initialize(const SerialConfig& config, const uint32_t baudRate) override;
+    bool isInitialized() const override;
+    int send(const uint8_t* data, size_t length) override;
+    int send(const std::string & data) override;
+    int receive(uint8_t* buffer, size_t maxLength) override;
+    int receive(std::string &data, size_t maxLength) override;
+    int available() const override;
+    void flush() override;
+    void close() override;
+    
+    /**
+     * @brief Check if port is open
+     * @return true if port is open
+     */
+    bool isOpen() const;
+};
+
+} // namespace jellED
+
+#endif // __JELLED_RASPI_UART_H__ 

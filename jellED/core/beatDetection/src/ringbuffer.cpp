@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <limits>
 
+namespace jellED {
+
 Ringbuffer::Ringbuffer(uint16_t max_len)
 : buffer{nullptr},
   tail{nullptr},
@@ -74,3 +76,5 @@ double Ringbuffer::max() const {
     }
     return max_val;
 }
+
+} // end namespace jellED

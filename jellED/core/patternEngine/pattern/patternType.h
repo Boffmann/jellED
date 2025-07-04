@@ -1,6 +1,8 @@
 #ifndef _PATTERN_TYPE_H_
 #define _PATTERN_TYPE_H_
 
+namespace jellED {
+
 enum class PatternType : int {
     // Shows full amplitude on beat and decreases with time since beat
     COLORED_AMPLITUDE,
@@ -12,4 +14,7 @@ namespace PatternTypeCast {
         return (int)(patternType);
     }
 }
+
+} // namespace jellED
+
 #endif

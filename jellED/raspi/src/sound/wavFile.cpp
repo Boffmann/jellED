@@ -3,6 +3,8 @@
 #include <iostream>
 #include <cmath>
 
+namespace jellED {
+
 WavFile::WavFile(std::string& filepath) 
 : currentBufferLocation{0}
 {
@@ -31,3 +33,5 @@ bool WavFile::read(AudioBuffer* buffer) {
     buffer->samplingRate = this->audioFile.getSampleRate();
     return true;
 }
+
+} // namespace jellED

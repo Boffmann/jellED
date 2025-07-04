@@ -8,6 +8,8 @@
 #include "pattern.h"
 #include "IPlatformUtils.h"
 
+namespace jellED {
+
 class PatternEngine {
 private:
     Pattern current_pattern;
@@ -51,5 +53,7 @@ public:
     void update_pattern_color_config(const pattern_config& pattern_config);
 
 };
+
+} // namespace jellED
 
 #endif

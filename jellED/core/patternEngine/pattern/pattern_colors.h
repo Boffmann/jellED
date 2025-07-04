@@ -1,6 +1,8 @@
 #ifndef __JELLED_DEFAULT_COLORS_H__
 #define __JELLED_DEFAULT_COLORS_H__
 
+namespace jellED {
+
 typedef struct t_color {
     int red;
     int green;
@@ -21,5 +23,7 @@ static constexpr pattern_color rainbow_colors[6] = {
     pattern_color{0, 0, 255},       // blue
     pattern_color{255, 0, 255},     // magenta
 };
+
+} // namespace jellED
 
 #endif

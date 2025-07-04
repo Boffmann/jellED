@@ -3,6 +3,8 @@
 
 #include "patternBlueprint.h"
 
+namespace jellED {
+
 class AlternatingColors : public PatternBlueprint {
 public:
     AlternatingColors(IPlatformUtils& pUtils, int num_leds);
@@ -12,5 +14,7 @@ public:
 protected:
     void init();
 };
+
+} // namespace jellED
 
 #endif

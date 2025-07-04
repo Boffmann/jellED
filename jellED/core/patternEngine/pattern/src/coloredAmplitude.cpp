@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+namespace jellED {
+
 ColoredAmplitude::ColoredAmplitude(IPlatformUtils& pUtils, int num_leds)
  : PatternBlueprint(pUtils, PatternType::COLORED_AMPLITUDE, num_leds) {
     this->config.palette_color1 = pattern_color{0, 255, 0}; // Green
@@ -54,3 +56,5 @@ void ColoredAmplitude::update_pattern(long time_since_beat_micros) {
         this->colors[num_leds - turn_off] = pattern_color{0, 0, 0};
     }
 }
+
+} // namespace jellED

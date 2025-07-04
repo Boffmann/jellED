@@ -1,14 +1,7 @@
 #include <Arduino.h>
-#include <cmath>
-#include "musicPiece.h"
-#include "soundconfig.h"
-#include "speaker.h"
-#include "INMP441.h"
-#include "beatdetection.h"
-#include "esputils.h"
-#include "patternEngine.h"
-#include "BluetoothInterface.h"
-#include "configParser.h"
+#include <algorithm>
+
+#include "EspUart.h"
 
 constexpr uint8_t LED_PIN = 13;
 constexpr uint8_t LED_ENABLE = 14;
@@ -20,119 +13,97 @@ constexpr uint8_t MIC_SCK_PIN = 33;
 
 constexpr uint8_t SPEAKER_OUT_PIN = 26;
 
-//EspCrono espCrono;
-//EspLogger espLogger;
+constexpr uint8_t ESP_UART_TX_PIN = 17;
+constexpr uint8_t ESP_UART_RX_PIN = 16;
 
-EspPlatformUtils espUtils;
-
-MusicPiece piece;
-Speaker speaker(SAMPLE_RATE);
-INMP441 mic(MIC_WS_PIN, MIC_SD_PIN, MIC_SCK_PIN);
-BeatDetector detector(espUtils, SAMPLE_RATE);
-PatternEngine patternEngine(espUtils, NUM_LEDS);
-JellEDConfigParser configParser;
+constexpr uint32_t ESP_UART_BAUD_RATE = 115200;
+constexpr bool MODE_SEND = true;
 
 long lastMillis = 0;
 long loops = 0;
 
-String toString(PatternType p) {
-   if (p == PatternType::COLORED_AMPLITUDE) {
-      return "COLORED_AMPLITUDE";
-   } else {
-      return "ALTERNATING_COLORS";
-   }
-}
+jellED::SerialConfig espSerialConfig;
+jellED::EspUart espUart("Uart Receiver", UART_NUM_2, ESP_UART_TX_PIN, ESP_UART_RX_PIN);
 
-void toString(pattern_color c) {
-   Serial.println(c.red);
-   Serial.println(c.green);
-   Serial.println(c.blue);
-}
-
-void onBlePackageReceived(std::string &package) {
-   Serial.println("On Package Received");
-   configParser.parse_to_config(package);
-
-   Serial.println("p1");
-   Serial.println(toString(configParser.get_pattern_engine_config().pattern1));
-   Serial.println("p2");
-   Serial.println(toString(configParser.get_pattern_engine_config().pattern2));
-   Serial.println("p3");
-   Serial.println(toString(configParser.get_pattern_engine_config().pattern3));
-   Serial.println("p4");
-   Serial.println(toString(configParser.get_pattern_engine_config().pattern4));
-   Serial.println("bpp");
-   Serial.println(configParser.get_pattern_engine_config().beats_per_pattern);
-
-   Serial.println("c1");
-   toString(configParser.get_pattern_config().palette_color1);
-   Serial.println("c2");
-   toString(configParser.get_pattern_config().palette_color2);
-   Serial.println("c3");
-   toString(configParser.get_pattern_config().palette_color3);
-}
-
-BluetoothInterface bli(onBlePackageReceived);
- 
 void setup() {
    Serial.begin(115200);
    Serial.println(" ");
 
    Serial.println("ready");
    Serial.println(esp_get_idf_version());
-   pinMode(2, OUTPUT);
-   //piece.initialize();
-   mic.initialize();
-   //speaker.initialize();
-   //patternEngine.start(PatternType::COLORED_AMPLITUDE);
-   bli.initialize();
-}
 
-uint8_t convert8Bit(int16_t in) {
-   float intermediate = 32768.0f + (float) in;
-   return (uint8_t) (intermediate * 0.00389105058);
-}
-
-uint16_t convertUnsigned(int16_t in) {
-   return (uint16_t) 32768 + in;
-}
-
-AudioBuffer audio;
-float bibabuffer[16000];
-size_t sample_counter = 0;
-size_t sample_counter_2 = 0;
-bool streamed = false;
-void loop() {
-   //int rangelimit = 1;
-   //Serial.println(rangelimit*-1);
-   //Serial.print(" ");
-   //Serial.println(rangelimit);
-   //Serial.print(" ");
-
-   bool buffer_ready = mic.read(&audio);
-   // for (int i = 0; i < audio.num_samples; i++) {
-   //    float audio_value = ((float)audio.buffer[i]) / pow(2, 15);
-   //    // Serial.println(audio_value);
-   // }
-   // return;
-
-
-   if (sample_counter < 24000) {
-      for (size_t sample = 0; sample < audio.num_samples; ++sample) {
-         sample_counter++;
-      }
-   } else if (sample_counter_2 < 16000) {
-      for (size_t sample = 0; sample < audio.num_samples; ++sample) {
-         float audio_value = ((float)audio.buffer[sample]) / pow(2, 15);
-         bibabuffer[sample_counter_2] = audio_value;
-         sample_counter_2++;
-      }
+   if (!espUart.initialize(espSerialConfig, ESP_UART_BAUD_RATE)) {
+      Serial.println("Error initializing UART");
    } else {
-      if (!streamed) {
-         for (size_t sample = 0; sample < 16000; sample++) {
-            Serial.println(bibabuffer[sample]);
-         }
-         streamed = true;
-      }
+      Serial.println("Successfully initialized UART");
+   }
+   espUart.flush();
+}
+
+static uint8_t dataToWrite = 0;
+void uart_send_int() {
+   dataToWrite = dataToWrite + 1;
+	if (dataToWrite > 255) {
+		dataToWrite = 0;
+	}
+   if (espUart.send(&dataToWrite, 1) == -1) {
+      Serial.println("Failed to write to uart");
+   } else {
+      Serial.println("Written to uart: " + (String)unsigned(dataToWrite));
+   }
+   delay(5000);
+}
+
+std::string helloToSend = "Hello";
+void uart_send_string() {
+   int bytes_send = espUart.send(helloToSend);
+   if (bytes_send == -1) {
+      Serial.println("Failed to write to uart");
+   } else {
+      Serial.println("Written to uart: " + (String)helloToSend.c_str() + " (" + (String)bytes_send + " bytes)");
+   }
+   delay(5000);
+}
+
+int maxLength = 8;
+uint8_t receivedBuffer;
+void uart_read_int() {
+   int available = espUart.available();
+   if (available > 0) {
+      Serial.println("Available: " + (String)available);
+      int received = espUart.receive(&receivedBuffer, std::min(available, maxLength));
+       if (received > 0) {
+            Serial.println("Received: " + (String)receivedBuffer + " (" + received + " bytes)");
+        } else if (received == 0) {
+            Serial.println("No data available");
+        } else {
+            Serial.println("Error receiving message");
+        }
+      espUart.flush();
+   }
+}
+
+std::string receivedBuffer_string;
+void uart_read_string() {
+   int available = espUart.available();
+   if (available > 0) {
+      Serial.println("Available: " + (String)available);
+      int received = espUart.receive(receivedBuffer_string, std::min(available, maxLength));
+       if (received > 0) {
+            Serial.println("Received: " + (String)receivedBuffer_string.c_str() + " (" + received + " bytes)");
+        } else if (received == 0) {
+            Serial.println("No data available");
+        } else {
+            Serial.println("Error receiving message");
+        }
+      espUart.flush();
+   }
+}
+
+void loop() {
+   if (MODE_SEND) {
+		uart_send_string();
+   } else {
+		uart_read_string();
    }
 }

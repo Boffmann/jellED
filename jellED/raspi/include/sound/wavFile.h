@@ -7,6 +7,8 @@
 
 #include "AudioFile.h"
 
+namespace jellED {
+
 class WavFile : public SoundInput {
 private:
     AudioFile<double> audioFile;
@@ -17,5 +19,7 @@ public:
     ~WavFile();
     bool read(AudioBuffer* buffer);
 };
+
+} // namespace jellED
 
 #endif

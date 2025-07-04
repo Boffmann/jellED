@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <cstddef>
 
+namespace jellED {
+
 #define I2S_DMA_BUF_LEN 64
 
 typedef struct AudioBuffer {
@@ -12,5 +14,7 @@ typedef struct AudioBuffer {
     size_t num_samples;
     uint16_t samplingRate;
 } AudioBuffer;
+
+} // namespace jellED
 
 #endif
