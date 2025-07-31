@@ -15,7 +15,8 @@ NC='\033[0m' # No Color
 # Script configuration
 PROJECT_DIR="."
 ENVIRONMENT="az-delivery-devkit-v4"
-DEFAULT_PORT="/dev/ttyUSB0"
+# DEFAULT_PORT="/dev/ttyUSB0"
+DEFAULT_PORT="/dev/tty.usbserial-0001"
 DEFAULT_BAUD="115200"
 
 # Function to print colored output
@@ -100,9 +101,9 @@ find_serial_ports() {
 # Function to discover ESP32 port automatically
 discover_esp32_port() {
     print_status "Discovering ESP32 port..."
-    
+
     local found_port=""
-    
+
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS - check for ESP32 devices using system_profiler
         if command -v system_profiler &> /dev/null; then
@@ -119,7 +120,7 @@ discover_esp32_port() {
                 done
             fi
         fi
-        
+
         # Fallback: try common ESP32 port patterns
         if [ -z "$found_port" ]; then
             print_status "Trying fallback port detection..."
@@ -130,7 +131,7 @@ discover_esp32_port() {
                 fi
             done
         fi
-        
+
     elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
         # Linux - check for ESP32 devices using lsusb
         if command -v lsusb &> /dev/null; then
@@ -147,7 +148,7 @@ discover_esp32_port() {
                 done
             fi
         fi
-        
+
         # Fallback: try common ESP32 port patterns
         if [ -z "$found_port" ]; then
             print_status "Trying fallback port detection..."
@@ -162,7 +163,7 @@ discover_esp32_port() {
         print_warning "Auto-discovery not supported on this OS. Please specify port manually."
         return 1
     fi
-    
+
     if [ -n "$found_port" ]; then
         print_success "Found ESP32 on port: $found_port"
         echo "$found_port"
@@ -192,15 +193,17 @@ compile_project() {
 upload_firmware() {
     print_status "Uploading firmware to ESP32..."
     cd "$PROJECT_DIR"
-    
+
     # Check if firmware exists
     if [ ! -f ".pio/build/$ENVIRONMENT/firmware.bin" ]; then
         print_warning "Firmware not found. Compiling first..."
         compile_project
     fi
-    
+
+    echo "Uploading firmware to $PORT at ${BAUD} baud..."
+
     # Upload command
-    if pio run -e "$ENVIRONMENT" -t upload --upload-port "$PORT" --upload-speed "$BAUD"; then
+    if pio run -e "$ENVIRONMENT" -t upload --upload-port "$PORT"; then
         print_success "Upload completed successfully"
     else
         print_error "Upload failed"
