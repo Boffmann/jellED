@@ -37,7 +37,8 @@ bool EspUart::initialize(const UartConfig& uartConfig) {
     
     // Configure UART parameters
     uart_config_t uartConfig_esp = {};
-    uartConfig_esp.baud_rate = getEspBaudRate(config.baudRate);
+    // uartConfig_esp.baud_rate = getEspBaudRate(config.baudRate);
+    uartConfig_esp.baud_rate = config.baudRate;
     uartConfig_esp.data_bits = getEspDataBits(config.dataBits);
     uartConfig_esp.stop_bits = getEspStopBits(config.stopBits);
     uartConfig_esp.parity = getEspParity(config.parity);
@@ -159,22 +160,22 @@ uart_port_t EspUart::getUartPort() const {
     return uartPort;
 }
 
-uart_baud_rate_t EspUart::getEspBaudRate(uint32_t baudRate) const {
-    switch (baudRate) {
-        case 1200: return (uart_baud_rate_t)1200;
-        case 2400: return (uart_baud_rate_t)2400;
-        case 4800: return (uart_baud_rate_t)4800;
-        case 9600: return (uart_baud_rate_t)9600;
-        case 19200: return (uart_baud_rate_t)19200;
-        case 38400: return (uart_baud_rate_t)38400;
-        case 57600: return (uart_baud_rate_t)57600;
-        case 115200: return (uart_baud_rate_t)115200;
-        case 230400: return (uart_baud_rate_t)230400;
-        case 460800: return (uart_baud_rate_t)460800;
-        case 921600: return (uart_baud_rate_t)921600;
-        default: return (uart_baud_rate_t)115200;
-    }
-}
+// uart_baud_rate_t EspUart::getEspBaudRate(uint32_t baudRate) const {
+//     switch (baudRate) {
+//         case 1200: return (uart_baud_rate_t)1200;
+//         case 2400: return (uart_baud_rate_t)2400;
+//         case 4800: return (uart_baud_rate_t)4800;
+//         case 9600: return (uart_baud_rate_t)9600;
+//         case 19200: return (uart_baud_rate_t)19200;
+//         case 38400: return (uart_baud_rate_t)38400;
+//         case 57600: return (uart_baud_rate_t)57600;
+//         case 115200: return (uart_baud_rate_t)115200;
+//         case 230400: return (uart_baud_rate_t)230400;
+//         case 460800: return (uart_baud_rate_t)460800;
+//         case 921600: return (uart_baud_rate_t)921600;
+//         default: return (uart_baud_rate_t)115200;
+//     }
+// }
 
 uart_word_length_t EspUart::getEspDataBits(uint8_t dataBits) const {
     switch (dataBits) {

@@ -8,7 +8,7 @@
 #include "esputils.h"
 #include "patternEngine.h"
 #include "BluetoothInterface.h"
-#include "configParser.h"
+#include "config/configParser.h"
 
 namespace jellED {
 
@@ -32,7 +32,7 @@ Speaker speaker(SAMPLE_RATE);
 INMP441 mic(MIC_WS_PIN, MIC_SD_PIN, MIC_SCK_PIN);
 BeatDetector detector(espUtils, SAMPLE_RATE);
 PatternEngine patternEngine(espUtils, NUM_LEDS);
-JellEDConfigParser configParser;
+JellEDConfigParser configParser(espUtils);
 
 long lastMillis = 0;
 long loops = 0;

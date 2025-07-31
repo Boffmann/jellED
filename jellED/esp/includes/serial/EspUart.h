@@ -20,7 +20,7 @@ private:
     UartConfig config;
     
     // Convert baud rate to ESP32 format
-    uart_baud_rate_t getEspBaudRate(uint32_t baudRate) const;
+    // uart_baud_rate_t getEspBaudRate(uint32_t baudRate) const;
     
     // Convert data bits to ESP32 format
     uart_word_length_t getEspDataBits(uint8_t dataBits) const;
