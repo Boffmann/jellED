@@ -10,6 +10,8 @@
 #include "BluetoothInterface.h"
 #include "configParser.h"
 
+namespace jellED {
+
 constexpr uint8_t LED_PIN = 13;
 constexpr uint8_t LED_ENABLE = 14;
 constexpr uint16_t NUM_LEDS = 2;
@@ -73,7 +75,9 @@ void onBlePackageReceived(std::string &package) {
 }
 
 BluetoothInterface bli(onBlePackageReceived);
- 
+
+} // namespace jellED
+
 void setup() {
    Serial.begin(115200);
    Serial.println(" ");
@@ -82,10 +86,10 @@ void setup() {
    Serial.println(esp_get_idf_version());
    pinMode(2, OUTPUT);
    //piece.initialize();
-   mic.initialize();
+   jellED::mic.initialize();
    //speaker.initialize();
    //patternEngine.start(PatternType::COLORED_AMPLITUDE);
-   bli.initialize();
+   jellED::bli.initialize();
 }
 
 uint8_t convert8Bit(int16_t in) {
@@ -97,7 +101,7 @@ uint16_t convertUnsigned(int16_t in) {
    return (uint16_t) 32768 + in;
 }
 
-AudioBuffer audio;
+jellED::AudioBuffer audio;
 float bibabuffer[16000];
 size_t sample_counter = 0;
 size_t sample_counter_2 = 0;
@@ -109,7 +113,7 @@ void loop() {
    //Serial.println(rangelimit);
    //Serial.print(" ");
 
-   bool buffer_ready = mic.read(&audio);
+   bool buffer_ready = jellED::mic.read(&audio);
    // for (int i = 0; i < audio.num_samples; i++) {
    //    float audio_value = ((float)audio.buffer[i]) / pow(2, 15);
    //    // Serial.println(audio_value);

@@ -3,7 +3,6 @@
 #include <algorithm>
 
 namespace jellED {
-namespace serial {
 
 // Base UART implementation with common functionality
 class UartBase : public IUart {
@@ -83,5 +82,4 @@ public:
     }
 };
 
-} // namespace serial
 } // namespace jellED 

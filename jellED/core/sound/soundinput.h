@@ -3,12 +3,16 @@
 
 #include "audiobuffer.h"
 
+namespace jellED {
+
 class SoundInput {
 public:
     SoundInput(){};
     virtual ~SoundInput(){}
     virtual bool read(AudioBuffer* buffer) = 0;
 };
+
+} // namespace jellED
 
 #endif
 

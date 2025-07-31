@@ -4,6 +4,8 @@
 #include <BLEUtils.h>
 #include <BLEServer.h>
 
+namespace jellED {
+
 class DeviceStateCallback;
 
 class BluetoothInterface {
@@ -21,5 +23,7 @@ public:
 
     friend class DeviceStateCallback;
 };
+
+} // namespace jellED
 
 #endif

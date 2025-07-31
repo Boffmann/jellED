@@ -3,7 +3,6 @@
 #include <cstring>
 
 namespace jellED {
-namespace serial {
 
 EspUart::EspUart() 
     : uartPort(UART_NUM_0), txPin(-1), rxPin(-1), initialized(false) {
@@ -199,5 +198,4 @@ uart_parity_t EspUart::getEspParity(bool parity) const {
     return parity ? UART_PARITY_EVEN : UART_PARITY_DISABLE;
 }
 
-} // namespace serial
 } // namespace jellED 

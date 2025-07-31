@@ -10,6 +10,8 @@
 #include <vector>
 #include <fstream>
 
+namespace jellED {
+
 std::string microphone_device_id = "BuiltInMicrophoneDevice";
 
 // Function to write audio samples to a file for debugging
@@ -29,16 +31,18 @@ void write_samples_to_file(const std::vector<float>& samples, const std::string&
     std::cout << "Wrote " << samples.size() << " samples to " << filename << std::endl;
 }
 
+} // namespace jellED
+
 int main () {
     // Print all available input devices for debugging
-    UsbMicro::print_available_input_devices();
-    UsbMicro usbMicro(microphone_device_id);
+    jellED::UsbMicro::print_available_input_devices();
+    jellED::UsbMicro usbMicro(jellED::microphone_device_id);
     
     // Initialize the microphone before using it
     std::cout << "Initializing USB microphone..." << std::endl;
     usbMicro.initialize();
     
-    AudioBuffer buffer;
+    jellED::AudioBuffer buffer;
     
     // Wait for first audio data with timeout (max 3 seconds)
     std::cout << "Waiting for first audio data..." << std::endl;
@@ -78,7 +82,7 @@ int main () {
     
     // Start debug collection thread
     std::thread debug_thread([&usbMicro, &debug_samples, max_debug_samples, &debug_complete, &debug_running]() {
-        AudioBuffer debug_buffer;
+        jellED::AudioBuffer debug_buffer;
         std::cout << "Debug thread started" << std::endl;
         
         while (debug_running && !debug_complete) {
@@ -92,7 +96,7 @@ int main () {
                 
                 if (debug_samples.size() >= max_debug_samples) {
                     debug_complete = true;
-                    write_samples_to_file(debug_samples, "debug_audio_samples.txt");
+                    jellED::write_samples_to_file(debug_samples, "debug_audio_samples.txt");
                     std::cout << "Debug collection completed. File written." << std::endl;
                     break;
                 }

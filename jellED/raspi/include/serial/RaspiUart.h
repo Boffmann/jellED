@@ -6,7 +6,6 @@
 #include <termios.h>
 
 namespace jellED {
-namespace serial {
 
 /**
  * @brief RaspberryPi-specific UART implementation
@@ -70,7 +69,6 @@ public:
     bool isOpen() const;
 };
 
-} // namespace serial
 } // namespace jellED
 
 #endif // __JELLED_RASPI_UART_H__ 

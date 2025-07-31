@@ -11,6 +11,8 @@
 #include <thread>
 #include <atomic>
 
+namespace jellED {
+
 struct RecordContext {
     struct SoundIoRingBuffer* ring_buffer;
 };
@@ -33,5 +35,7 @@ public:
     bool read(AudioBuffer* buffer);
     static void print_available_input_devices();
 };
+
+} // namespace jellED
 
 #endif

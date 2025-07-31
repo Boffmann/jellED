@@ -7,7 +7,6 @@
 #include <system_error>
 
 namespace jellED {
-namespace serial {
 
 RaspiUart::RaspiUart() 
     : fileDescriptor(-1), uartNumber(0), initialized(false) {
@@ -241,5 +240,4 @@ void RaspiUart::restoreTermios() {
     }
 }
 
-} // namespace serial
 } // namespace jellED 

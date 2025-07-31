@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+namespace jellED {
+
 BandpassFilter::BandpassFilter()
 : prev_samples_per_section{nullptr},
   prev_filtered_per_section{nullptr}
@@ -85,3 +87,5 @@ double BandpassFilter::apply(const double sample) {
 
     return filtered_sample;
 }
+
+} // end namespace jellED

@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <driver/dac.h>
 
+namespace jellED {
+
 Speaker::Speaker(const uint16_t sampling_rate)
     : OUTPUT_DELAY_MICRO{1000000 / sampling_rate},
     last_output_time{0},
@@ -24,3 +26,5 @@ void Speaker::play(const uint8_t audio) {
 
     last_output_time = micros();
 }
+
+} // namespace jellED

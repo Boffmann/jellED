@@ -1,6 +1,8 @@
 #include "alternatingColors.h"
 #include "pattern.h"
 
+namespace jellED {
+
 AlternatingColors::AlternatingColors(IPlatformUtils& pUtils, int num_leds) 
  : PatternBlueprint(pUtils, PatternType::ALTERNATING_COLORS, num_leds) {
     this->config.palette_color1 = pattern_color{255, 0, 0}; // Red
@@ -36,3 +38,5 @@ void AlternatingColors::update_pattern(long time_since_beat_micros) {
     }
     this->tracked_time_since_last_beat_micros = time_since_beat_micros;
 }
+
+} // namespace jellED

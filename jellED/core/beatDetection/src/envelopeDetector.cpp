@@ -3,6 +3,8 @@
 #include <iostream>
 #include <cmath>
 
+namespace jellED {
+
 EnvelopeDetector::EnvelopeDetector(uint32_t sample_rate, uint8_t downsample_factor)
 : sample_rate{sample_rate},
   downsample_factor{downsample_factor},
@@ -37,3 +39,5 @@ double EnvelopeDetector::apply(const double sample) {
     
     return this->current_envelope;
 }
+
+} // end namespace jellED

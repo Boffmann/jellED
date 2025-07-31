@@ -7,6 +7,8 @@
 
 #include <string>
 
+namespace jellED {
+
 class JellEDConfigParser {
 private:
     pattern_engine_config pe_config;
@@ -20,5 +22,7 @@ public:
     const pattern_config& get_pattern_config();
 
 };
+
+} // namespace jellED
 
 #endif

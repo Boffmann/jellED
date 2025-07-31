@@ -2,6 +2,8 @@
 
 #include <Arduino.h>
 
+namespace jellED {
+
 WS2812::WS2812(uint8_t pin_gpio, uint16_t led_count) {
     led_data = new rmt_data_t[24*led_count];
 	ledCounts = led_count;
@@ -71,3 +73,5 @@ void WS2812::writeZero(int index, uint8_t bit) {
 esp_err_t WS2812::show() {
 	return rmtWrite(rmt_send, led_data, ledCounts*24);
 }
+
+} // namespace jellED

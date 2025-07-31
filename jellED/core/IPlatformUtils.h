@@ -4,10 +4,15 @@
 #include "ILogger.h"
 #include "ICrono.h"
 
+namespace jellED {
+
 class IPlatformUtils {
 public:
     virtual ~IPlatformUtils() = default;
     virtual ILogger& logger() = 0;
     virtual ICrono& crono() = 0;
 };
+
+} // namespace jellED
+
 #endif

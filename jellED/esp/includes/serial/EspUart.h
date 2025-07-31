@@ -7,7 +7,6 @@
 #include <memory>
 
 namespace jellED {
-namespace serial {
 
 /**
  * @brief ESP32-specific UART implementation
@@ -66,7 +65,6 @@ public:
     uart_port_t getUartPort() const;
 };
 
-} // namespace serial
 } // namespace jellED
 
 #endif // __JELLED_ESP_UART_H__ 

@@ -6,7 +6,6 @@
 #include <cstdint>
 
 namespace jellED {
-namespace serial {
 
 /**
  * @brief Serial communication configuration
@@ -94,7 +93,6 @@ public:
     virtual void close() = 0;
 };
 
-} // namespace serial
 } // namespace jellED
 
 #endif // __JELLED_I_SERIAL_H__ 

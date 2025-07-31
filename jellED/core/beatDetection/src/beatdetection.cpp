@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <iostream>
 
+namespace jellED {
+
 constexpr int NUM_FILTER_STAGES = 2;
 constexpr int ENVELOPE_DOWNSAMPLE_RATIO = 8;
 
@@ -51,3 +53,5 @@ bool BeatDetector::is_beat(const double sample) {
 
     return peakDetection.is_peak(filteredSample, current_time);
 }
+
+} // end namespace jellED

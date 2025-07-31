@@ -6,6 +6,8 @@
 #include "patternConfig.h"
 #include "ILogger.h"
 
+namespace jellED {
+
 class PatternBlueprint {
 protected:
     PatternType pattern_type;
@@ -27,5 +29,7 @@ public:
     virtual const pattern_color& get_color(int index);
     virtual void update_pattern(long time_since_bea_microst) = 0;
 };
+
+} // namespace jellED
 
 #endif

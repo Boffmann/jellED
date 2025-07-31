@@ -6,6 +6,8 @@
 #include "raspilogger.h"
 #include "raspicrono.h"
 
+namespace jellED {
+
 class RaspiPlatformUtils : public IPlatformUtils {
 private:
     RaspiLogger _logger;
@@ -16,5 +18,7 @@ public:
     ILogger& logger();
     ICrono& crono();
 };
+
+} // namespace jellED
 
 #endif

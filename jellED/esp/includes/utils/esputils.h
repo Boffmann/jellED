@@ -6,6 +6,8 @@
 #include "esplogger.h"
 #include "espcrono.h"
 
+namespace jellED {
+
 class EspPlatformUtils : public IPlatformUtils {
 private:
     EspLogger _logger;
@@ -16,4 +18,7 @@ public:
     ILogger& logger();
     ICrono& crono();
 };
+
+} // namespace jellED
+
 #endif

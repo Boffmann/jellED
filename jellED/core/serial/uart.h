@@ -5,7 +5,6 @@
 #include <string>
 
 namespace jellED {
-namespace serial {
 
 /**
  * @brief UART-specific configuration
@@ -70,7 +69,6 @@ public:
     virtual bool isLoopbackEnabled() const = 0;
 };
 
-} // namespace serial
 } // namespace jellED
 
 #endif // __JELLED_UART_H__

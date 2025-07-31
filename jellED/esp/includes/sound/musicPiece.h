@@ -4,6 +4,8 @@
 
 #include "audiobuffer.h"
 
+namespace jellED {
+
 class MusicPiece : public SoundInput {
 private:
     const uint8_t MAX_BUFFER_SIZE = 8;
@@ -18,5 +20,7 @@ public:
     void initialize();
     bool read(AudioBuffer* buffer);
 };
+
+} // namespace jellED
 
 #endif

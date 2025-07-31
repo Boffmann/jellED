@@ -4,6 +4,8 @@
 #include "filterStage.h"
 #include "ringbuffer.h"
 
+namespace jellED {
+
 class EnvelopeDetector : public FilterStage {
 private:
     static constexpr double ATTACK_TIME = 0.005;
@@ -23,5 +25,7 @@ public:
     ~EnvelopeDetector();
     double apply(const double sample);
 };
+
+} // namespace jellED
 
 #endif

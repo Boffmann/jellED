@@ -1,6 +1,10 @@
 #include "espcrono.h"
 #include <Arduino.h>
 
-virtual unsigned long EspCrono::currentTimeMicros() {
+namespace jellED {
+
+unsigned long EspCrono::currentTimeMicros() {
     return micros();
 }
+
+} // namespace jellED
