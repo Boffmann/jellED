@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# TODO Cleanup this AI generated code and only use what is necessary
+
 # jellED ESP32 Deployment Script
 # Supports: compile, upload, and compile+upload operations
 
@@ -15,8 +17,7 @@ NC='\033[0m' # No Color
 # Script configuration
 PROJECT_DIR="."
 ENVIRONMENT="az-delivery-devkit-v4"
-# DEFAULT_PORT="/dev/ttyUSB0"
-DEFAULT_PORT="/dev/tty.usbserial-0001"
+DEFAULT_PORT="/dev/ttyUSB0"
 DEFAULT_BAUD="115200"
 
 # Function to print colored output
@@ -55,6 +56,7 @@ show_usage() {
     echo "  -b, --baud BAUD    Baud rate (default: $DEFAULT_BAUD)"
     echo "  -e, --env ENV      PlatformIO environment (default: $ENVIRONMENT)"
     echo "  --list-ports       List available serial ports"
+    echo "  --debug            Enable debug output"
     echo "  -h, --help         Show this help message"
     echo ""
     echo "Examples:"
@@ -62,6 +64,7 @@ show_usage() {
     echo "  $0 upload                     # Upload only"
     echo "  $0 deploy                     # Compile and upload"
     echo "  $0 --auto-port deploy         # Auto-discover port and deploy"
+    echo "  $0 --auto-port --debug deploy # Auto-discover with debug output"
     echo "  $0 -p /dev/ttyUSB1 upload     # Upload to specific port"
     echo "  $0 -b 921600 deploy           # Use different baud rate"
 }
@@ -100,8 +103,6 @@ find_serial_ports() {
 
 # Function to discover ESP32 port automatically
 discover_esp32_port() {
-    print_status "Discovering ESP32 port..."
-
     local found_port=""
 
     if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -110,7 +111,6 @@ discover_esp32_port() {
             # Look for ESP32 devices in USB devices
             local esp_devices=$(system_profiler SPUSBDataType 2>/dev/null | grep -i "esp\|espressif" -A 5 -B 5 | grep "Product ID" | head -1)
             if [ -n "$esp_devices" ]; then
-                print_status "ESP32 device detected via system_profiler"
                 # Find corresponding serial port
                 for port in /dev/tty.usbserial* /dev/tty.usbmodem* /dev/tty.SLAB_USBtoUART*; do
                     if [ -e "$port" ]; then
@@ -123,7 +123,6 @@ discover_esp32_port() {
 
         # Fallback: try common ESP32 port patterns
         if [ -z "$found_port" ]; then
-            print_status "Trying fallback port detection..."
             for port in /dev/tty.usbserial* /dev/tty.usbmodem* /dev/tty.SLAB_USBtoUART*; do
                 if [ -e "$port" ]; then
                     found_port="$port"
@@ -138,7 +137,6 @@ discover_esp32_port() {
             # Look for ESP32 devices (common vendor IDs: 10c4, 1a86, 303a, 0403, 1d50)
             local esp_devices=$(lsusb 2>/dev/null | grep -E "(10c4|1a86|303a|0403|1d50)" | head -1)
             if [ -n "$esp_devices" ]; then
-                print_status "ESP32 device detected via lsusb: $esp_devices"
                 # Find corresponding serial port
                 for port in /dev/ttyUSB* /dev/ttyACM*; do
                     if [ -e "$port" ]; then
@@ -151,7 +149,6 @@ discover_esp32_port() {
 
         # Fallback: try common ESP32 port patterns
         if [ -z "$found_port" ]; then
-            print_status "Trying fallback port detection..."
             for port in /dev/ttyUSB* /dev/ttyACM*; do
                 if [ -e "$port" ]; then
                     found_port="$port"
@@ -160,18 +157,13 @@ discover_esp32_port() {
             done
         fi
     else
-        print_warning "Auto-discovery not supported on this OS. Please specify port manually."
         return 1
     fi
 
     if [ -n "$found_port" ]; then
-        print_success "Found ESP32 on port: $found_port"
         echo "$found_port"
         return 0
     else
-        print_warning "No ESP32 device found automatically"
-        print_status "Available ports:"
-        find_serial_ports
         return 1
     fi
 }
@@ -252,6 +244,7 @@ COMMAND="print"  # Default command
 PORT="$DEFAULT_PORT"
 BAUD="$DEFAULT_BAUD"
 AUTO_DISCOVER=false
+DEBUG=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -279,6 +272,10 @@ while [[ $# -gt 0 ]]; do
             AUTO_DISCOVER=true
             shift
             ;;
+        --debug)
+            DEBUG=true
+            shift
+            ;;
         -h|--help)
             show_usage
             exit 0
@@ -299,12 +296,20 @@ main() {
 
     # Handle auto-discovery if requested
     if [ "$AUTO_DISCOVER" = true ]; then
+        print_status "Discovering ESP32 port..."
         discovered_port=$(discover_esp32_port)
         if [ $? -eq 0 ]; then
             PORT="$discovered_port"
-            print_success "Using auto-discovered port: $PORT"
+            if [ "$DEBUG" = true ]; then
+                print_status "DEBUG: Raw discovered_port='$discovered_port'"
+                print_status "DEBUG: Setting PORT='$PORT'"
+            fi
+            print_success "Found ESP32 on port: $PORT"
         else
-            print_error "Failed to discover ESP32 port automatically. Please specify manually with -p."
+            print_error "Failed to discover ESP32 port automatically."
+            print_status "Available ports:"
+            find_serial_ports
+            print_error "Please specify port manually with -p."
             exit 1
         fi
     fi

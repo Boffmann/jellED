@@ -13,11 +13,11 @@ namespace jellED {
  */
 class EspUart : public IUart {
 private:
-    uart_port_t uartPort;
     int txPin;
     int rxPin;
     bool initialized;
     UartConfig config;
+    QueueHandle_t uart_queue;
     
     // Convert baud rate to ESP32 format
     // uart_baud_rate_t getEspBaudRate(uint32_t baudRate) const;
@@ -36,11 +36,12 @@ public:
     virtual ~EspUart();
     
     // ISerial interface implementation
-    bool initialize(const SerialConfig& config) override;
     bool initialize(const UartConfig& config) override;
-    bool isAvailable() const override;
+    bool isInitialized() const override;
     int send(const uint8_t* data, size_t length) override;
+    int send(const std::string& data) override;
     int receive(uint8_t* buffer, size_t maxLength) override;
+    int receive(std::string& data, size_t maxLength) override;
     int available() const override;
     void flush() override;
     void close() override;

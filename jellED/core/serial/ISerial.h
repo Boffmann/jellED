@@ -33,17 +33,10 @@ public:
     virtual ~ISerial() = default;
     
     /**
-     * @brief Initialize the serial connection
-     * @param config Serial configuration
-     * @return true if initialization successful
-     */
-    virtual bool initialize(const SerialConfig& config) = 0;
-    
-    /**
-     * @brief Check if serial connection is available
+     * @brief Check if serial connection is initialized
      * @return true if connection is ready
      */
-    virtual bool isAvailable() const = 0;
+    virtual bool isInitialized() const = 0;
     
     /**
      * @brief Send data over serial connection

@@ -21,23 +21,18 @@ public:
         }
     }
     
-    bool initialize(const SerialConfig& config) override {
-        // This should be overridden by platform-specific implementations
-        return false;
-    }
-    
     bool initialize(const UartConfig& uartConfig) override {
         config = uartConfig;
         initialized = true;
         return true;
     }
     
-    bool isAvailable() const override {
+    bool isInitialized() const override {
         return initialized;
     }
     
     int send(const std::string& data) override {
-        return send(reinterpret_cast<const uint8_t*>(data.c_str()), data.length());
+        return send(std::reinterpret_cast<const uint8_t*>(data.c_str()), data.length());
     }
     
     int receive(std::string& data, size_t maxLength) override {

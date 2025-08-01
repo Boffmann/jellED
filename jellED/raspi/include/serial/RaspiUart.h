@@ -34,9 +34,8 @@ public:
     virtual ~RaspiUart();
     
     // ISerial interface implementation
-    bool initialize(const SerialConfig& config) override;
     bool initialize(const UartConfig& config) override;
-    bool isAvailable() const override;
+    bool isInitialized() const override;
     int send(const uint8_t* data, size_t length) override;
     int receive(uint8_t* buffer, size_t maxLength) override;
     int available() const override;

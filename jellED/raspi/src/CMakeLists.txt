@@ -24,10 +24,12 @@ set(BUILD_BEATDETECTION_TESTS OFF CACHE BOOL "Build BeatDetection tests" FORCE)
 # This automatically builds all core libraries and makes them available as targets
 add_subdirectory(${PROJECT_ROOT_DIR_PATH}/../core/beatDetection ${CMAKE_BINARY_DIR}/core/beatDetection)
 add_subdirectory(${PROJECT_ROOT_DIR_PATH}/../core/patternEngine ${CMAKE_BINARY_DIR}/core/patternEngine)
+add_subdirectory(${PROJECT_ROOT_DIR_PATH}/../core/serial ${CMAKE_BINARY_DIR}/core/serial)
 
 set(include_path
     "${PROJECT_ROOT_DIR_PATH}/../core"
     "${PROJECT_ROOT_DIR_PATH}/../core/beatDetection/include"
+    "${PROJECT_ROOT_DIR_PATH}/../core/serial"
     "${PROJECT_ROOT_DIR_PATH}/../core/patternEngine"
     "${PROJECT_ROOT_DIR_PATH}/../core/patternEngine/config"
     "${PROJECT_ROOT_DIR_PATH}/../core/patternEngine/pattern"
@@ -40,6 +42,7 @@ set(source_path "${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(sources
   ${source_path}/jellED.cpp
+  ${source_path}/serial/RaspiUart.cpp
   ${source_path}/sound/usbMicro.cpp
   ${source_path}/sound/wavFile.cpp
   ${source_path}/utils/raspicrono.cpp
@@ -62,4 +65,5 @@ target_link_libraries(${target}
   BeatDetection
   AudioFile
   PatternEngine
+  jellED_serial
 )

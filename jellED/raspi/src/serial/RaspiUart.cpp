@@ -1,5 +1,5 @@
-#include "RaspiUart.h"
-#include "raspilogger.h"
+#include "serial/RaspiUart.h"
+#include "utils/raspilogger.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -18,20 +18,6 @@ RaspiUart::~RaspiUart() {
     if (initialized) {
         close();
     }
-}
-
-bool RaspiUart::initialize(const SerialConfig& config) {
-    UartConfig uartConfig;
-    uartConfig.baudRate = config.baudRate;
-    uartConfig.dataBits = config.dataBits;
-    uartConfig.stopBits = config.stopBits;
-    uartConfig.parity = config.parity;
-    uartConfig.flowControl = config.flowControl;
-    uartConfig.timeoutMs = config.timeoutMs;
-    uartConfig.portName = "/dev/ttyAMA0"; // Default RaspberryPi UART
-    uartConfig.uartNumber = 0;
-    
-    return initialize(uartConfig);
 }
 
 bool RaspiUart::initialize(const UartConfig& uartConfig) {
@@ -67,12 +53,12 @@ bool RaspiUart::initialize(const UartConfig& uartConfig) {
     return true;
 }
 
-bool RaspiUart::isAvailable() const {
+bool RaspiUart::isInitialized() const {
     return initialized && fileDescriptor >= 0;
 }
 
 int RaspiUart::send(const uint8_t* data, size_t length) {
-    if (!isAvailable()) {
+    if (!isInitialized()) {
         return -1;
     }
     
@@ -81,16 +67,17 @@ int RaspiUart::send(const uint8_t* data, size_t length) {
 }
 
 int RaspiUart::receive(uint8_t* buffer, size_t maxLength) {
-    if (!isAvailable()) {
+    if (!isInitialized()) {
         return -1;
     }
     
-    ssize_t read = read(fileDescriptor, buffer, maxLength);
-    return static_cast<int>(read);
+    ssize_t dataRead = read(fileDescriptor, buffer, maxLength);
+
+    return static_cast<int>(dataRead);
 }
 
 int RaspiUart::available() const {
-    if (!isAvailable()) {
+    if (!isInitialized()) {
         return 0;
     }
     
@@ -103,7 +90,7 @@ int RaspiUart::available() const {
 }
 
 void RaspiUart::flush() {
-    if (isAvailable()) {
+    if (isInitialized()) {
         tcflush(fileDescriptor, TCIOFLUSH);
     }
 }
@@ -167,8 +154,6 @@ speed_t RaspiUart::getLinuxBaudRate(uint32_t baudRate) const {
         case 57600: return B57600;
         case 115200: return B115200;
         case 230400: return B230400;
-        case 460800: return B460800;
-        case 921600: return B921600;
         default: return B115200;
     }
 }
