@@ -37,7 +37,9 @@ public:
     bool initialize(const UartConfig& config) override;
     bool isInitialized() const override;
     int send(const uint8_t* data, size_t length) override;
+    int send(const std::string & data) override;
     int receive(uint8_t* buffer, size_t maxLength) override;
+    int receive(std::string &data, size_t maxLength) override;
     int available() const override;
     void flush() override;
     void close() override;

@@ -5,6 +5,9 @@
 #include <sys/ioctl.h>
 #include <cstring>
 #include <system_error>
+#include <iostream>
+
+// https://www.electronicwings.com/raspberry-pi/raspberry-pi-uart-communication-using-python-and-c
 
 namespace jellED {
 
@@ -32,11 +35,13 @@ bool RaspiUart::initialize(const UartConfig& uartConfig) {
     // Open serial port
     fileDescriptor = open(portName.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
     if (fileDescriptor < 0) {
+        std::cout << "Error opening file descriptor" << std::endl;
         return false;
     }
     
     // Get current terminal settings
     if (tcgetattr(fileDescriptor, &originalTios) != 0) {
+        std::cout << "Error getting current terminal settings" << std::endl;
         ::close(fileDescriptor);
         fileDescriptor = -1;
         return false;
@@ -66,12 +71,34 @@ int RaspiUart::send(const uint8_t* data, size_t length) {
     return static_cast<int>(written);
 }
 
+int RaspiUart::send(const std::string& data) {
+    if (!isInitialized()) {
+        return -1;
+    }
+    
+    ssize_t written = write(fileDescriptor, (const char*) data.c_str(), strlen(data.c_str()));
+    return static_cast<int>(written);
+}
+
 int RaspiUart::receive(uint8_t* buffer, size_t maxLength) {
     if (!isInitialized()) {
         return -1;
     }
     
     ssize_t dataRead = read(fileDescriptor, buffer, maxLength);
+
+    return static_cast<int>(dataRead);
+}
+
+int RaspiUart::receive(std::string& buffer, size_t maxLength) {
+    if (!isInitialized()) {
+        return -1;
+    }
+
+    char* charBuffer;
+    
+    ssize_t dataRead = read(fileDescriptor, charBuffer, maxLength);
+    buffer = std::string(charBuffer);
 
     return static_cast<int>(dataRead);
 }
@@ -144,6 +171,7 @@ bool RaspiUart::isOpen() const {
 }
 
 speed_t RaspiUart::getLinuxBaudRate(uint32_t baudRate) const {
+    std::cout << "Baud: " << baudRate << std::endl;
     switch (baudRate) {
         case 1200: return B1200;
         case 2400: return B2400;
