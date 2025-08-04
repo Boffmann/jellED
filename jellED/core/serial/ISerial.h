@@ -11,17 +11,15 @@ namespace jellED {
  * @brief Serial communication configuration
  */
 struct SerialConfig {
-    uint32_t baudRate = 115200;
     uint8_t dataBits = 8;
     uint8_t stopBits = 1;
     bool parity = false;
     bool flowControl = false;
     uint32_t timeoutMs = 1000;
-    
-    SerialConfig() = default;
-    SerialConfig(uint32_t baud, uint8_t data = 8, uint8_t stop = 1, 
+
+    SerialConfig(uint8_t data = 8, uint8_t stop = 1, 
                  bool par = false, bool flow = false, uint32_t timeout = 1000)
-        : baudRate(baud), dataBits(data), stopBits(stop), 
+        : dataBits(data), stopBits(stop), 
           parity(par), flowControl(flow), timeoutMs(timeout) {}
 };
 

@@ -5,8 +5,8 @@
 
 namespace jellED {
 
-EspUart::EspUart() 
-    : txPin(-1), rxPin(-1), initialized(false) {
+EspUart::EspUart(const std::string portName, const int portNumber, const int txPin, const int rxPin) 
+    : portName(portName), portNumber(portNumber), txPin(txPin), rxPin(rxPin), initialized(false) {
 }
 
 EspUart::~EspUart() {
@@ -15,17 +15,23 @@ EspUart::~EspUart() {
     }
 }
 
-bool EspUart::initialize(const UartConfig& uartConfig) {
+bool EspUart::initialize(const SerialConfig& config, const uint32_t baudRate) {
     Serial.println("Initializing Esp Uart");
     if (initialized) {
         close();
     }
     
-    this->config = uartConfig;
+    this->config = config;
     
-    // Install UART driver
+    // Validate UART number
+    if (this->portNumber < 0 || this->portNumber > UART_NUM_2) {
+        Serial.println("Invalid UART number");
+        return false;
+    }
+    
+    // Install UART driver with reasonable buffer sizes
     Serial.println("Installing UART Driver");
-    esp_err_t ret = uart_driver_install(this->config.uartNumber, 1024, 1024, 10, &this->uart_queue, 0);
+    esp_err_t ret = uart_driver_install(this->portNumber, 1024, 1024, 10, &this->uart_queue, 0);
     if (ret != ESP_OK) {
         Serial.println("Installing UART Driver - Failure");
         return false;
@@ -34,30 +40,38 @@ bool EspUart::initialize(const UartConfig& uartConfig) {
     
     // Configure UART parameters
     uart_config_t uartConfig_esp = {};
-    uartConfig_esp.baud_rate = config.baudRate;
+    uartConfig_esp.baud_rate = baudRate;
     uartConfig_esp.data_bits = getEspDataBits(config.dataBits);
     uartConfig_esp.stop_bits = getEspStopBits(config.stopBits);
     uartConfig_esp.parity = getEspParity(config.parity);
     uartConfig_esp.flow_ctrl = config.flowControl ? UART_HW_FLOWCTRL_CTS_RTS : UART_HW_FLOWCTRL_DISABLE;
     
     // Configure UART parameters
-    ret = uart_param_config(this->config.uartNumber, &uartConfig_esp);
+    ret = uart_param_config(this->portNumber, &uartConfig_esp);
     if (ret != ESP_OK) {
-        uart_driver_delete(this->config.uartNumber);
+        uart_driver_delete(this->portNumber);
+        Serial.println("UART parameter configuration failed");
         return false;
     }
     
     // Set UART pins if specified
     if (txPin >= 0 && rxPin >= 0) {
-        ret = uart_set_pin(this->config.uartNumber, txPin, rxPin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+        ret = uart_set_pin(this->portNumber, txPin, rxPin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
         if (ret != ESP_OK) {
-            uart_driver_delete(this->config.uartNumber);
+            uart_driver_delete(this->portNumber);
+            Serial.println("UART pin configuration failed");
             return false;
         }
+    } else {
+        uart_driver_delete(this->portNumber);
+        Serial.println("UART parameter configuration failed");
+        return false;
     }
     
-    // Set timeout
-    uart_set_rx_timeout(this->config.uartNumber, config.timeoutMs / 10); // Convert to UART timeout units
+    // Set timeout (convert ms to UART timeout units, minimum 1)
+    uint32_t timeout_units = (config.timeoutMs + 9) / 10; // Round up division
+    if (timeout_units < 1) timeout_units = 1;
+    uart_set_rx_timeout(this->portNumber, timeout_units);
     
     initialized = true;
     return true;
@@ -68,11 +82,15 @@ bool EspUart::isInitialized() const {
 }
 
 int EspUart::send(const uint8_t* data, size_t length) {
-    if (!initialized) {
+    if (!initialized || !data) {
         return -1;
     }
     
-    int written = uart_write_bytes(this->config.uartNumber, data, length);
+    if (length == 0) {
+        return -1;
+    }
+    
+    int written = uart_write_bytes(this->portNumber, data, length);
     return written;
 }
 
@@ -81,16 +99,26 @@ int EspUart::send(const std::string& data) {
         return -1;
     }
 
-    int written = uart_write_bytes(this->config.uartNumber, (const char*) data.c_str(), strlen(data.c_str()));
+    if (data.empty()) {
+        return -1;
+    }
+
+    // Use the size() method instead of strlen for better performance
+    // and to handle strings with embedded null characters correctly
+    int written = uart_write_bytes(this->portNumber, data.c_str(), data.size());
     return written;
 }
 
 int EspUart::receive(uint8_t* buffer, size_t maxLength) {
-    if (!initialized) {
+    if (!initialized || !buffer) {
         return -1;
     }
     
-    int read = uart_read_bytes(this->config.uartNumber, buffer, maxLength, pdMS_TO_TICKS(config.timeoutMs));
+    if (maxLength == 0) {
+        return -1;
+    }
+    
+    int read = uart_read_bytes(this->portNumber, buffer, maxLength, pdMS_TO_TICKS(config.timeoutMs));
     return read;
 }
 
@@ -99,10 +127,40 @@ int EspUart::receive(std::string& data, size_t maxLength) {
         return -1;
     }
 
-    char* buffer;
+    // Validate maxLength to prevent excessive memory allocation
+    if (maxLength == 0 || maxLength > 8192) { // Reasonable upper limit
+        return -1;
+    }
+
+    // Use stack allocation for small buffers, heap for large ones
+    const size_t STACK_THRESHOLD = 256;
+    char* buffer = nullptr;
+    bool use_heap = maxLength > STACK_THRESHOLD;
     
-    int read = uart_read_bytes(this->config.uartNumber, buffer, maxLength, pdMS_TO_TICKS(config.timeoutMs));
-    data = std::string(buffer);
+    if (use_heap) {
+        buffer = static_cast<char*>(malloc(maxLength));
+        if (!buffer) {
+            return -1; // Memory allocation failed
+        }
+    } else {
+        buffer = static_cast<char*>(alloca(maxLength));
+    }
+    
+    // Read data from UART
+    int read = uart_read_bytes(this->portNumber, buffer, maxLength, pdMS_TO_TICKS(config.timeoutMs));
+    
+    if (read > 0) {
+        // Only copy the actual bytes read, not the entire buffer
+        data.assign(buffer, read);
+    } else {
+        data.clear();
+    }
+    
+    // Free heap memory if used
+    if (use_heap) {
+        free(buffer);
+    }
+    
     return read;
 }
 
@@ -112,61 +170,21 @@ int EspUart::available() const {
     }
     
     size_t length = 0;
-    uart_get_buffered_data_len(this->config.uartNumber, &length);
+    uart_get_buffered_data_len(this->portNumber, &length);
     return static_cast<int>(length);
 }
 
 void EspUart::flush() {
     if (initialized) {
-        uart_flush(this->config.uartNumber);
+        uart_flush(this->portNumber);
     }
 }
 
 void EspUart::close() {
     if (initialized) {
-        uart_driver_delete(this->config.uartNumber);
+        uart_driver_delete(this->portNumber);
         initialized = false;
     }
-}
-
-UartConfig EspUart::getConfig() const {
-    return config;
-}
-
-bool EspUart::setPins(int tx, int rx) {
-    txPin = tx;
-    rxPin = rx;
-    
-    if (initialized) {
-        // Reconfigure pins if already initialized
-        esp_err_t ret = uart_set_pin(this->config.uartNumber, txPin, rxPin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-        return ret == ESP_OK;
-    }
-    
-    return true;
-}
-
-std::string EspUart::getPortName() const {
-    return config.portName;
-}
-
-int EspUart::getUartNumber() const {
-    return this->config.uartNumber;
-}
-
-bool EspUart::isLoopbackEnabled() const {
-    return config.enableLoopback;
-}
-
-void EspUart::setUartPort(uart_port_t port) {
-    if (!initialized) {
-        config.uartNumber = port;
-        config.portName = "UART" + std::to_string(port);
-    }
-}
-
-uart_port_t EspUart::getUartPort() const {
-    return this->config.uartNumber;
 }
 
 uart_word_length_t EspUart::getEspDataBits(uint8_t dataBits) const {

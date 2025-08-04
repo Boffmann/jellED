@@ -13,10 +13,12 @@ namespace jellED {
  */
 class EspUart : public IUart {
 private:
+    std::string portName;
+    int portNumber;
     int txPin;
     int rxPin;
     bool initialized;
-    UartConfig config;
+    SerialConfig config;
     QueueHandle_t uart_queue;
     
     // Convert baud rate to ESP32 format
@@ -32,11 +34,11 @@ private:
     uart_parity_t getEspParity(bool parity) const;
     
 public:
-    EspUart();
+    EspUart(const std::string portName, const int portNumber, const int txPin, const int rxPin);
     virtual ~EspUart();
     
     // ISerial interface implementation
-    bool initialize(const UartConfig& config) override;
+    bool initialize(const SerialConfig& config, const uint32_t baudRate) override;
     bool isInitialized() const override;
     int send(const uint8_t* data, size_t length) override;
     int send(const std::string& data) override;
@@ -45,25 +47,6 @@ public:
     int available() const override;
     void flush() override;
     void close() override;
-    
-    // IUart interface implementation
-    UartConfig getConfig() const override;
-    bool setPins(int txPin, int rxPin) override;
-    std::string getPortName() const override;
-    int getUartNumber() const override;
-    bool isLoopbackEnabled() const override;
-    
-    /**
-     * @brief Set UART port number (0, 1, 2)
-     * @param port UART port number
-     */
-    void setUartPort(uart_port_t port);
-    
-    /**
-     * @brief Get UART port number
-     * @return UART port number
-     */
-    uart_port_t getUartPort() const;
 };
 
 } // namespace jellED

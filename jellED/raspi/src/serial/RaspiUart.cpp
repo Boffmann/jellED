@@ -6,13 +6,12 @@
 #include <cstring>
 #include <system_error>
 #include <iostream>
-
-// https://www.electronicwings.com/raspberry-pi/raspberry-pi-uart-communication-using-python-and-c
+#include <errno.h>
 
 namespace jellED {
 
-RaspiUart::RaspiUart() 
-    : fileDescriptor(-1), uartNumber(0), initialized(false) {
+RaspiUart::RaspiUart(const std::string portName, const int portNumber) 
+    : fileDescriptor(-1), portName(portName), uartNumber(portNumber), initialized(false) {
     memset(&originalTios, 0, sizeof(originalTios));
     memset(&currentTios, 0, sizeof(currentTios));
 }
@@ -23,25 +22,30 @@ RaspiUart::~RaspiUart() {
     }
 }
 
-bool RaspiUart::initialize(const UartConfig& uartConfig) {
+bool RaspiUart::initialize(const SerialConfig& config, const uint32_t baudRate) {
     if (initialized) {
         close();
     }
     
-    config = uartConfig;
-    portName = config.portName;
-    uartNumber = config.uartNumber;
+    this->config = config;
+    this->baudRate = baudRate;
+    
+    // Validate port name
+    if (portName.empty()) {
+        std::cout << "Error: Port name is empty" << std::endl;
+        return false;
+    }
     
     // Open serial port
     fileDescriptor = open(portName.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
     if (fileDescriptor < 0) {
-        std::cout << "Error opening file descriptor" << std::endl;
+        std::cout << "Error opening file descriptor for " << portName << ": " << strerror(errno) << std::endl;
         return false;
     }
     
     // Get current terminal settings
     if (tcgetattr(fileDescriptor, &originalTios) != 0) {
-        std::cout << "Error getting current terminal settings" << std::endl;
+        std::cout << "Error getting current terminal settings: " << strerror(errno) << std::endl;
         ::close(fileDescriptor);
         fileDescriptor = -1;
         return false;
@@ -49,6 +53,7 @@ bool RaspiUart::initialize(const UartConfig& uartConfig) {
     
     // Configure terminal settings
     if (!configureTermios()) {
+        std::cout << "Error configuring terminal settings" << std::endl;
         ::close(fileDescriptor);
         fileDescriptor = -1;
         return false;
@@ -63,7 +68,11 @@ bool RaspiUart::isInitialized() const {
 }
 
 int RaspiUart::send(const uint8_t* data, size_t length) {
-    if (!isInitialized()) {
+    if (!isInitialized() || !data) {
+        return -1;
+    }
+    
+    if (length == 0) {
         return -1;
     }
     
@@ -76,17 +85,26 @@ int RaspiUart::send(const std::string& data) {
         return -1;
     }
     
-    ssize_t written = write(fileDescriptor, (const char*) data.c_str(), strlen(data.c_str()));
+    if (data.empty()) {
+        return -1;
+    }
+    
+    // Use the size() method instead of strlen for better performance
+    // and to handle strings with embedded null characters correctly
+    ssize_t written = write(fileDescriptor, data.c_str(), data.size());
     return static_cast<int>(written);
 }
 
 int RaspiUart::receive(uint8_t* buffer, size_t maxLength) {
-    if (!isInitialized()) {
+    if (!isInitialized() || !buffer) {
+        return -1;
+    }
+    
+    if (maxLength == 0) {
         return -1;
     }
     
     ssize_t dataRead = read(fileDescriptor, buffer, maxLength);
-
     return static_cast<int>(dataRead);
 }
 
@@ -95,11 +113,40 @@ int RaspiUart::receive(std::string& buffer, size_t maxLength) {
         return -1;
     }
 
-    char* charBuffer;
-    
-    ssize_t dataRead = read(fileDescriptor, charBuffer, maxLength);
-    buffer = std::string(charBuffer);
+    // Validate maxLength to prevent excessive memory allocation
+    if (maxLength == 0 || maxLength > 8192) { // Reasonable upper limit
+        return -1;
+    }
 
+    // Use stack allocation for small buffers, heap for large ones
+    const size_t STACK_THRESHOLD = 256;
+    char* charBuffer = nullptr;
+    bool use_heap = maxLength > STACK_THRESHOLD;
+    
+    if (use_heap) {
+        charBuffer = static_cast<char*>(malloc(maxLength));
+        if (!charBuffer) {
+            return -1; // Memory allocation failed
+        }
+    } else {
+        charBuffer = static_cast<char*>(alloca(maxLength));
+    }
+    
+    // Read data from UART
+    ssize_t dataRead = read(fileDescriptor, charBuffer, maxLength);
+    
+    if (dataRead > 0) {
+        // Only copy the actual bytes read, not the entire buffer
+        buffer.assign(charBuffer, dataRead);
+    } else {
+        buffer.clear();
+    }
+    
+    // Free heap memory if used
+    if (use_heap) {
+        free(charBuffer);
+    }
+    
     return static_cast<int>(dataRead);
 }
 
@@ -133,39 +180,6 @@ void RaspiUart::close() {
     }
 }
 
-UartConfig RaspiUart::getConfig() const {
-    return config;
-}
-
-bool RaspiUart::setPins(int txPin, int rxPin) {
-    // On RaspberryPi, pins are typically configured through device tree or GPIO
-    // This is a placeholder for pin configuration
-    return true;
-}
-
-std::string RaspiUart::getPortName() const {
-    return portName;
-}
-
-int RaspiUart::getUartNumber() const {
-    return uartNumber;
-}
-
-bool RaspiUart::isLoopbackEnabled() const {
-    return config.enableLoopback;
-}
-
-void RaspiUart::setPortName(const std::string& port) {
-    if (!initialized) {
-        portName = port;
-        config.portName = port;
-    }
-}
-
-int RaspiUart::getFileDescriptor() const {
-    return fileDescriptor;
-}
-
 bool RaspiUart::isOpen() const {
     return fileDescriptor >= 0;
 }
@@ -191,9 +205,10 @@ bool RaspiUart::configureTermios() {
     currentTios = originalTios;
     
     // Set baud rate
-    speed_t baudRate = getLinuxBaudRate(config.baudRate);
+    speed_t baudRate = getLinuxBaudRate(this->baudRate);
     if (cfsetispeed(&currentTios, baudRate) != 0 || 
         cfsetospeed(&currentTios, baudRate) != 0) {
+        std::cout << "Error setting baud rate: " << strerror(errno) << std::endl;
         return false;
     }
     
@@ -235,12 +250,15 @@ bool RaspiUart::configureTermios() {
     currentTios.c_oflag &= ~OPOST;
     currentTios.c_iflag &= ~(IXON | IXOFF | IXANY | ICRNL);
     
-    // Set timeout
-    currentTios.c_cc[VTIME] = config.timeoutMs / 100; // Deciseconds
+    // Set timeout (convert ms to deciseconds, minimum 1)
+    uint8_t timeout_deciseconds = (config.timeoutMs + 99) / 100; // Round up division
+    if (timeout_deciseconds < 1) timeout_deciseconds = 1;
+    currentTios.c_cc[VTIME] = timeout_deciseconds;
     currentTios.c_cc[VMIN] = 0; // Non-blocking
     
     // Apply settings
     if (tcsetattr(fileDescriptor, TCSANOW, &currentTios) != 0) {
+        std::cout << "Error applying terminal settings: " << strerror(errno) << std::endl;
         return false;
     }
     

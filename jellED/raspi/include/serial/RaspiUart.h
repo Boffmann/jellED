@@ -15,8 +15,9 @@ private:
     int fileDescriptor;
     std::string portName;
     int uartNumber;
+    uint32_t baudRate;
     bool initialized;
-    UartConfig config;
+    SerialConfig config;
     struct termios originalTios;
     struct termios currentTios;
     
@@ -30,11 +31,11 @@ private:
     void restoreTermios();
     
 public:
-    RaspiUart();
+    RaspiUart(const std::string portName, const int portNumber);
     virtual ~RaspiUart();
     
     // ISerial interface implementation
-    bool initialize(const UartConfig& config) override;
+    bool initialize(const SerialConfig& config, const uint32_t baudRate) override;
     bool isInitialized() const override;
     int send(const uint8_t* data, size_t length) override;
     int send(const std::string & data) override;
@@ -43,25 +44,6 @@ public:
     int available() const override;
     void flush() override;
     void close() override;
-    
-    // IUart interface implementation
-    UartConfig getConfig() const override;
-    bool setPins(int txPin, int rxPin) override;
-    std::string getPortName() const override;
-    int getUartNumber() const override;
-    bool isLoopbackEnabled() const override;
-    
-    /**
-     * @brief Set UART port name (e.g., "/dev/ttyAMA0", "/dev/ttyUSB0")
-     * @param port Port name
-     */
-    void setPortName(const std::string& port);
-    
-    /**
-     * @brief Get file descriptor
-     * @return File descriptor, -1 if not open
-     */
-    int getFileDescriptor() const;
     
     /**
      * @brief Check if port is open

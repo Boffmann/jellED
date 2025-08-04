@@ -38,3 +38,4 @@ The first thing to do is to install the drivers with `uart_driver_install()` and
 
 # Refs
 - [Espressif UART Documentation](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/uart.html)
+- [Raspi Setup for UART](https://www.electronicwings.com/raspberry-pi/raspberry-pi-uart-communication-using-python-and-c)
