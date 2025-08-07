@@ -6,7 +6,7 @@
 namespace jellED {
 
 EspUart::EspUart(const std::string portName, const int portNumber, const int txPin, const int rxPin) 
-    : portName(portName), portNumber(portNumber), txPin(txPin), rxPin(rxPin), initialized(false) {
+    : portName(portName), portNumber(portNumber), txPin(txPin), rxPin(rxPin), initialized(false), baudRate(115200) {
 }
 
 EspUart::~EspUart() {
@@ -22,6 +22,7 @@ bool EspUart::initialize(const SerialConfig& config, const uint32_t baudRate) {
     }
     
     this->config = config;
+    this->baudRate = baudRate;
     
     // Validate UART number
     if (this->portNumber < 0 || this->portNumber > UART_NUM_2) {
@@ -81,6 +82,8 @@ bool EspUart::isInitialized() const {
     return initialized;
 }
 
+
+// TODO Proper error handling
 int EspUart::send(const uint8_t* data, size_t length) {
     if (!initialized || !data) {
         return -1;
@@ -91,6 +94,20 @@ int EspUart::send(const uint8_t* data, size_t length) {
     }
     
     int written = uart_write_bytes(this->portNumber, data, length);
+    
+    if (written > 0) {
+        // Wait for transmission to complete with a reasonable timeout
+        // Use a timeout based on the data size and baud rate
+        uint32_t timeout_ms = (length * 10 * 1000) / baudRate + 100; // Add 100ms buffer
+        if (timeout_ms < 100) timeout_ms = 100; // Minimum 100ms
+        if (timeout_ms > 5000) timeout_ms = 5000; // Maximum 5 seconds
+        
+        esp_err_t wait_result = uart_wait_tx_done(this->portNumber, pdMS_TO_TICKS(timeout_ms));
+        if (wait_result != ESP_OK) {
+            Serial.println("Warning: UART transmission timeout");
+        }
+    }
+    
     return written;
 }
 
@@ -106,6 +123,20 @@ int EspUart::send(const std::string& data) {
     // Use the size() method instead of strlen for better performance
     // and to handle strings with embedded null characters correctly
     int written = uart_write_bytes(this->portNumber, data.c_str(), data.size());
+    
+    if (written > 0) {
+        // Wait for transmission to complete with a reasonable timeout
+        // Use a timeout based on the data size and baud rate
+        uint32_t timeout_ms = (data.size() * 10 * 1000) / baudRate + 100; // Add 100ms buffer
+        if (timeout_ms < 100) timeout_ms = 100; // Minimum 100ms
+        if (timeout_ms > 5000) timeout_ms = 5000; // Maximum 5 seconds
+        
+        esp_err_t wait_result = uart_wait_tx_done(this->portNumber, pdMS_TO_TICKS(timeout_ms));
+        if (wait_result != ESP_OK) {
+            Serial.println("Warning: UART transmission timeout");
+        }
+    }
+    
     return written;
 }
 

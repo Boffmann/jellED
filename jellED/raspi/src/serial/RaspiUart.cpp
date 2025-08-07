@@ -7,6 +7,7 @@
 #include <system_error>
 #include <iostream>
 #include <errno.h>
+#include <sys/time.h>
 
 namespace jellED {
 
@@ -36,8 +37,8 @@ bool RaspiUart::initialize(const SerialConfig& config, const uint32_t baudRate) 
         return false;
     }
     
-    // Open serial port
-    fileDescriptor = open(portName.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
+    // Open serial port (blocking mode for reliable communication)
+    fileDescriptor = open(portName.c_str(), O_RDWR | O_NOCTTY);
     if (fileDescriptor < 0) {
         std::cout << "Error opening file descriptor for " << portName << ": " << strerror(errno) << std::endl;
         return false;
@@ -76,8 +77,26 @@ int RaspiUart::send(const uint8_t* data, size_t length) {
         return -1;
     }
     
-    ssize_t written = write(fileDescriptor, data, length);
-    return static_cast<int>(written);
+    // Ensure all bytes are written by looping until complete
+    size_t bytesWritten = 0;
+    
+    while (bytesWritten < length) {
+        ssize_t written = write(fileDescriptor, data + bytesWritten, length - bytesWritten);
+        
+        if (written < 0) {
+            // Error occurred
+            return -1;
+        }
+        
+        bytesWritten += written;
+        
+        // Small delay to allow system to process
+        if (bytesWritten < length) {
+            usleep(1000); // 1ms delay
+        }
+    }
+    
+    return static_cast<int>(bytesWritten);
 }
 
 int RaspiUart::send(const std::string& data) {
@@ -89,10 +108,28 @@ int RaspiUart::send(const std::string& data) {
         return -1;
     }
     
-    // Use the size() method instead of strlen for better performance
-    // and to handle strings with embedded null characters correctly
-    ssize_t written = write(fileDescriptor, data.c_str(), data.size());
-    return static_cast<int>(written);
+    // Ensure all bytes are written by looping until complete
+    const char* buffer = data.c_str();
+    size_t totalBytes = data.size();
+    size_t bytesWritten = 0;
+    
+    while (bytesWritten < totalBytes) {
+        ssize_t written = write(fileDescriptor, buffer + bytesWritten, totalBytes - bytesWritten);
+        
+        if (written < 0) {
+            // Error occurred
+            return -1;
+        }
+        
+        bytesWritten += written;
+        
+        // Small delay to allow system to process
+        if (bytesWritten < totalBytes) {
+            usleep(1000); // 1ms delay
+        }
+    }
+    
+    return static_cast<int>(bytesWritten);
 }
 
 int RaspiUart::receive(uint8_t* buffer, size_t maxLength) {
@@ -104,8 +141,32 @@ int RaspiUart::receive(uint8_t* buffer, size_t maxLength) {
         return -1;
     }
     
-    ssize_t dataRead = read(fileDescriptor, buffer, maxLength);
-    return static_cast<int>(dataRead);
+    // Read data from UART with timeout handling
+    ssize_t totalRead = 0;
+    ssize_t dataRead = 0;
+    
+    // Try to read all available data up to maxLength
+    while (totalRead < static_cast<ssize_t>(maxLength)) {
+        dataRead = read(fileDescriptor, buffer + totalRead, maxLength - totalRead);
+        
+        if (dataRead > 0) {
+            totalRead += dataRead;
+        } else if (dataRead == 0) {
+            // No more data available (EOF or timeout)
+            break;
+        } else {
+            // Error occurred
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // No data available right now, but not an error
+                break;
+            } else {
+                // Real error
+                return -1;
+            }
+        }
+    }
+    
+    return static_cast<int>(totalRead);
 }
 
 int RaspiUart::receive(std::string& buffer, size_t maxLength) {
@@ -132,12 +193,37 @@ int RaspiUart::receive(std::string& buffer, size_t maxLength) {
         charBuffer = static_cast<char*>(alloca(maxLength));
     }
     
-    // Read data from UART
-    ssize_t dataRead = read(fileDescriptor, charBuffer, maxLength);
+    // Read data from UART with timeout handling
+    ssize_t totalRead = 0;
+    ssize_t dataRead = 0;
     
-    if (dataRead > 0) {
+    // Try to read all available data up to maxLength
+    while (totalRead < static_cast<ssize_t>(maxLength)) {
+        dataRead = read(fileDescriptor, charBuffer + totalRead, maxLength - totalRead);
+        
+        if (dataRead > 0) {
+            totalRead += dataRead;
+        } else if (dataRead == 0) {
+            // No more data available (EOF or timeout)
+            break;
+        } else {
+            // Error occurred
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // No data available right now, but not an error
+                break;
+            } else {
+                // Real error
+                if (use_heap) {
+                    free(charBuffer);
+                }
+                return -1;
+            }
+        }
+    }
+    
+    if (totalRead > 0) {
         // Only copy the actual bytes read, not the entire buffer
-        buffer.assign(charBuffer, dataRead);
+        buffer.assign(charBuffer, totalRead);
     } else {
         buffer.clear();
     }
@@ -147,7 +233,7 @@ int RaspiUart::receive(std::string& buffer, size_t maxLength) {
         free(charBuffer);
     }
     
-    return static_cast<int>(dataRead);
+    return static_cast<int>(totalRead);
 }
 
 int RaspiUart::available() const {

@@ -56,10 +56,11 @@ void uart_send_int() {
 
 std::string helloToSend = "Hello";
 void uart_send_string() {
-   if (espUart.send(helloToSend) == -1) {
+   int bytes_send = espUart.send(helloToSend);
+   if (bytes_send == -1) {
       Serial.println("Failed to write to uart");
    } else {
-      Serial.println("Written to uart: " + (String)helloToSend.c_str());
+      Serial.println("Written to uart: " + (String)helloToSend.c_str() + " (" + (String)bytes_send + " bytes)");
    }
    delay(5000);
 }

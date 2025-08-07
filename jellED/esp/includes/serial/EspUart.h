@@ -19,6 +19,7 @@ private:
     int rxPin;
     bool initialized;
     SerialConfig config;
+    uint32_t baudRate;
     QueueHandle_t uart_queue;
     
     // Convert baud rate to ESP32 format
