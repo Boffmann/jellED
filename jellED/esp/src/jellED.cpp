@@ -17,12 +17,10 @@ constexpr uint8_t ESP_UART_TX_PIN = 17;
 constexpr uint8_t ESP_UART_RX_PIN = 16;
 
 constexpr uint32_t ESP_UART_BAUD_RATE = 115200;
+constexpr bool MODE_SEND = true;
 
 long lastMillis = 0;
 long loops = 0;
-
-int maxLength = 8;
-std::string receivedBuffer;
 
 jellED::SerialConfig espSerialConfig;
 jellED::EspUart espUart("Uart Receiver", UART_NUM_2, ESP_UART_TX_PIN, ESP_UART_RX_PIN);
@@ -42,19 +40,69 @@ void setup() {
    espUart.flush();
 }
 
-void loop() {
+static uint8_t dataToWrite = 0;
+void uart_send_int() {
+   dataToWrite = dataToWrite + 1;
+	if (dataToWrite > 255) {
+		dataToWrite = 0;
+	}
+   if (espUart.send(&dataToWrite, 1) == -1) {
+      Serial.println("Failed to write to uart");
+   } else {
+      Serial.println("Written to uart: " + (String)unsigned(dataToWrite));
+   }
+   delay(5000);
+}
+
+std::string helloToSend = "Hello";
+void uart_send_string() {
+   if (espUart.send(helloToSend) == -1) {
+      Serial.println("Failed to write to uart");
+   } else {
+      Serial.println("Written to uart: " + (String)helloToSend.c_str());
+   }
+   delay(5000);
+}
+
+int maxLength = 8;
+uint8_t receivedBuffer;
+void uart_read_int() {
    int available = espUart.available();
    if (available > 0) {
       Serial.println("Available: " + (String)available);
-      int received = espUart.receive(receivedBuffer, std::min(available, maxLength));
+      int received = espUart.receive(&receivedBuffer, std::min(available, maxLength));
        if (received > 0) {
-            Serial.println("Received: " + (String)receivedBuffer.c_str() + " (" + received + " bytes)");
-            // Serial.println("Received: " + (String)receivedBuffer + " (" + received + " bytes)");
+            Serial.println("Received: " + (String)receivedBuffer + " (" + received + " bytes)");
         } else if (received == 0) {
             Serial.println("No data available");
         } else {
             Serial.println("Error receiving message");
         }
       espUart.flush();
+   }
+}
+
+std::string receivedBuffer_string;
+void uart_read_string() {
+   int available = espUart.available();
+   if (available > 0) {
+      Serial.println("Available: " + (String)available);
+      int received = espUart.receive(receivedBuffer_string, std::min(available, maxLength));
+       if (received > 0) {
+            Serial.println("Received: " + (String)receivedBuffer_string.c_str() + " (" + received + " bytes)");
+        } else if (received == 0) {
+            Serial.println("No data available");
+        } else {
+            Serial.println("Error receiving message");
+        }
+      espUart.flush();
+   }
+}
+
+void loop() {
+   if (MODE_SEND) {
+		uart_send_string();
+   } else {
+		uart_read_string();
    }
 }
