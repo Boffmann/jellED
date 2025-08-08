@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <algorithm>
 
-#include "EspUart.h"
+#include "serial/EspUart.h"
 
 constexpr uint8_t LED_PIN = 13;
 constexpr uint8_t LED_ENABLE = 14;

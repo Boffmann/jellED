@@ -195,7 +195,6 @@ function run_and_monitor_raspberry_pi() {
         PID=\$(ps aux | grep raspi_test | grep -v grep | awk '{print \$2}')
         kill -9 \$PID
 EOF
-# ./raspi_test 2>&1 | tee raspi_test.log
 }
 
 # Main execution

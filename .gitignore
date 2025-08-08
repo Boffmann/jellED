@@ -14,3 +14,9 @@ soundalyzer/sound.wav
 **/*.wav
 **/esp.code-workspace
 jellED/core/beatDetection/test/resources/beatDetection/*
+jellED/test/test_serial/esp_src/serial/**
+jellED/test/test_serial/esp_src/utils/**
+.cache/**
+.scripts/**
+.vscode/**
+.cursorrules
