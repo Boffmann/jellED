@@ -82,7 +82,6 @@ bool EspUart::isInitialized() const {
     return initialized;
 }
 
-
 // TODO Proper error handling
 int EspUart::send(const uint8_t* data, size_t length) {
     if (!initialized || !data) {
