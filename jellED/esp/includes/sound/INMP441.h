@@ -7,6 +7,8 @@
 #include <driver/i2s.h>
 #include "audiobuffer.h"
 
+namespace jellED {
+
 class INMP441 : public SoundInput {
 private:
     const uint8_t pin_sck;
@@ -22,5 +24,7 @@ public:
     void initialize();
     bool read(AudioBuffer* buffer);
 };
+
+} // namespace jellED
 
 #endif

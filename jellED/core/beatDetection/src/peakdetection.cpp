@@ -4,6 +4,8 @@
 #include <numeric>
 #include <iostream>
 
+namespace jellED {
+
 PeakDetector::PeakDetector(double attack, double release, double threshold_rel, 
                            double min_peak_distance, double max_bpm, uint32_t sample_rate)
     : attack(attack),
@@ -84,3 +86,5 @@ bool PeakDetector::is_peak(double sample, double current_time) {
 
     return isPeak;
 }
+
+} // end namespace jellED

@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+namespace jellED {
+
 class Ringbuffer {
 private:
     double* buffer;
@@ -20,5 +22,7 @@ public:
     double min() const;
     double max() const;
 };
+
+} // end namespace jellED
 
 #endif

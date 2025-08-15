@@ -7,6 +7,8 @@
 
 #include <memory>
 
+namespace jellED {
+
 class TestPlatformUtils : public IPlatformUtils {
 private:
     std::unique_ptr<ICrono> _crono;
@@ -16,5 +18,7 @@ public:
     ILogger& logger();
     ICrono& crono();
 };
+
+} // namespace jellED
 
 #endif

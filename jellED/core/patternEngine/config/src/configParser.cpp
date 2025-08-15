@@ -3,6 +3,8 @@
 
 #include "jsonlib.h"
 
+namespace jellED {
+
 #define PATTERN_TYPE_1_PARAM "p1"
 #define PATTERN_TYPE_2_PARAM "p2"
 #define PATTERN_TYPE_3_PARAM "p3"
@@ -75,3 +77,5 @@ const pattern_engine_config& JellEDConfigParser::get_pattern_engine_config() {
 const pattern_config& JellEDConfigParser::get_pattern_config() {
     return this->p_config;
 }
+
+} // end namespace jellED

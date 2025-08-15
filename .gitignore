@@ -14,3 +14,11 @@ soundalyzer/sound.wav
 **/*.wav
 **/esp.code-workspace
 jellED/core/beatDetection/test/resources/beatDetection/*
+.cache/**
+.vscode/**
+.cursorrules
+.cursorproject
+ARCHITECTURE.md
+BUILD.md
+DEVELOPMENT.md
+TROUBLESHOOTING.md

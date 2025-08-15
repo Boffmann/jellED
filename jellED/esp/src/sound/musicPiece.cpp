@@ -4,6 +4,8 @@
 // #include "SPIFFS.h"
 #include "soundconfig.h"
 
+namespace jellED {
+
 MusicPiece::MusicPiece()
     : buffer_ptr{0} {}
 
@@ -75,3 +77,5 @@ bool MusicPiece::read(AudioBuffer* buffer) {
     
     return true;
 }
+
+} // end namespace jellED

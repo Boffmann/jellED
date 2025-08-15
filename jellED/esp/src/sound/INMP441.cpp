@@ -3,6 +3,8 @@
 #include "soundconfig.h"
 #include <Arduino.h>
 
+namespace jellED {
+
 #define I2S_PORT I2S_NUM_0
 
 INMP441::INMP441(uint8_t ws_pin, uint8_t sd_pin, uint8_t sck_pin) 
@@ -86,3 +88,5 @@ bool INMP441::read(AudioBuffer* buffer) {
 
     return result == ESP_OK;
 }
+
+} // end namespace jellED

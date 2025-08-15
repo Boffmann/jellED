@@ -5,6 +5,8 @@
 #include <vector>
 #include <memory>
 
+namespace jellED {
+
 class PeakDetector {
 private:
     // Configuration parameters
@@ -37,5 +39,7 @@ public:
     
     bool is_peak(double sample, double current_time);
 };
+
+} // end namespace jellED
 
 #endif

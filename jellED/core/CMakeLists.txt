@@ -16,6 +16,11 @@ if(EXISTS ${CORE_LIBS_DIR}/patternEngine/CMakeLists.txt)
     add_subdirectory(${CORE_LIBS_DIR}/patternEngine ${CMAKE_BINARY_DIR}/core/patternEngine)
 endif()
 
+# Add Serial library
+if(EXISTS ${CORE_LIBS_DIR}/serial/CMakeLists.txt)
+    add_subdirectory(${CORE_LIBS_DIR}/serial ${CMAKE_BINARY_DIR}/core/serial)
+endif()
+
 # TODO: Add other core libraries as they get CMake support
 # if(EXISTS ${CORE_LIBS_DIR}/bluetooth/CMakeLists.txt)
 #     add_subdirectory(${CORE_LIBS_DIR}/bluetooth ${CMAKE_BINARY_DIR}/core/bluetooth)
@@ -28,5 +33,6 @@ set(CORE_INCLUDE_DIRS
     ${CORE_LIBS_DIR}/patternEngine
     ${CORE_LIBS_DIR}/patternEngine/config
     ${CORE_LIBS_DIR}/patternEngine/pattern
+    ${CORE_LIBS_DIR}/serial
     PARENT_SCOPE
 ) 

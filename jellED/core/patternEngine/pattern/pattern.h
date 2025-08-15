@@ -5,6 +5,8 @@
 
 #include "IPlatformUtils.h"
 
+namespace jellED {
+
 class Pattern {
 private:
     int max_length;
@@ -18,5 +20,7 @@ public:
     const int get_length() const;
     const pattern_color& get_color(const int color_index) const;
 };
+
+} // namespace jellED
 
 #endif

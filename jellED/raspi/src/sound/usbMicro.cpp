@@ -10,6 +10,8 @@
 #include <chrono>
 #include <thread>
 
+namespace jellED {
+
 #define NO_SUPPORTED_SAMPLE_RATE -1
 
 // https://github.com/andrewrk/libsoundio/blob/master/example/sio_microphone.c
@@ -358,3 +360,5 @@ void UsbMicro::print_available_input_devices() {
     }
     soundio_destroy(soundio);
 }
+
+} // namespace jellED

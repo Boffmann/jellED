@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "esp32-hal.h"
 
+namespace jellED {
+
 typedef uint8_t ColorChannel;
 
 class WS2812 {
@@ -33,6 +35,8 @@ public:
 
 	esp_err_t show();
 };
+
+} // namespace jellED
 
 #endif
 

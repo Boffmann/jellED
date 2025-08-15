@@ -4,6 +4,8 @@
 #include "filterStage.h"
 #include "ringbuffer.h"
 
+namespace jellED {
+
 class BandpassFilter : public FilterStage {
 private:
     // TODO define num sections
@@ -23,5 +25,7 @@ public:
     double apply(const double sample);
 
 };
+
+} // namespace jellED
 
 #endif

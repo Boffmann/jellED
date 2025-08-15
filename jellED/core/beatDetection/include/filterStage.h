@@ -3,11 +3,15 @@
 
 #include <stdint.h>
 
+namespace jellED {
+
 class FilterStage {
 public:
     FilterStage(){};
     virtual ~FilterStage(){}
     virtual double apply(const double sample) = 0;
 };
+
+} // namespace jellED
 
 #endif

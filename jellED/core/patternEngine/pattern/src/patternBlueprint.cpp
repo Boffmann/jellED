@@ -2,6 +2,8 @@
 
 #include <cstdlib>
 
+namespace jellED {
+
 PatternBlueprint::PatternBlueprint(IPlatformUtils& pUtils, PatternType patternType, int num_leds)
     : pattern_type{patternType},
     num_leds{num_leds},
@@ -37,3 +39,5 @@ const pattern_color& PatternBlueprint::get_color(int index) {
     }
     return colors[index];
 }
+
+} // namespace jellED

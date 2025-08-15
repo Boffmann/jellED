@@ -3,9 +3,13 @@
 
 #include "ICrono.h"
 
+namespace jellED {
+
 class RaspiCrono : public ICrono {
 public:
     unsigned long currentTimeMicros();
 };
+
+} // namespace jellED
 
 #endif

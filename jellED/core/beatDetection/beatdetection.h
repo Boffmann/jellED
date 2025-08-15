@@ -6,6 +6,8 @@
 #include "include/peakdetection.h"
 #include "../IPlatformUtils.h"
 
+namespace jellED {
+
 class BeatDetector {
 private:
     static constexpr double UNFILTERED = 2.0;
@@ -22,5 +24,7 @@ public:
     ~BeatDetector();
     bool is_beat(const double sample);
 };
+
+} // namespace jellED
 
 #endif

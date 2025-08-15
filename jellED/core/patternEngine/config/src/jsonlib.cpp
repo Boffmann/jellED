@@ -1,5 +1,7 @@
 #include "jsonlib.h"
 
+namespace jellED {
+
 // remove all white space from the json string... preserving strings
 std::string jsonRemoveWhiteSpace(const std::string& json){
   int i = 0;
@@ -164,3 +166,5 @@ std::string jsonExtract(const std::string& json, const std::string& nameArg){
   }
   return json.substr(start, stop);
 }
+
+} // namespace jellED

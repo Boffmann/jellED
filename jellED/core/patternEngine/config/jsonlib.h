@@ -3,6 +3,8 @@
 
 #include <string>
 
+namespace jellED {
+
 // remove all white space from the json string... preserving strings
 std::string jsonRemoveWhiteSpace(const std::string& json);
 
@@ -11,5 +13,7 @@ std::string jsonIndexList(std::string json, int idx);
 
 // extract a json component from json
 std::string jsonExtract(const std::string& json, const std::string& name);
+
+} // namespace jellED
 
 #endif

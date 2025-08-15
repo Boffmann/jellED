@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+namespace jellED {
+
 PatternEngineConfig::PatternEngineConfig() :
 current_pattern{-1} {
     srand(time(NULL));
@@ -43,3 +45,5 @@ const PatternType PatternEngineConfig::get_pattern_type(int index) {
     }
     return this->config.pattern4;
 }
+
+} // end namespace jellED

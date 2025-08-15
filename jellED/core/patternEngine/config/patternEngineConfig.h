@@ -3,6 +3,8 @@
 
 #include "pattern/patternType.h"
 
+namespace jellED {
+
 constexpr int NUM_PATTERN_TYPES = 4;
 
 typedef struct t_pattern_engine_config {
@@ -29,5 +31,7 @@ public:
     const PatternType get_next_pattern_type();
     const PatternType get_random_pattern_type();
 };
+
+} // namespace jellED
 
 #endif
