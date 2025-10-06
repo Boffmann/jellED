@@ -1,7 +1,7 @@
 #include "beatdetection.h"
 
-#include "bandpassFilter.h"
-#include "envelopeDetector.h"
+#include "include/bandpassFilter.h"
+#include "include/envelopeDetector.h"
 
 #include <algorithm>
 #include <iostream>

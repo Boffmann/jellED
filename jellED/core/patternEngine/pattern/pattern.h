@@ -3,7 +3,7 @@
 
 #include "pattern/pattern_colors.h"
 
-#include "IPlatformUtils.h"
+#include "pUtils/IPlatformUtils.h"
 
 namespace jellED {
 

@@ -1,7 +1,7 @@
 #ifndef __PEAKDETECTION_JELLED_H__
 #define __PEAKDETECTION_JELLED_H__
 
-#include "ringbuffer.h"
+#include "include/ringbuffer.h"
 #include <vector>
 #include <memory>
 

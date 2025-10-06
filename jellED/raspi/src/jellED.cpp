@@ -1,70 +1,97 @@
-#include "utils/raspiutils.h"
-#include "serial/RaspiUart.h"
+#include "pUtils/raspi/include/raspiutils.h"
+#include "serial/raspi/RaspiUart.h"
+#include "pushButton/pushbutton.h"
+#include "sound/raspi/usbMicro.h"
+#include "beatdetection.h"
+#include "uartProtocol.h"
 
 #include <iostream>
 #include <thread>
+#include <fstream>
+
+using namespace jellED;
 
 constexpr uint32_t ESP_UART_BAUD_RATE = 115200;
 constexpr bool MODE_SEND = true;
+constexpr uint8_t PUSH_BUTTON_PIN = 4;
 
-jellED::SerialConfig serialConfig;
-jellED::RaspiUart uart("/dev/ttyS0", 0);
+std::string microphone_device_id = "hw:CARD=Device,DEV=0";
 
-static uint8_t dataToWrite = 0;
-void uart_send_int() {
-	dataToWrite = dataToWrite + 1;
-	if (dataToWrite > 255) {
-		dataToWrite = 0;
-	}
+RaspiPlatformUtils raspiUtils;
+SerialConfig serialConfig;
+RaspiUart uart("/dev/ttyS0", 0);
+
+PushButton pushButton(raspiUtils, PUSH_BUTTON_PIN);
+
+void uart_send_int(const uint8_t dataToWrite) {
 	if (uart.send(&dataToWrite, 1) == -1) {
 		std::cout << "Failed to write to uart" << std::endl;
 	} else {
 		std::cout << "Written to uart: " << unsigned(dataToWrite) << std::endl;
 	}
-	std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 }
 
-std::string helloToSend = "Hello";
-void uart_send_string() {
-	if (uart.send(helloToSend) == -1) {
-		std::cout << "Failed to write to uart" << std::endl;
-	} else {
-		std::cout << "Written to uart: " << helloToSend << std::endl;
-	}
-	std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+bool initializeMicrophone(UsbMicro& usbMicro) {
+    const int timeout_seconds = 3;
+    AudioBuffer buffer;
+    bool got_data = false;
+    usbMicro.initialize();
+
+    auto start = std::chrono::steady_clock::now();
+
+    while (!got_data) {
+        got_data = usbMicro.read(&buffer);
+        if (got_data) {
+            std::cout << "Audio data received! Starting main processing loop." << std::endl;
+            return true;
+        }
+
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - start).count();
+
+        if (elapsed >= timeout_seconds) {
+            std::cout << "Timeout reached (" << timeout_seconds << "s). Starting main loop anyway..." << std::endl;
+            return false;
+        }
+
+        // Sleep briefly to avoid busy waiting
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    return false;
 }
 
-uint8_t receiveBuffer = 0;
-int maxLength = 8;
-void uart_read_int() {
-	int available = uart.available();
-	if (available > 0) {
-		int received = uart.receive(&receiveBuffer, std::min(available, maxLength));
-		if (received > 0) {
-			std::cout << "Received: " << unsigned(receiveBuffer) << " (" << received << " bytes)" << std::endl;
-		} else if (received == 0) {
-			std::cout << "No data available" << std::endl;
-		} else {
-			std::cout << "Error receiving message" << std::endl;
-		}
-      uart.flush();
-	}
+void write_samples_to_file(const std::vector<float>& samples, const std::string& filename) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Error: Could not open file " << filename << " for writing" << std::endl;
+        return;
+    }
+
+    // Write each sample on a separate line
+    for (float sample : samples) {
+        file << sample << std::endl;
+    }
+
+    file.close();
+    std::cout << "Wrote " << samples.size() << " samples to " << filename << std::endl;
 }
 
-std::string receivedBuffer_string;
-void uart_read_string() {
-	int available = uart.available();
-	if (available > 0) {
-		int received = uart.receive(receivedBuffer_string, std::min(available, maxLength));
-		if (received > 0) {
-			std::cout << "Received: " << receivedBuffer_string << " (" << received << " bytes)" << std::endl;
-		} else if (received == 0) {
-			std::cout << "No data available" << std::endl;
-		} else {
-			std::cout << "Error receiving message" << std::endl;
-		}
-      uart.flush();
-	}
+bool button_state = false;
+void checkButtonPressed() {
+    if (pushButton.isPressed()) {
+        if (button_state == false) {
+            // Button Pressed
+            std::cout << "Button Pressed" << std::endl;
+            uart_send_int(UART_BUTTON_PRESSED);
+        }
+        button_state = true;
+    } else {
+        if (button_state == true) {
+            // Button Released
+            std::cout << "Button Released" << std::endl;
+        }
+        button_state = false;
+    }
 }
 
 int main () {
@@ -72,13 +99,34 @@ int main () {
     	std::cout << "Error setting up uart" << std::endl;
 		return 1;
     }
-    
 
+    AudioBuffer buffer;
+
+    // UsbMicro::print_available_input_devices();
+    UsbMicro usbMicro(microphone_device_id);
+    if (!initializeMicrophone(usbMicro)) {
+        std::cout << "Error initializing Microphone" << std::endl;
+        return 1;
+    }
+
+    std::thread button_thread([]() {
+        while(true) {
+            checkButtonPressed();
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        }
+    });
+
+    BeatDetector beatDetection(raspiUtils, usbMicro.getSampleRate());
     while(true) {
-		if (MODE_SEND) {
-			uart_send_string();
-		} else {
-			uart_read_string();;
-		}
+        if (usbMicro.read(&buffer)) {
+            for (int i = 0; i < buffer.num_samples; i++) {
+                // std::cout << "Feeding sample: " << buffer.buffer[i] << std::endl;
+                if (beatDetection.is_beat(buffer.buffer[i])) {
+                    uart_send_int(UART_BEAT_DETECTED);
+                }
+            }
+        } else {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
     }
 }

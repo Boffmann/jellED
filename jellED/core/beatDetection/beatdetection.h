@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "include/filterStage.h"
 #include "include/peakdetection.h"
-#include "../IPlatformUtils.h"
+#include "pUtils/IPlatformUtils.h"
 
 namespace jellED {
 

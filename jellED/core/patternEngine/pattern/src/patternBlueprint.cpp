@@ -4,12 +4,13 @@
 
 namespace jellED {
 
-PatternBlueprint::PatternBlueprint(IPlatformUtils& pUtils, PatternType patternType, int num_leds)
+PatternBlueprint::PatternBlueprint(unsigned long startTime, PatternType patternType, int num_leds, unsigned long pattern_duration_micros)
     : pattern_type{patternType},
     num_leds{num_leds},
-    tracked_time_since_last_beat_micros{0},
-    pUtils(pUtils) {
-
+    pattern_duration_micros{pattern_duration_micros},
+    should_react_to_beat{true},
+    time_of_last_beat{startTime},
+    pattern_start_time_micros{startTime} {
     this->colors = (pattern_color*) malloc(sizeof(pattern_color) * num_leds);
 }
 
@@ -23,21 +24,20 @@ PatternType PatternBlueprint::get_pattern_type() {
     return this->pattern_type;
 }
 
-void PatternBlueprint::update_config(const pattern_config& config) {
-    this->config = config;
-    this->init();
-}
-
 int PatternBlueprint::get_num_leds() {
     return this->num_leds;
 };
 
 const pattern_color& PatternBlueprint::get_color(int index) {
     if (index >= this->num_leds) {
-        pUtils.logger().log("Error: Colored Amplitude Index out of bounds");
         return colors[0];
     }
     return colors[index];
+}
+
+void PatternBlueprint::shouldReactToBeat(bool should_react, unsigned long current_time_micros) {
+    this->should_react_to_beat = should_react;
+    this->time_of_last_beat = current_time_micros;
 }
 
 } // namespace jellED

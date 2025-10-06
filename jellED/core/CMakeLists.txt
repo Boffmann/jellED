@@ -3,6 +3,8 @@
 
 cmake_minimum_required(VERSION 3.16.0)
 
+add_compile_options(-std=c++17)
+
 # Set core libraries directory
 set(CORE_LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -16,23 +18,17 @@ if(EXISTS ${CORE_LIBS_DIR}/patternEngine/CMakeLists.txt)
     add_subdirectory(${CORE_LIBS_DIR}/patternEngine ${CMAKE_BINARY_DIR}/core/patternEngine)
 endif()
 
-# Add Serial library
-if(EXISTS ${CORE_LIBS_DIR}/serial/CMakeLists.txt)
-    add_subdirectory(${CORE_LIBS_DIR}/serial ${CMAKE_BINARY_DIR}/core/serial)
+# Option to build tests (disabled by default)
+option(BUILD_CORE_TESTS "Build Core tests" ON)
+
+# Only build tests if explicitly requested
+if(BUILD_CORE_TESTS)
+    include(FetchContent)
+    FetchContent_Declare(
+      googletest
+      URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+    )
+    FetchContent_MakeAvailable(googletest)
+    enable_testing()
+    add_subdirectory(test)
 endif()
-
-# TODO: Add other core libraries as they get CMake support
-# if(EXISTS ${CORE_LIBS_DIR}/bluetooth/CMakeLists.txt)
-#     add_subdirectory(${CORE_LIBS_DIR}/bluetooth ${CMAKE_BINARY_DIR}/core/bluetooth)
-# endif()
-
-# Export core include directories for use by parent projects
-set(CORE_INCLUDE_DIRS
-    ${CORE_LIBS_DIR}
-    ${CORE_LIBS_DIR}/beatDetection/include
-    ${CORE_LIBS_DIR}/patternEngine
-    ${CORE_LIBS_DIR}/patternEngine/config
-    ${CORE_LIBS_DIR}/patternEngine/pattern
-    ${CORE_LIBS_DIR}/serial
-    PARENT_SCOPE
-) 

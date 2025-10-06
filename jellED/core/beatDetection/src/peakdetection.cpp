@@ -1,4 +1,4 @@
-#include "peakdetection.h"
+#include "include/peakdetection.h"
 #include <algorithm>
 #include <cmath>
 #include <numeric>
