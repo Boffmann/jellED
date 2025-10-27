@@ -4,9 +4,7 @@
 namespace jellED {
 
 enum class PatternType : int {
-    // Shows full amplitude on beat and decreases with time since beat
-    COLORED_AMPLITUDE,
-    ALTERNATING_COLORS
+    RAINBOW
 };
 
 namespace PatternTypeCast {

@@ -14,5 +14,6 @@ sudo snap install snapd
 sudo apt install nvim --classic
 sudo ln -s /snap/nvim/current/usr/bin/nvim /bin/nvim
 git clone https://github.com/boffmann/jellED
+sudo apt install libgpiod-dev gpiod
 sudo raspi-config
 

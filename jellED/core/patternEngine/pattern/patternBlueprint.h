@@ -3,31 +3,31 @@
 
 #include "pattern.h"
 #include "pattern/patternType.h"
-#include "patternConfig.h"
-#include "ILogger.h"
+#include "pUtils/ILogger.h"
 
 namespace jellED {
 
 class PatternBlueprint {
 protected:
-    PatternType pattern_type;
-    int num_leds;
+    const PatternType pattern_type;
+    const int num_leds;
+    const unsigned long pattern_duration_micros;
     // The colors representing the finally generated pattern for the moment
     pattern_color* colors;
-    pattern_config config;
-    long tracked_time_since_last_beat_micros;
-
-    IPlatformUtils& pUtils;
+    unsigned long pattern_start_time_micros;
+    bool should_react_to_beat;
+    unsigned long time_of_last_beat;
 
     virtual void init() = 0;
 public:
-    PatternBlueprint(IPlatformUtils& pUtils, PatternType patternType, int num_leds);
+    PatternBlueprint(unsigned long startTime, PatternType patternType, int num_leds, unsigned long pattern_duration_micros);
     virtual ~PatternBlueprint();
     PatternType get_pattern_type();
     int get_num_leds();
-    void update_config(const pattern_config& config);
-    virtual const pattern_color& get_color(int index);
-    virtual void update_pattern(long time_since_bea_microst) = 0;
+    const pattern_color& get_color(int index);
+    void shouldReactToBeat(bool should_react, unsigned long current_time_micros);
+    
+    virtual void update_pattern(bool is_beat, unsigned long current_time_micros) = 0;
 };
 
 } // namespace jellED

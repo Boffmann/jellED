@@ -45,7 +45,6 @@ class WavePlot:
 
     def process_command_queue(self):
         if self.start_time == None:
-            print("Not Started yet")
             return
         time_passed = datetime.datetime.now() - self.start_time
         self.begin_vLine.pos = time_passed.seconds

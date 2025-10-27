@@ -15,6 +15,7 @@ NC='\033[0m' # No Color
 # Script configuration
 PROJECT_DIR="."
 ENVIRONMENT="az-delivery-devkit-v4"
+#ENVIRONMENT="esp32-c3-devkitm-1"
 DEFAULT_PORT="/dev/ttyUSB0"
 DEFAULT_BAUD="115200"
 

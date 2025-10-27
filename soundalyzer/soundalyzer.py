@@ -67,11 +67,11 @@ def generate_butterworth():
 
 def generate_test_expectations():
     working_dir = str(Path.cwd())
-    Path(working_dir + "/../jellED/core/beatDetection/test/resources/beatDetection").mkdir(parents=True, exist_ok=True)
-    original_sample_file = working_dir + "/../jellED/core/beatDetection/test/resources/beatDetection/unfiltered_test_values.txt"
-    filtered_sample_file = working_dir + "/../jellED/core/beatDetection/test/resources/beatDetection/filtered_test_values.txt"
-    envelope_sample_file = working_dir + "/../jellED/core/beatDetection/test/resources/beatDetection/enveloped_test_values.txt"
-    peaks_sample_file = working_dir + "/../jellED/core/beatDetection/test/resources/beatDetection/peak_values.txt"
+    Path(working_dir + "/../jellED/core/test/beatDetection/resources").mkdir(parents=True, exist_ok=True)
+    original_sample_file = working_dir + "/../jellED/core/test/beatDetection/resources/unfiltered_test_values.txt"
+    filtered_sample_file = working_dir + "/../jellED/core/test/beatDetection/resources/filtered_test_values.txt"
+    envelope_sample_file = working_dir + "/../jellED/core/test/beatDetection/resources/enveloped_test_values.txt"
+    peaks_sample_file = working_dir + "/../jellED/core/test/beatDetection/resources/peak_values.txt"
 
     order = 4
     lowcut = 50
@@ -122,18 +122,17 @@ def generate_test_expectations():
         0, smaller_wave.ts[-1], smaller_wave.ts[-1] / len(enveloped_downsampled), len(enveloped_downsampled))
     main.plot(plot_index_3, downsampled_ts, enveloped_downsampled)
     main.plot(plot_index_3, filtered.ts, enveloped_original, color=(0, 255, 0))
-    np.savetxt(envelope_sample_file, enveloped_downsampled, fmt='%f')
     print(len(enveloped_downsampled))
 
     for ts_index in range(len(enveloped_downsampled)):
         envelope_sample = enveloped_downsampled[ts_index]
         # ts = downsampled_ts[ts_index]
-        is_peak = 0 if peakDetector.add(envelope_sample) is None else 1
+        is_peak = 0 if peakDetector.add(envelope_sample, include_envelope=True) is None else 1
         if is_peak:
             peaks[0].append(ts_index)
         peaks[1].append(is_peak)
     main.plot(plot_index_3, downsampled_ts, peaks[1], color=(255, 0, 255))
-    return
+    # return
     with open(peaks_sample_file, "w") as peaks_file:
         for peak in peaks[0]:
             peaks_file.write(str(peak) + "\n")
@@ -226,9 +225,9 @@ def soundalyzer_main(mode):
 
     # print(len(bandpass_filtered))
     # return
-    #filtered_own = Wave(bandpass_filtered, downsampled_ts, 8000)
+    # filtered_own = Wave(bandpass_filtered, downsampled_ts, 8000)
     main.start_playing_wave()
-    #filtered_own.play()
+    # filtered_own.play()
     wave.play()
 
 
