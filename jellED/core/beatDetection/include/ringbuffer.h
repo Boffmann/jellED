@@ -9,16 +9,20 @@ class Ringbuffer {
 private:
     double* buffer;
     double* tail;
-    uint16_t head_position;
-    uint16_t max_len;
-    uint16_t current_size;
+    uint32_t head_position;
+    uint32_t max_len;
+    uint32_t current_size;
+
+    uint32_t get_position(const uint32_t index) const;
 
 public:
-    Ringbuffer(uint16_t max_len);
+    Ringbuffer(uint32_t max_len);
     ~Ringbuffer();
-    double get(uint16_t index);
+    void fill(double value);
+    double get(uint32_t index);
     void append(double entry);
-    uint16_t size() const;
+    void clear();
+    uint32_t size() const;
     double min() const;
     double max() const;
 };
