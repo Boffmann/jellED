@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QLabel>
 #include "WaveformWidget.h"
+#include "EnvelopePeakWidget.h"
 
 class QPushButton;
 
@@ -43,6 +44,7 @@ private:
     QPushButton* clearButton_;
     WaveformWidget* originalSamplesWaveformWidget_;
     WaveformWidget* lowpassFilteredWaveformWidget_;
+    EnvelopePeakWidget* envelopePeakWaveformWidget_;
     WaveformProcessor* processorThread_;
     QLabel* statusLabel_;
     const int sampleRate_;
@@ -64,6 +66,8 @@ public:
 
     void addOriginalSample(const double sample);
     void addLowpassFilteredSample(const double sample);
+    void addEnvelopeFilteredSample(const double sample);
+    void addPeak();
 };
 
 #endif

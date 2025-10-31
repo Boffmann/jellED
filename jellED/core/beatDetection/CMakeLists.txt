@@ -18,6 +18,8 @@ set(sources
   ${source_path}/envelopeDetector.cpp
   ${source_path}/ringbuffer.cpp
   ${source_path}/peakdetection.cpp
+  ${source_path}/adaptiveNormalizer.cpp
+  ${source_path}/downsampler.cpp
   ${source_path}/beatdetection.cpp
 )
 

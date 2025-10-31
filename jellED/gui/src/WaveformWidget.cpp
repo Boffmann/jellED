@@ -59,7 +59,7 @@ void WaveformWidget::drawWaveform(QPainter& painter) {
     // This is much faster than QPainterPath for dense waveforms
     for (size_t i = 0; i < w; ++i) {
         float x = static_cast<float>(i);
-        WaveformPoint currentPoint = scaleSampleData(i);
+        WaveformPoint currentPoint = scaleSampleData(i, ringSampleBuffer_);
         
         // Clamp values
         float minVal = std::max(-1.0f, std::min(1.0f, currentPoint.min));
@@ -71,28 +71,6 @@ void WaveformWidget::drawWaveform(QPainter& painter) {
         
         // Draw vertical line from min to max
         painter.drawLine(QPointF(x, yMin), QPointF(x, yMax));
-
-        // double yFrom, yTo = 0.0f;
-        // double x = static_cast<double>(i);
-        // double x_prev = static_cast<double>(i-1);
-        // WaveformPoint prevPoint = scaleSampleData(i-1);
-        // WaveformPoint currentPoint = scaleSampleData(i);
-
-        // if (i % 2 == 0) {
-        //     double minVal = std::max(-1.0f, std::min(1.0f, prevPoint.min));
-        //     double maxVal = std::max(-1.0f, std::min(1.0f, currentPoint.max));
-
-        //     yFrom = centerY - (minVal * scale);
-        //     yTo = centerY - (maxVal * scale);
-        // } else {
-        //     double minVal = std::max(-1.0f, std::min(1.0f, currentPoint.min));
-        //     double maxVal = std::max(-1.0f, std::min(1.0f, prevPoint.max));
-
-        //     yFrom = centerY - (maxVal * scale);
-        //     yTo = centerY - (minVal * scale);
-        // }
-        
-        // painter.drawLine(QPointF(x_prev, yFrom), QPointF(x, yTo));
     }
 }
 
@@ -129,8 +107,8 @@ void WaveformWidget::drawGrid(QPainter& painter) {
     }
 }
 
-WaveformPoint WaveformWidget::scaleSampleData(const uint32_t width_index) const {
-    if (ringSampleBuffer_->size() == 0) {
+WaveformPoint WaveformWidget::scaleSampleData(const uint32_t width_index, const std::unique_ptr<jellED::Ringbuffer>& ringBuffer) const {
+    if (ringBuffer->size() == 0) {
         return WaveformPoint(0.0f, 0.0f);
     }
     
@@ -139,7 +117,7 @@ WaveformPoint WaveformWidget::scaleSampleData(const uint32_t width_index) const 
         return WaveformPoint(0.0f, 0.0f);
     }
     
-    size_t numSamples = ringSampleBuffer_->size();
+    size_t numSamples = ringBuffer->size();
     
     // Calculate how many samples per pixel
     double samplesPerPixel = static_cast<double>(numSamples) / w;
@@ -147,7 +125,7 @@ WaveformPoint WaveformWidget::scaleSampleData(const uint32_t width_index) const 
     if (samplesPerPixel <= 1.0f) {
             size_t sampleIdx = static_cast<size_t>((width_index * numSamples) / w);
             if (sampleIdx < numSamples) {
-                double sample = ringSampleBuffer_->get(sampleIdx);
+                double sample = ringBuffer->get(sampleIdx);
                 return WaveformPoint(sample, sample);
             } else {
                 return WaveformPoint(0.0f, 0.0f);
@@ -162,11 +140,11 @@ WaveformPoint WaveformWidget::scaleSampleData(const uint32_t width_index) const 
             }
             
             // Find min and max in this range
-            double minVal = ringSampleBuffer_->get(startSample);
-            double maxVal = ringSampleBuffer_->get(startSample);
+            double minVal = ringBuffer->get(startSample);
+            double maxVal = ringBuffer->get(startSample);
             
             for (size_t i = startSample + 1; i < endSample; ++i) {
-                double sample = ringSampleBuffer_->get(i);
+                double sample = ringBuffer->get(i);
                 if (sample < minVal) minVal = sample;
                 if (sample > maxVal) maxVal = sample;
             }

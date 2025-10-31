@@ -32,14 +32,20 @@ set(SOURCES
     src/main.cpp
     src/AudioDisplay.cpp
     src/WaveformWidget.cpp
+    src/EnvelopePeakWidget.cpp
     ../core/beatDetection/src/bandpassFilter.cpp
+    ../core/beatDetection/src/adaptiveNormalizer.cpp
+    ../core/beatDetection/src/downsampler.cpp
+    ../core/beatDetection/src/envelopeDetector.cpp
     ../core/beatDetection/src/ringbuffer.cpp
+    ../core/beatDetection/src/peakdetection.cpp
 )
 
 # Header files
 set(HEADERS
     include/AudioDisplay.h
     include/WaveformWidget.h
+    include/EnvelopePeakWidget.h
 )
 
 # Create executable

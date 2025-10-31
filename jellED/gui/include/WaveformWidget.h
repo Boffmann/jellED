@@ -7,20 +7,7 @@
 #include <mutex>
 
 #include "include/ringbuffer.h"
-
-/**
- * Min/Max pair for efficient waveform display
- */
- struct WaveformPoint {
-    float min;
-    float max;
-    
-    WaveformPoint() : min(0.0f), max(0.0f) {}
-    WaveformPoint(float mn, float mx) : min(mn), max(mx) {}
-};
-
-// Declare the type for Qt's meta-object system
-Q_DECLARE_METATYPE(std::vector<WaveformPoint>)
+#include "WaveformPoint.h"
 
 class WaveformWidget : public QWidget {
     Q_OBJECT
@@ -31,20 +18,20 @@ private:
     QColor gridColor_;
     std::unique_ptr<jellED::Ringbuffer> ringSampleBuffer_;
     std::mutex dataMutex_;
-    const int sampleRate_;
-    const int displaySeconds_;
     void drawGrid(QPainter& painter);
-    void drawWaveform(QPainter& painter);
-    WaveformPoint scaleSampleData(const uint32_t index) const;
 
 protected:
+    const int sampleRate_;
+    const int displaySeconds_;
+    virtual void drawWaveform(QPainter& painter);
+    WaveformPoint scaleSampleData(const uint32_t index, const std::unique_ptr<jellED::Ringbuffer>& ringBuffer) const;
     void paintEvent(QPaintEvent* event) override;
 
 public:
     WaveformWidget(int sampleRate, int displaySeconds, QWidget* parent = nullptr);
     void updateWidget();
     void clearSamples();
-    void addSample(const double sample);
+    virtual void addSample(const double sample);
 };
 
 #endif

@@ -15,30 +15,30 @@ BandpassFilter::BandpassFilter()
         this->prev_samples_per_section[ring_buffer_index] = new Ringbuffer(3);
         this->prev_filtered_per_section[ring_buffer_index] = new Ringbuffer(3);
     }
-            this->numerator[0][0] = 1.5947411880374773e-10;
-            this->numerator[0][1] = 3.1894823760749546e-10;
-            this->numerator[0][2] = 1.5947411880374773e-10;
-            this->denominator[0][0] = 1.0;
-            this->denominator[0][1] = -1.9923805893229776;
-            this->denominator[0][2] = 0.9925150492764175;
-            this->numerator[1][0] = 1.0;
-            this->numerator[1][1] = 2.0;
-            this->numerator[1][2] = 1.0;
-            this->denominator[1][0] = 1.0;
-            this->denominator[1][1] = -1.9942897911961985;
-            this->denominator[1][2] = 0.9943659033572181;
-            this->numerator[2][0] = 1.0;
-            this->numerator[2][1] = -2.0;
-            this->numerator[2][2] = 1.0;
-            this->denominator[2][0] = 1.0;
-            this->denominator[2][1] = -1.9962338759142015;
-            this->denominator[2][2] = 0.9964274390739875;
-            this->numerator[3][0] = 1.0;
-            this->numerator[3][1] = -2.0;
-            this->numerator[3][2] = 1.0;
-            this->denominator[3][0] = 1.0;
-            this->denominator[3][1] = -1.9980753538279281;
-            this->denominator[3][2] = 0.9981284289380167;
+    this->numerator[0][0] = 9.055525499921561e-09;
+    this->numerator[0][1] = 1.8111050999843122e-08;
+    this->numerator[0][2] = 9.055525499921561e-09;
+    this->denominator[0][0] = 1.0;
+    this->denominator[0][1] = -1.9754041983075488;
+    this->denominator[0][2] = 0.9757579840517517;
+    this->numerator[1][0] = 1.0;
+    this->numerator[1][1] = 2.0;
+    this->numerator[1][2] = 1.0;
+    this->denominator[1][0] = 1.0;
+    this->denominator[1][1] = -1.987554778689961;
+    this->denominator[1][2] = 0.9881962235913563;
+    this->numerator[2][0] = 1.0;
+    this->numerator[2][1] = -2.0;
+    this->numerator[2][2] = 1.0;
+    this->denominator[2][0] = 1.0;
+    this->denominator[2][1] = -1.9882455371009717;
+    this->denominator[2][2] = 0.9883270414334357;
+    this->numerator[3][0] = 1.0;
+    this->numerator[3][1] = -2.0;
+    this->numerator[3][2] = 1.0;
+    this->denominator[3][0] = 1.0;
+    this->denominator[3][1] = -1.996806272575241;
+    this->denominator[3][2] = 0.9968516999815845;
 }
 
 BandpassFilter::~BandpassFilter() {

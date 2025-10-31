@@ -62,6 +62,11 @@ void Ringbuffer::append(double entry) {
     }
 }
 
+void Ringbuffer::override_head_value(double value) {
+    //this->buffer[this->head_position] = value;
+    *this->tail = value;
+}
+
 void Ringbuffer::clear() {
     this->head_position = 0;
     this->current_size = 0;
