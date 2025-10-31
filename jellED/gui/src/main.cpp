@@ -3,11 +3,16 @@
 #include <chrono>
 #include "AudioDisplay.h"
 #include "include/bandpassFilter.h"
+#include "include/envelopeDetector.h"
+#include "include/peakdetection.h"
 #include "sound/raspi/usbMicro.h"
 
+#include <iostream>
 
 //std::string microphone_device_id = "BuiltInMicrophoneDevice";
-std::string microphone_device_id = "AppleUSBAudioEngine:C-Media Electronics Inc.      :USB PnP Sound Device:2140000:1";
+std::string microphone_device_id = "AppleUSBAudioEngine:C-Media Electronics Inc.      :USB PnP Sound Device:2123000:1";
+
+constexpr int ENVELOPE_DOWNSAMPLE_RATIO = 8;
 
 class BeatDetectorThread : public QThread {
 public:
@@ -17,6 +22,8 @@ public:
         , usbMicro_(usbMicro)
         , shouldStop_(false)
         , bandpassFilter_()
+        , envelopeDetector_(usbMicro_->getSampleRate(), ENVELOPE_DOWNSAMPLE_RATIO)
+        , peakDetector_(0.01, 0.1, 0.1, 0.4, 180.0, usbMicro_->getSampleRate())
     {}
 
     void stop() {
@@ -26,31 +33,39 @@ public:
 protected:
     void run() override {
         jellED::AudioBuffer buffer;
+        const double GAIN = 2.0;
         while (!shouldStop_) {
             if (usbMicro_->read(&buffer)) {
                 for (int i = 0; i < buffer.num_samples; i++) {
-                    display_->addOriginalSample(buffer.buffer[i]);
-                    double filteredSample = bandpassFilter_.apply(buffer.buffer[i]);
+                    totalSamplesReceived_++;
+                    double amplifiedSample = buffer.buffer[i] * GAIN / 2.0;
+                    display_->addOriginalSample(amplifiedSample);
+                    double filteredSample = bandpassFilter_.apply(amplifiedSample) * GAIN;
                     display_->addLowpassFilteredSample(filteredSample);
+                    double envelopeSample = envelopeDetector_.apply(filteredSample);
+                    if (envelopeSample != -1.0) {
+                        display_->addEnvelopeFilteredSample(envelopeSample);
+                        double current_time = static_cast<double>(totalSamplesReceived_) / usbMicro_->getSampleRate();
+                        if (peakDetector_.is_peak(envelopeSample, current_time)) {
+                            std::cout << "Peak detected at time: " << current_time << std::endl;
+                            display_->addPeak();
+                        }
+                    } else {
+                        display_->addEnvelopeFilteredSample(0.0);
+                    }
                 }
             }
         }
-        // while (!shouldStop_) {
-        //     int sign = rand() % 2 == 0 ? 1 : -1;
-        //     double r = sign * static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
-        //     display_->addOriginalSample(r);
-        //     double r2 = sign * static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
-        //     display_->addLowpassFilteredSample(r2);
-        //     QThread::usleep(1000000 / sampleRate_);
-        //     //QThread::msleep(11);
-        // }
     }
 
 private:
     AudioDisplay* display_;
     jellED::UsbMicro* usbMicro_;
     bool shouldStop_;
+    uint32_t totalSamplesReceived_;
     jellED::BandpassFilter bandpassFilter_;
+    jellED::EnvelopeDetector envelopeDetector_;
+    jellED::PeakDetector peakDetector_;
 };
 
 int main(int argc, char* argv[]) {

@@ -52,8 +52,8 @@ def read_from_serial(should_store):
 def generate_butterworth():
     order = 4
     lowcut = 50
-    highcut = 100
-    framerate = 44100
+    highcut = 200
+    framerate = 48000
     sos = signal.butter(order, [lowcut, highcut],
                         'band', fs=framerate, output='sos')
     for o in range(0, order):

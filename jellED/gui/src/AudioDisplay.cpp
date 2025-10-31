@@ -103,9 +103,17 @@ void AudioDisplay::setupUi() {
     secondWaveformLayout->addWidget(lowpassFilteredSamplesLabel);
     secondWaveformLayout->addWidget(lowpassFilteredWaveformWidget_, 1);
 
+    QHBoxLayout* thirdWaveformLayout = new QHBoxLayout();
+    VerticalLabel* envelopeFilteredSamplesLabel = new VerticalLabel("Envelope Filtered Samples");
+    envelopeFilteredSamplesLabel->setFixedWidth(30);
+    envelopePeakWaveformWidget_ = new EnvelopePeakWidget(sampleRate_, displaySeconds_, this);
+    thirdWaveformLayout->addWidget(envelopeFilteredSamplesLabel);
+    thirdWaveformLayout->addWidget(envelopePeakWaveformWidget_, 1);
+
     waveformLayout->addLayout(firstWaveformLayout);
     waveformLayout->addLayout(secondWaveformLayout);
-
+    waveformLayout->addLayout(thirdWaveformLayout);
+    
     mainLayout->addWidget(waveboxesWidget, 1);
 
     // Status bar
@@ -123,9 +131,18 @@ void AudioDisplay::addLowpassFilteredSample(const double sample) {
     lowpassFilteredWaveformWidget_->addSample(sample);
 }
 
+void AudioDisplay::addEnvelopeFilteredSample(const double sample) {
+    envelopePeakWaveformWidget_->addSample(sample);
+}
+
+void AudioDisplay::addPeak() {
+    envelopePeakWaveformWidget_->addPeak();
+}
+
 void AudioDisplay::updateDisplay() {
     originalSamplesWaveformWidget_->updateWidget();
     lowpassFilteredWaveformWidget_->updateWidget();
+    envelopePeakWaveformWidget_->updateWidget();
     updateStatusBar();  // Safe to update UI here - we're in the GUI thread
 }
 
@@ -145,6 +162,7 @@ void AudioDisplay::updateStatusBar() {
 void AudioDisplay::onClearClicked() {
     originalSamplesWaveformWidget_->clearSamples();
     lowpassFilteredWaveformWidget_->clearSamples();
+    envelopePeakWaveformWidget_->clearSamples();
     currentSamplesReceived_ = 0;
     updateStatusBar();
 }

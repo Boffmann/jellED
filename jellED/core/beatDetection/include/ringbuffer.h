@@ -21,6 +21,7 @@ public:
     void fill(double value);
     double get(uint32_t index);
     void append(double entry);
+    void override_head_value(double value);
     void clear();
     uint32_t size() const;
     double min() const;
