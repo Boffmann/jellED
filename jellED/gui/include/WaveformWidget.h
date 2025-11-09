@@ -21,7 +21,7 @@ private:
     void drawGrid(QPainter& painter);
 
 protected:
-    const int sampleRate_;
+    int sampleRate_;
     const int displaySeconds_;
     virtual void drawWaveform(QPainter& painter);
     WaveformPoint scaleSampleData(const uint32_t index, const std::unique_ptr<jellED::Ringbuffer>& ringBuffer) const;
@@ -30,8 +30,9 @@ protected:
 public:
     WaveformWidget(int sampleRate, int displaySeconds, QWidget* parent = nullptr);
     void updateWidget();
-    void clearSamples();
+    void updateSampleRate(int newSampleRate);
     virtual void addSample(const double sample);
+    virtual void clearSamples();
 };
 
 #endif

@@ -31,6 +31,7 @@ set(include_path
 set(SOURCES
     src/main.cpp
     src/AudioDisplay.cpp
+    src/BeatDetectionProcessor.cpp
     src/WaveformWidget.cpp
     src/EnvelopePeakWidget.cpp
     ../core/beatDetection/src/bandpassFilter.cpp
@@ -46,6 +47,7 @@ set(HEADERS
     include/AudioDisplay.h
     include/WaveformWidget.h
     include/EnvelopePeakWidget.h
+    include/BeatDetectionProcessor.h
 )
 
 # Create executable
