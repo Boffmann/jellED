@@ -30,6 +30,14 @@ void WaveformWidget::clearSamples() {
     ringSampleBuffer_->fill(0.0);
 }
 
+void WaveformWidget::updateSampleRate(int newSampleRate) {
+    std::lock_guard<std::mutex> lock(dataMutex_);
+    sampleRate_ = newSampleRate;
+    // Recreate the ring buffer with the new size
+    ringSampleBuffer_ = std::make_unique<jellED::Ringbuffer>(sampleRate_ * displaySeconds_);
+    ringSampleBuffer_->fill(0.0);
+}
+
 void WaveformWidget::paintEvent(QPaintEvent* event) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);

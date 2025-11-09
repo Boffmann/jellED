@@ -20,6 +20,12 @@ void EnvelopePeakWidget::addSample(const double sample) {
     ringPeakBuffer_->append(0.0);
 }
 
+void EnvelopePeakWidget::clearSamples() {
+    std::lock_guard<std::mutex> lock(peakDataMutex_);
+    WaveformWidget::clearSamples();
+    ringPeakBuffer_->fill(0.0);
+}
+
 void EnvelopePeakWidget::drawWaveform(QPainter& painter) {
     std::lock_guard<std::mutex> lock(peakDataMutex_);
     WaveformWidget::drawWaveform(painter);
@@ -59,4 +65,13 @@ void EnvelopePeakWidget::addPeak() {
     std::cout << "Adding peak" << std::endl;
     ringPeakBuffer_->override_head_value(1.0);
     //ringPeakBuffer_->append(1.0);
+}
+
+void EnvelopePeakWidget::updateSampleRate(int newSampleRate) {
+    std::lock_guard<std::mutex> lock(peakDataMutex_);
+    // Call parent class method to update the waveform buffer
+    WaveformWidget::updateSampleRate(newSampleRate);
+    // Also recreate the peak buffer with the new size
+    ringPeakBuffer_ = std::make_unique<jellED::Ringbuffer>(sampleRate_ * displaySeconds_);
+    ringPeakBuffer_->fill(0.0);
 }

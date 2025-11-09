@@ -3,8 +3,10 @@
 
 #include <QMainWindow>
 #include <QLabel>
+#include <QSlider>
 #include "WaveformWidget.h"
 #include "EnvelopePeakWidget.h"
+#include "BeatDetectionProcessor.h"
 
 class QPushButton;
 
@@ -46,23 +48,40 @@ private:
     WaveformWidget* lowpassFilteredWaveformWidget_;
     EnvelopePeakWidget* envelopePeakWaveformWidget_;
     WaveformProcessor* processorThread_;
+    BeatDetectionProcessor* beatDetectionProcessor_;
+    QLabel* infoLabel_;
     QLabel* statusLabel_;
-    const int sampleRate_;
+    QLabel* downsampleRateValueLabel_;
+    QLabel* envelopeDownsampleRateValueLabel_;
+    QSlider* downsampleRateSlider_;
+    QSlider* envelopeDownsampleRateSlider_;
+    
+    int sampleRate_;
+    jellED::UsbMicro* usbMicro_;
     const int displaySeconds_;
     const int refreshRate_;
     uint64_t currentSamplesReceived_;
     uint64_t totalSamplesReceived_;
 
     void setupUi();
+    QWidget* setupInfoPanel();
+    QWidget* setupParameterControls();
+    QWidget* setupWaveformDisplays();
+    void setupStatusBar();
 
 private slots:
     void onClearClicked();
     void updateDisplay();
     void updateStatusBar();
+    void onDownsampleRateSliderChanged(int value);
+    void onEnvelopeDownsampleRateSliderChanged(int value);
+    void onApplyButtonClicked();
 
 public:
-    AudioDisplay(int sampleRate = 44100, int displaySeconds = 10, int refreshRate = 30, QWidget* parent = nullptr);
+    AudioDisplay(std::string microphone_device_id, int displaySeconds = 10, int refreshRate = 30, QWidget* parent = nullptr);
     ~AudioDisplay();
+
+    void startBeatDetectionProcessor();
 
     void addOriginalSample(const double sample);
     void addLowpassFilteredSample(const double sample);
