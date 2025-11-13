@@ -42,7 +42,7 @@ uint32_t Ringbuffer::get_position(const uint32_t index) const {
 }
 
 void Ringbuffer::fill(double value) {
-    for (int index = 0; index < max_len; ++index) {
+    for (uint32_t index = 0; index < max_len; ++index) {
         this->append(value);
     }
 }
@@ -70,7 +70,7 @@ void Ringbuffer::override_head_value(double value) {
 void Ringbuffer::clear() {
     this->head_position = 0;
     this->current_size = 0;
-    for (int index = 0; index < max_len; ++index) {
+    for (uint32_t index = 0; index < max_len; ++index) {
         this->buffer[index] = 0.0;
     }
 }

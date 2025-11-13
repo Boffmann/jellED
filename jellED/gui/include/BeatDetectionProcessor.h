@@ -6,7 +6,6 @@
 #include "include/bandpassFilter.h"
 #include "include/envelopeDetector.h"
 #include "include/peakdetection.h"
-#include "include/adaptiveNormalizer.h"
 #include "include/downsampler.h"
 #include "sound/raspi/usbMicro.h"
 
@@ -20,6 +19,11 @@ public:
         jellED::UsbMicro* usbMicro,
         int signalDownsampleRatio,
         int envelopeDownsampleRatio,
+        double downsampleCutoffFrequency,
+        double peakDetectionAbsoluteMinThreshold,
+        double peakDetectionThresholdRel,
+        double peakDetectionMinPeakDistance,
+        double peakDetectionMaxBpm,
         QObject* parent = nullptr);
 
     void stop() {
@@ -31,8 +35,6 @@ public:
         QThread::start();
     }
 
-    void updateParameters(int signalDownsampleRatio, int envelopeDownsampleRatio);
-
 protected:
     void run() override;
 
@@ -42,9 +44,8 @@ private:
     bool shouldStop_;
     int signalDownsampleRatio_;
     uint32_t totalSamplesReceived_;
-    jellED::AdaptiveNormalizer adaptiveNormalizer_;
-    jellED::BandpassFilter bandpassFilter_;
     jellED::Downsampler downsampler_;
+    jellED::BandpassFilter bandpassFilter_;
     jellED::EnvelopeDetector envelopeDetector_;
     jellED::PeakDetector peakDetector_;
 };

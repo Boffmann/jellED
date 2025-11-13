@@ -26,7 +26,6 @@ public:
     void addSample(const double sample) override;
     void clearSamples() override;
     void addPeak();
-    void updateSampleRate(int newSampleRate);
 };
 
 #endif

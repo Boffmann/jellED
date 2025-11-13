@@ -4,11 +4,13 @@
 #include <QMainWindow>
 #include <QLabel>
 #include <QSlider>
+#include <QLineEdit>
 #include "WaveformWidget.h"
 #include "EnvelopePeakWidget.h"
 #include "BeatDetectionProcessor.h"
 
 class QPushButton;
+class BeatIndicatorWidget;
 
 class WaveformProcessor : public QThread {
     Q_OBJECT
@@ -51,10 +53,17 @@ private:
     BeatDetectionProcessor* beatDetectionProcessor_;
     QLabel* infoLabel_;
     QLabel* statusLabel_;
-    QLabel* downsampleRateValueLabel_;
     QLabel* envelopeDownsampleRateValueLabel_;
-    QSlider* downsampleRateSlider_;
     QSlider* envelopeDownsampleRateSlider_;
+    QLabel* downsampleCutoffFrequencyValueLabel_;
+    QSlider* downsampleCutoffFrequencySlider_;
+
+    QLineEdit* peakDetectionAbsoluteMinThresholdTextField_;
+    QLineEdit* peakDetectionThresholdRelTextField_;
+    QLineEdit* peakDetectionMinPeakDistanceTextField_;
+    QLineEdit* peakDetectionMaxBpmTextField_;
+
+    BeatIndicatorWidget* beatIndicatorWidget_;
     
     int sampleRate_;
     jellED::UsbMicro* usbMicro_;
@@ -66,6 +75,7 @@ private:
     void setupUi();
     QWidget* setupInfoPanel();
     QWidget* setupParameterControls();
+    QWidget* setupPeakDetectionControls();
     QWidget* setupWaveformDisplays();
     void setupStatusBar();
 
@@ -73,8 +83,8 @@ private slots:
     void onClearClicked();
     void updateDisplay();
     void updateStatusBar();
-    void onDownsampleRateSliderChanged(int value);
     void onEnvelopeDownsampleRateSliderChanged(int value);
+    void onDownsampleCutoffFrequencySliderChanged(int value);
     void onApplyButtonClicked();
 
 public:

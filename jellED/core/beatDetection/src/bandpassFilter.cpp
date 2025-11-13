@@ -15,30 +15,31 @@ BandpassFilter::BandpassFilter()
         this->prev_samples_per_section[ring_buffer_index] = new Ringbuffer(3);
         this->prev_filtered_per_section[ring_buffer_index] = new Ringbuffer(3);
     }
-    this->numerator[0][0] = 9.055525499921561e-09;
-    this->numerator[0][1] = 1.8111050999843122e-08;
-    this->numerator[0][2] = 9.055525499921561e-09;
+    // Butterworth coefficients: 50 Hz - 200 Hz, order: 4, framerate: 12000
+    this->numerator[0][0] = 2.1505687372880117e-06;
+    this->numerator[0][1] = 4.3011374745760235e-06;
+    this->numerator[0][2] = 2.1505687372880117e-06;
     this->denominator[0][0] = 1.0;
-    this->denominator[0][1] = -1.9754041983075488;
-    this->denominator[0][2] = 0.9757579840517517;
+    this->denominator[0][1] = -1.900968573046465;
+    this->denominator[0][2] = 0.9064322445782939;
     this->numerator[1][0] = 1.0;
     this->numerator[1][1] = 2.0;
     this->numerator[1][2] = 1.0;
     this->denominator[1][0] = 1.0;
-    this->denominator[1][1] = -1.987554778689961;
-    this->denominator[1][2] = 0.9881962235913563;
+    this->denominator[1][1] = -1.943579632456509;
+    this->denominator[1][2] = 0.9536573669275572;
     this->numerator[2][0] = 1.0;
     this->numerator[2][1] = -2.0;
     this->numerator[2][2] = 1.0;
     this->denominator[2][0] = 1.0;
-    this->denominator[2][1] = -1.9882455371009717;
-    this->denominator[2][2] = 0.9883270414334357;
+    this->denominator[2][1] = -1.9528162428273361;
+    this->denominator[2][2] = 0.9540976768424779;
     this->numerator[3][0] = 1.0;
     this->numerator[3][1] = -2.0;
     this->numerator[3][2] = 1.0;
     this->denominator[3][0] = 1.0;
-    this->denominator[3][1] = -1.996806272575241;
-    this->denominator[3][2] = 0.9968516999815845;
+    this->denominator[3][1] = -1.98673867006111;
+    this->denominator[3][2] = 0.9874620427225849;
 }
 
 BandpassFilter::~BandpassFilter() {

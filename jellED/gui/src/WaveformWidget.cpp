@@ -30,15 +30,8 @@ void WaveformWidget::clearSamples() {
     ringSampleBuffer_->fill(0.0);
 }
 
-void WaveformWidget::updateSampleRate(int newSampleRate) {
-    std::lock_guard<std::mutex> lock(dataMutex_);
-    sampleRate_ = newSampleRate;
-    // Recreate the ring buffer with the new size
-    ringSampleBuffer_ = std::make_unique<jellED::Ringbuffer>(sampleRate_ * displaySeconds_);
-    ringSampleBuffer_->fill(0.0);
-}
-
 void WaveformWidget::paintEvent(QPaintEvent* event) {
+    (void)event;
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     
@@ -65,7 +58,7 @@ void WaveformWidget::drawWaveform(QPainter& painter) {
     
     // Draw using vertical lines for each pixel column
     // This is much faster than QPainterPath for dense waveforms
-    for (size_t i = 0; i < w; ++i) {
+    for (int i = 0; i < w; ++i) {
         float x = static_cast<float>(i);
         WaveformPoint currentPoint = scaleSampleData(i, ringSampleBuffer_);
         

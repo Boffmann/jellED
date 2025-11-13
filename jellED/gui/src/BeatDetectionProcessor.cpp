@@ -7,18 +7,31 @@ BeatDetectionProcessor::BeatDetectionProcessor(AudioDisplay* display,
     jellED::UsbMicro* usbMicro,
     int signalDownsampleRatio,
     int envelopeDownsampleRatio,
+    double downsampleCutoffFrequency,
+    double peakDetectionAbsoluteMinThreshold,
+    double peakDetectionThresholdRel,
+    double peakDetectionMinPeakDistance,
+    double peakDetectionMaxBpm,
     QObject* parent)
             : QThread(parent)
             , display_(display)
             , usbMicro_(usbMicro)
-            , signalDownsampleRatio_(signalDownsampleRatio)
             , shouldStop_(false)
-            , adaptiveNormalizer_(usbMicro_->getSampleRate() / signalDownsampleRatio, 0.1, 0.01)
-            , downsampler_(signalDownsampleRatio_, usbMicro_->getSampleRate(), 0.5)
+            , signalDownsampleRatio_(signalDownsampleRatio)
+            , downsampler_(signalDownsampleRatio_, usbMicro_->getSampleRate(), downsampleCutoffFrequency)
             , bandpassFilter_()
             , envelopeDetector_(usbMicro_->getSampleRate() / signalDownsampleRatio, envelopeDownsampleRatio)
-            , peakDetector_(0.01, 0.1, 0.1, 0.4, 180.0, usbMicro_->getSampleRate() / signalDownsampleRatio)
-        {}
+            , peakDetector_(peakDetectionAbsoluteMinThreshold, peakDetectionThresholdRel, peakDetectionMinPeakDistance, peakDetectionMaxBpm, usbMicro_->getSampleRate() / signalDownsampleRatio)
+        {
+            std::cout << "BeatDetectionProcessor constructed with signalDownsampleRatio: " << signalDownsampleRatio
+            << ", envelopeDownsampleRatio: " << envelopeDownsampleRatio
+            << ", downsampleCutoffFrequency: " << downsampleCutoffFrequency
+            << ", peakDetectionAbsoluteMinThreshold: " << peakDetectionAbsoluteMinThreshold
+            << ", peakDetectionThresholdRel: " << peakDetectionThresholdRel
+            << ", peakDetectionMinPeakDistance: " << peakDetectionMinPeakDistance
+            << ", peakDetectionMaxBpm: " << peakDetectionMaxBpm
+            << std::endl;
+        }
 
 void BeatDetectionProcessor::run() {
     jellED::AudioBuffer buffer;
@@ -30,11 +43,10 @@ void BeatDetectionProcessor::run() {
         if (usbMicro_->read(&buffer)) {
             jellED::AudioBuffer downsampledBuffer;
             downsampler_.downsample(buffer, downsampledBuffer);
-            for (int i = 0; i < downsampledBuffer.num_samples; i++) {
+            for (size_t i = 0; i < downsampledBuffer.num_samples; i++) {
                 totalSamplesReceived_++;
-                double adaptiveNormalizedSample = adaptiveNormalizer_.apply(downsampledBuffer.buffer[i]);
-        //         // double adaptiveNormalizedSample = downsampledBuffer.buffer[i];
-                double amplifiedSample = adaptiveNormalizedSample;// * GAIN / 2.0;
+                double sample = downsampledBuffer.buffer[i];
+                double amplifiedSample = sample * GAIN;
                 display_->addOriginalSample(amplifiedSample);
                 double filteredSample = bandpassFilter_.apply(amplifiedSample);// * GAIN;
                 display_->addLowpassFilteredSample(filteredSample);
@@ -52,12 +64,4 @@ void BeatDetectionProcessor::run() {
             }
         }
     }
-}
-
-void BeatDetectionProcessor::updateParameters(int signalDownsampleRatio, int envelopeDownsampleRatio) {
-    signalDownsampleRatio_ = signalDownsampleRatio;
-    adaptiveNormalizer_ = jellED::AdaptiveNormalizer(usbMicro_->getSampleRate() / signalDownsampleRatio, 0.1, 0.01);
-    downsampler_ = jellED::Downsampler(signalDownsampleRatio_, usbMicro_->getSampleRate(), 0.5);
-    envelopeDetector_ = jellED::EnvelopeDetector(usbMicro_->getSampleRate() / signalDownsampleRatio, envelopeDownsampleRatio);
-    peakDetector_ = jellED::PeakDetector(0.01, 0.1, 0.1, 0.4, 180.0, usbMicro_->getSampleRate() / signalDownsampleRatio);
 }
