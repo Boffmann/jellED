@@ -10,19 +10,15 @@ namespace jellED {
 class PeakDetector {
 private:
     // Configuration parameters
-    double attack;
-    double release;
+    double absolute_min_threshold;
     double threshold_rel;
     double min_peak_distance;
     uint32_t sample_rate;
     double max_bpm;
+    double threshold_baseline; 
 
     // Envelope follower state
     double envelope;
-
-    Ringbuffer* local_min_buffer;
-    Ringbuffer* sample_times_buffer;
-    Ringbuffer* envelope_buffer;
     
     // Peak detection state
     double prev_env;
@@ -30,12 +26,10 @@ private:
     double last_peak_time;
 
     double update_envelope(double sample);
-    double dynamic_threshold();
 
 public:
-    PeakDetector(double attack, double release, double threshold_rel, 
+    PeakDetector(double absolute_min_threshold, double threshold_rel, 
                  double min_peak_distance, double max_bpm, uint32_t sample_rate);
-    ~PeakDetector();
     
     bool is_peak(double sample, double current_time);
 };

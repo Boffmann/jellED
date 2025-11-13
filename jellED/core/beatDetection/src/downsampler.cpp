@@ -5,8 +5,7 @@
 namespace jellED {
 
 Downsampler::Downsampler(int downsample_factor, double sample_rate_in, double fc_cut_frac)
-    : downsample_factor(downsample_factor),
-      sample_rate_in(sample_rate_in)
+    : downsample_factor(downsample_factor)
 {
     if (downsample_factor < 1) {
         this->downsample_factor = 1;
@@ -20,7 +19,7 @@ Downsampler::Downsampler(int downsample_factor, double sample_rate_in, double fc
 
 void Downsampler::downsample(const AudioBuffer& in, AudioBuffer& out) {
     int out_index = 0;
-    for (int i = 0; i < in.num_samples; i++) {
+    for (size_t i = 0; i < in.num_samples; i++) {
         out.buffer[i / this->downsample_factor] = in.buffer[i];
         // 1-pole lowpass smoothing (simple IIR)
         this->z = this->alpha * this->z + (1.0 - this->alpha) * in.buffer[i];

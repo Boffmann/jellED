@@ -9,6 +9,7 @@ EnvelopeDetector::EnvelopeDetector(uint32_t sample_rate, uint8_t downsample_fact
 : sample_rate{sample_rate},
   downsample_factor{downsample_factor},
   current_envelope{0.0},
+  previous_envelope{0.0},
   sample_counter{0}
 {
     this->attack_coeff = 1.0 - std::exp(-1.0 / (ATTACK_TIME * this->sample_rate));
@@ -19,25 +20,32 @@ EnvelopeDetector::~EnvelopeDetector() {
 }
 
 double EnvelopeDetector::apply(const double sample) {
-    this->sample_counter++;
-    
-    // Only process every downsample_factor samples
-    if (this->sample_counter % this->downsample_factor != 0) {
-        return -1.0;
-    }
-    
-    // Process the sample normally (equivalent to calling envelope_peak_decay_realtime)
+    // 1. Rectify the sample
     double sample_abs = std::abs(sample);
 
-    if (sample_abs > this->current_envelope) {
-        // Attack phase - fast response to sudden increases
-        this->current_envelope += this->attack_coeff * (sample_abs - this->current_envelope);
+    // 2. Smooth with single pole lowpass filter
+    // double alpha = std::exp(-2.0 * M_PI * ENVELOPE_CUTOFF / (sample_rate));
+    // this->current_envelope = alpha * current_envelope + (1.0 - alpha) * sample_abs;
+
+    if (sample_abs > current_envelope) {
+        current_envelope += attack_coeff * (sample_abs - current_envelope);
     } else {
-        // Release phase - gradual decay
-        this->current_envelope += this->release_coeff * (sample_abs - this->current_envelope);
+        current_envelope += release_coeff * (sample_abs - current_envelope);
     }
-    
-    return this->current_envelope;
+
+    // 3. Downsample
+    sample_counter++;
+    if (sample_counter % downsample_factor != 0) {
+        return -1.0;
+    }
+
+    // return this->current_envelope;
+
+    // 4. Novelty (positive derivative)
+    double novelty = std::max(0.0, this->current_envelope - this->previous_envelope);
+    this->previous_envelope = this->current_envelope;
+
+    return novelty * 300.0;
 }
 
 } // end namespace jellED

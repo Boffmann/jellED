@@ -6,10 +6,17 @@
 #include <QStatusBar>
 #include <QGroupBox>
 #include <QPainter>
+#include <QPainterPath>
 #include <iostream>
 
 static constexpr int SIGNAL_DOWNSAMPLE_RATIO = 4;
-static constexpr int ENVELOPE_DOWNSAMPLE_RATIO = 8;
+static constexpr int ENVELOPE_DOWNSAMPLE_RATIO = 2;
+static constexpr double DOWNSAMPLE_CUTOFF_FREQUENCY = 0.5;
+
+static constexpr double PEAK_DETECTION_ABSOLUTE_MIN_THRESHOLD = 0.01;
+static constexpr double PEAK_DETECTION_THRESHOLD_REL = 0.1;
+static constexpr double PEAK_DETECTION_MIN_PEAK_DISTANCE = 0.4;
+static constexpr double PEAK_DETECTION_MAX_BPM = 180.0;
 
 class VerticalLabel : public QLabel
 {
@@ -38,14 +45,72 @@ protected:
     }
 };
 
+class BeatIndicatorWidget : public QWidget {
+public:
+    explicit BeatIndicatorWidget(QWidget *parent = nullptr)
+        : QWidget(parent),
+        m_color_off(128,128,128),
+        m_color_beat(255,0,0)
+    {
+        setFixedSize(100,100);
+        setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+        setAutoFillBackground(false);
+    }
+
+    void setBeat(bool beat) {
+        if (beat == m_beat) {
+            return;
+        }
+        std::lock_guard<std::mutex> lock(dataMutex_);
+        if (beat) {
+            m_beat = true;
+            beat_cycles_remaining = BEAT_RESET_COUNTER;
+            update();
+        } else {
+            beat_cycles_remaining--;
+            if (beat_cycles_remaining <= 0) {
+                m_beat = false;
+                update();
+            }
+        }
+    }
+
+protected:
+
+    void paintEvent(QPaintEvent * /*ev*/) override {
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing, true);
+
+        qreal penW = 3.0;
+        QRectF r = rect().adjusted(penW/2, penW/2, -penW/2, -penW/2);
+
+        QPen pen(Qt::black, penW);
+        p.setPen(pen);
+        if (m_beat) {
+            p.setBrush(m_color_beat);
+        } else {
+            p.setBrush(m_color_off);
+        }
+        p.drawEllipse(r);
+    }
+
+private:
+    constexpr static int BEAT_RESET_COUNTER = 1000;
+    bool m_beat;
+    std::mutex dataMutex_;
+    int beat_cycles_remaining;
+    QColor m_color_off;
+    QColor m_color_beat;
+};
+
 AudioDisplay::AudioDisplay(std::string microphone_device_id, int displaySeconds, int refreshRate, QWidget* parent)
     : QMainWindow(parent)
+    , sampleRate_(0)
+    , usbMicro_(new jellED::UsbMicro(microphone_device_id, SoundIoBackendCoreAudio))
     , displaySeconds_(displaySeconds)
     , refreshRate_(refreshRate)
-    , usbMicro_(new jellED::UsbMicro(microphone_device_id, SoundIoBackendCoreAudio))
     , currentSamplesReceived_(0)
-    , totalSamplesReceived_(0)
-    , sampleRate_(0) {
+    , totalSamplesReceived_(0) {
     setWindowTitle("jellED - Oscilloscope");
     resize(1000, 600);
 
@@ -119,32 +184,6 @@ QWidget* AudioDisplay::setupParameterControls() {
     parameterLayout->setSpacing(0);
     parameterLayout->setContentsMargins(5, 5, 5, 5);
 
-    // Downsample Rate control
-    QGroupBox* downsampleRateGroup = new QGroupBox("Downsample Rate", this);
-    QHBoxLayout* downsampleRateSliderLayout = new QHBoxLayout(downsampleRateGroup);
-    downsampleRateSliderLayout->setSpacing(5);
-    downsampleRateSliderLayout->setContentsMargins(5, 5, 5, 5);
-    this->downsampleRateSlider_ = new QSlider(Qt::Horizontal, this);
-    // Slider range 0-4 represents powers of 2: 2^0=1, 2^1=2, 2^2=4, 2^3=8, 2^4=16
-    this->downsampleRateSlider_->setRange(0, 4);
-    // Find the power of 2 position for SIGNAL_DOWNSAMPLE_RATIO (log2)
-    int initialPosition = 0;
-    int temp = SIGNAL_DOWNSAMPLE_RATIO;
-    while (temp > 1) {
-        temp >>= 1;
-        initialPosition++;
-    }
-    this->downsampleRateSlider_->setValue(initialPosition);
-    this->downsampleRateSlider_->setSingleStep(1);
-    this->downsampleRateSlider_->setTickPosition(QSlider::TicksBelow);
-    this->downsampleRateSlider_->setTickInterval(1);
-    this->downsampleRateValueLabel_ = new QLabel(QString::number(SIGNAL_DOWNSAMPLE_RATIO), this);
-    this->downsampleRateValueLabel_->setFixedWidth(30);
-    downsampleRateSliderLayout->addWidget(this->downsampleRateSlider_);
-    downsampleRateSliderLayout->addWidget(this->downsampleRateValueLabel_);
-    
-    connect(this->downsampleRateSlider_, &QSlider::valueChanged, this, &AudioDisplay::onDownsampleRateSliderChanged);
-
     // Envelope Downsample Rate control
     QGroupBox* envelopeDownsampleRateGroup = new QGroupBox("Envelope Downsample Rate", this);
     QHBoxLayout* envelopeDownsampleRateSliderLayout = new QHBoxLayout(envelopeDownsampleRateGroup);
@@ -153,8 +192,8 @@ QWidget* AudioDisplay::setupParameterControls() {
     this->envelopeDownsampleRateSlider_ = new QSlider(Qt::Horizontal, this);
     this->envelopeDownsampleRateSlider_->setRange(0, 4);
     // Find the power of 2 position for SIGNAL_DOWNSAMPLE_RATIO (log2)
-    initialPosition = 0;
-    temp = ENVELOPE_DOWNSAMPLE_RATIO;
+    int initialPosition = 0;
+    int temp = ENVELOPE_DOWNSAMPLE_RATIO;
     while (temp > 1) {
         temp >>= 1;
         initialPosition++;
@@ -173,13 +212,86 @@ QWidget* AudioDisplay::setupParameterControls() {
     QPushButton* applyButton = new QPushButton("Apply", this);
     applyButton->setFixedWidth(100);
     connect(applyButton, &QPushButton::clicked, this, &AudioDisplay::onApplyButtonClicked);
+
+
+    // Downsample Rate control
+    QGroupBox* downsampleCutoffFrequencyGroup = new QGroupBox("Downsample Cutoff Frequency", this);
+    QHBoxLayout* downsampleCutoffFrequencySliderLayout = new QHBoxLayout(downsampleCutoffFrequencyGroup);
+    downsampleCutoffFrequencySliderLayout->setSpacing(5);
+    downsampleCutoffFrequencySliderLayout->setContentsMargins(5, 5, 5, 5);
+    this->downsampleCutoffFrequencySlider_ = new QSlider(Qt::Horizontal, this);
+    // Slider range 0-4 represents powers of 2: 2^0=1, 2^1=2, 2^2=4, 2^3=8, 2^4=16
+    this->downsampleCutoffFrequencySlider_->setRange(0, 10);
+    // Find the power of 2 position for SIGNAL_DOWNSAMPLE_RATIO (log2)
+    this->downsampleCutoffFrequencySlider_->setValue(DOWNSAMPLE_CUTOFF_FREQUENCY * 10);
+    this->downsampleCutoffFrequencySlider_->setSingleStep(1);
+    this->downsampleCutoffFrequencySlider_->setTickPosition(QSlider::TicksBelow);
+    this->downsampleCutoffFrequencySlider_->setTickInterval(1);
+    this->downsampleCutoffFrequencyValueLabel_ = new QLabel(QString::number(DOWNSAMPLE_CUTOFF_FREQUENCY), this);
+    this->downsampleCutoffFrequencyValueLabel_->setFixedWidth(30);
+    downsampleCutoffFrequencySliderLayout->addWidget(this->downsampleCutoffFrequencySlider_);
+    downsampleCutoffFrequencySliderLayout->addWidget(this->downsampleCutoffFrequencyValueLabel_);
     
-    parameterLayout->addWidget(downsampleRateGroup);
+    connect(this->downsampleCutoffFrequencySlider_, &QSlider::valueChanged, this, &AudioDisplay::onDownsampleCutoffFrequencySliderChanged);
+
+    beatIndicatorWidget_ = new BeatIndicatorWidget(this);
+    
     parameterLayout->addWidget(envelopeDownsampleRateGroup);
+    parameterLayout->addWidget(downsampleCutoffFrequencyGroup);
+    parameterLayout->addWidget(setupPeakDetectionControls());
     parameterLayout->addWidget(applyButton);
+    parameterLayout->addWidget(beatIndicatorWidget_, 0, Qt::AlignCenter);
     parameterLayout->addStretch();
     
     return parameterWidget;
+}
+
+QWidget* AudioDisplay::setupPeakDetectionControls() {
+    // QWidget* peakDetectionWidget = new QWidget(this);
+
+    QGroupBox* peakDetectionGroup = new QGroupBox("Peak Detection Parameters", this);
+    QVBoxLayout* peakDetectionLayout = new QVBoxLayout(peakDetectionGroup);
+    peakDetectionLayout->setSpacing(0);
+    peakDetectionLayout->setContentsMargins(5, 5, 5, 5);
+
+    // Peak Detection Absolute Min Threshold control
+    QGroupBox* peakDetectionAbsoluteMinThresholdGroup = new QGroupBox("Peak Detection Absolute Min Threshold", this);
+    QHBoxLayout* peakDetectionAbsoluteMinThresholdLayout = new QHBoxLayout(peakDetectionAbsoluteMinThresholdGroup);
+    peakDetectionAbsoluteMinThresholdLayout->setSpacing(5);
+    peakDetectionAbsoluteMinThresholdLayout->setContentsMargins(5, 5, 5, 5);
+    this->peakDetectionAbsoluteMinThresholdTextField_ = new QLineEdit(QString::number(PEAK_DETECTION_ABSOLUTE_MIN_THRESHOLD), this);
+    peakDetectionAbsoluteMinThresholdLayout->addWidget(this->peakDetectionAbsoluteMinThresholdTextField_);
+
+    // Peak Detection Threshold Rel control
+    QGroupBox* peakDetectionThresholdRelGroup = new QGroupBox("Peak Detection Threshold Rel", this);
+    QHBoxLayout* peakDetectionThresholdRelLayout = new QHBoxLayout(peakDetectionThresholdRelGroup);
+    peakDetectionThresholdRelLayout->setSpacing(5);
+    peakDetectionThresholdRelLayout->setContentsMargins(5, 5, 5, 5);
+    this->peakDetectionThresholdRelTextField_ = new QLineEdit(QString::number(PEAK_DETECTION_THRESHOLD_REL), this);
+    peakDetectionThresholdRelLayout->addWidget(this->peakDetectionThresholdRelTextField_);
+
+    // Peak Detection Min Peak Distance control
+    QGroupBox* peakDetectionMinPeakDistanceGroup = new QGroupBox("Peak Detection Min Peak Distance", this);
+    QHBoxLayout* peakDetectionMinPeakDistanceLayout = new QHBoxLayout(peakDetectionMinPeakDistanceGroup);
+    peakDetectionMinPeakDistanceLayout->setSpacing(5);
+    peakDetectionMinPeakDistanceLayout->setContentsMargins(5, 5, 5, 5);
+    this->peakDetectionMinPeakDistanceTextField_ = new QLineEdit(QString::number(PEAK_DETECTION_MIN_PEAK_DISTANCE), this);
+    peakDetectionMinPeakDistanceLayout->addWidget(this->peakDetectionMinPeakDistanceTextField_);
+
+    // Peak Detection Max BPM control
+    QGroupBox* peakDetectionMaxBpmGroup = new QGroupBox("Peak Detection Max BPM", this);
+    QHBoxLayout* peakDetectionMaxBpmLayout = new QHBoxLayout(peakDetectionMaxBpmGroup);
+    peakDetectionMaxBpmLayout->setSpacing(5);
+    peakDetectionMaxBpmLayout->setContentsMargins(5, 5, 5, 5);
+    this->peakDetectionMaxBpmTextField_ = new QLineEdit(QString::number(PEAK_DETECTION_MAX_BPM), this);
+    peakDetectionMaxBpmLayout->addWidget(this->peakDetectionMaxBpmTextField_);
+
+    peakDetectionLayout->addWidget(peakDetectionAbsoluteMinThresholdGroup);
+    peakDetectionLayout->addWidget(peakDetectionThresholdRelGroup);
+    peakDetectionLayout->addWidget(peakDetectionMinPeakDistanceGroup);
+    peakDetectionLayout->addWidget(peakDetectionMaxBpmGroup);
+
+    return peakDetectionGroup;
 }
 
 QWidget* AudioDisplay::setupWaveformDisplays() {
@@ -220,7 +332,17 @@ void AudioDisplay::setupStatusBar() {
 }
 
 void AudioDisplay::startBeatDetectionProcessor() {
-    this->beatDetectionProcessor_ = new BeatDetectionProcessor(this, usbMicro_, SIGNAL_DOWNSAMPLE_RATIO, ENVELOPE_DOWNSAMPLE_RATIO, this);
+    this->beatDetectionProcessor_ =
+    new BeatDetectionProcessor(this,
+        usbMicro_,
+        SIGNAL_DOWNSAMPLE_RATIO,
+        ENVELOPE_DOWNSAMPLE_RATIO,
+        DOWNSAMPLE_CUTOFF_FREQUENCY,
+        PEAK_DETECTION_ABSOLUTE_MIN_THRESHOLD,
+        PEAK_DETECTION_THRESHOLD_REL,
+        PEAK_DETECTION_MIN_PEAK_DISTANCE,
+        PEAK_DETECTION_MAX_BPM,
+        this);
     this->beatDetectionProcessor_->start();
 }
 
@@ -228,6 +350,7 @@ void AudioDisplay::addOriginalSample(const double sample) {
     originalSamplesWaveformWidget_->addSample(sample);
     totalSamplesReceived_++;
     currentSamplesReceived_++;
+    beatIndicatorWidget_->setBeat(false); // Reset beat indicator at every sample
 }
 
 void AudioDisplay::addLowpassFilteredSample(const double sample) {
@@ -240,6 +363,7 @@ void AudioDisplay::addEnvelopeFilteredSample(const double sample) {
 
 void AudioDisplay::addPeak() {
     envelopePeakWaveformWidget_->addPeak();
+    beatIndicatorWidget_->setBeat(true);
 }
 
 void AudioDisplay::updateDisplay() {
@@ -270,16 +394,16 @@ void AudioDisplay::onClearClicked() {
     updateStatusBar();
 }
 
-void AudioDisplay::onDownsampleRateSliderChanged(int value) {
-    // Convert slider position (0-4) to power of 2 (1, 2, 4, 8, 16)
-    int downsampleRate = 1 << value;  // Same as pow(2, value)
-    this->downsampleRateValueLabel_->setText(QString::number(downsampleRate));
-}
-
 void AudioDisplay::onEnvelopeDownsampleRateSliderChanged(int value) {
     // Convert slider position (0-4) to power of 2 (1, 2, 4, 8, 16)
     int envelopeDownsampleRate = 1 << value;  // Same as pow(2, value)
     this->envelopeDownsampleRateValueLabel_->setText(QString::number(envelopeDownsampleRate));
+}
+
+void AudioDisplay::onDownsampleCutoffFrequencySliderChanged(int value) {
+    // Convert slider position (0-4) to power of 2 (1, 2, 4, 8, 16)
+    double downsampleCutoffFrequency = 0.1 * value;
+    this->downsampleCutoffFrequencyValueLabel_->setText(QString::number(downsampleCutoffFrequency));
 }
 
 void AudioDisplay::onApplyButtonClicked() {
@@ -287,32 +411,34 @@ void AudioDisplay::onApplyButtonClicked() {
     this->beatDetectionProcessor_->stop();
     this->beatDetectionProcessor_->wait();
     delete this->beatDetectionProcessor_;
-    
-    // Update sample rate - convert slider position to power of 2
-    int newDownsampleRatio = 1 << downsampleRateSlider_->value();  // 2^value
-    this->sampleRate_ = usbMicro_->getSampleRate() / newDownsampleRatio;
 
     int newEnvelopeDownsampleRatio = 1 << envelopeDownsampleRateSlider_->value();
+    double newDownsampleCutoffFrequency = 0.1 * downsampleCutoffFrequencySlider_->value();
+
+    double newPeakDetectionAbsoluteMinThreshold = peakDetectionAbsoluteMinThresholdTextField_->text().toDouble();
+    double newPeakDetectionThresholdRel = peakDetectionThresholdRelTextField_->text().toDouble();
+    double newPeakDetectionMinPeakDistance = peakDetectionMinPeakDistanceTextField_->text().toDouble();
+    double newPeakDetectionMaxBpm = peakDetectionMaxBpmTextField_->text().toDouble();
 
     // Update all waveform widgets with new sample rate
-    originalSamplesWaveformWidget_->updateSampleRate(sampleRate_);
-    lowpassFilteredWaveformWidget_->updateSampleRate(sampleRate_);
-    envelopePeakWaveformWidget_->updateSampleRate(sampleRate_);
+    originalSamplesWaveformWidget_->clearSamples();
+    lowpassFilteredWaveformWidget_->clearSamples();
+    envelopePeakWaveformWidget_->clearSamples();
     
     // Reset sample counters
     currentSamplesReceived_ = 0;
 
-    // Update info panel
-    QString infoText = QString("Sample Rate: %1 Hz | Display Window: %2 seconds | Refresh Rate: %3 FPS | Buffer Size: %4 samples")
-        .arg(sampleRate_)
-        .arg(displaySeconds_)
-        .arg(refreshRate_)
-        .arg(sampleRate_ * displaySeconds_);
-    
-    this->infoLabel_->setText(infoText);
-
     // Create and start a new thread with the new parameters
-    this->beatDetectionProcessor_ = new BeatDetectionProcessor(this, usbMicro_, newDownsampleRatio, newEnvelopeDownsampleRatio, this);
+    this->beatDetectionProcessor_ = new BeatDetectionProcessor(this,
+        usbMicro_,
+        SIGNAL_DOWNSAMPLE_RATIO,
+        newEnvelopeDownsampleRatio,
+        newDownsampleCutoffFrequency,
+        newPeakDetectionAbsoluteMinThreshold,
+        newPeakDetectionThresholdRel,
+        newPeakDetectionMinPeakDistance,
+        newPeakDetectionMaxBpm,
+        this);
     this->beatDetectionProcessor_->start();
     
     updateStatusBar();

@@ -30,7 +30,7 @@ protected:
 public:
     WaveformWidget(int sampleRate, int displaySeconds, QWidget* parent = nullptr);
     void updateWidget();
-    void updateSampleRate(int newSampleRate);
+    // void updateSampleRate(int newSampleRate);
     virtual void addSample(const double sample);
     virtual void clearSamples();
 };

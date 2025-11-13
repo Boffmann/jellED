@@ -53,11 +53,11 @@ def generate_butterworth():
     order = 4
     lowcut = 50
     highcut = 200
-    framerate = 48000
+    framerate = 12000
     sos = signal.butter(order, [lowcut, highcut],
                         'band', fs=framerate, output='sos')
     print(f"// Butterworth coefficients: {lowcut} Hz - {highcut} Hz, order: {order}, framerate: {framerate}"
-        .format(lowcut=lowcut, highcut=highcut, order=order, framerate=framerate))
+          .format(lowcut=lowcut, highcut=highcut, order=order, framerate=framerate))
     for o in range(0, order):
         for i in range(0, 3):
             print("this->numerator[{order}][{place}] = {result};".format(

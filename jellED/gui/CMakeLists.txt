@@ -9,6 +9,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+add_compile_options(-Wall -Wextra -pedantic -Werror)
+
 # Find Qt5 packages
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
@@ -35,7 +37,6 @@ set(SOURCES
     src/WaveformWidget.cpp
     src/EnvelopePeakWidget.cpp
     ../core/beatDetection/src/bandpassFilter.cpp
-    ../core/beatDetection/src/adaptiveNormalizer.cpp
     ../core/beatDetection/src/downsampler.cpp
     ../core/beatDetection/src/envelopeDetector.cpp
     ../core/beatDetection/src/ringbuffer.cpp
