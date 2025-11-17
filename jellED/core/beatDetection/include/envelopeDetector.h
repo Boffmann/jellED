@@ -20,9 +20,10 @@ private:
     double current_envelope;
     double previous_envelope;
     uint8_t sample_counter;
+    double novelty_gain;
 
 public:
-    EnvelopeDetector(uint32_t sample_rate, uint8_t downsample_factor = 8);
+    EnvelopeDetector(uint32_t sample_rate, uint8_t downsample_factor = 8, double novelty_gain = 300.0);
     ~EnvelopeDetector();
     double apply(const double sample);
 };
