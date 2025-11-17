@@ -46,6 +46,8 @@ class AudioDisplay : public QMainWindow {
 
 private:
     QPushButton* clearButton_;
+    QPushButton* startStopButton_;
+    
     WaveformWidget* originalSamplesWaveformWidget_;
     WaveformWidget* lowpassFilteredWaveformWidget_;
     EnvelopePeakWidget* envelopePeakWaveformWidget_;
@@ -59,6 +61,7 @@ private:
     QSlider* downsampleCutoffFrequencySlider_;
 
     QLineEdit* automaticGainControlTargetLevelTextField_;
+    QLineEdit* noveltyGainTextField_;
 
     QLineEdit* peakDetectionAbsoluteMinThresholdTextField_;
     QLineEdit* peakDetectionThresholdRelTextField_;
@@ -84,6 +87,7 @@ private:
 
 private slots:
     void onClearClicked();
+    void onStartStopClicked();
     void updateDisplay();
     void updateStatusBar();
     void onEnvelopeDownsampleRateSliderChanged(int value);

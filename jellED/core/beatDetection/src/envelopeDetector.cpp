@@ -5,12 +5,13 @@
 
 namespace jellED {
 
-EnvelopeDetector::EnvelopeDetector(uint32_t sample_rate, uint8_t downsample_factor)
+EnvelopeDetector::EnvelopeDetector(uint32_t sample_rate, uint8_t downsample_factor, double novelty_gain)
 : sample_rate{sample_rate},
   downsample_factor{downsample_factor},
   current_envelope{0.0},
   previous_envelope{0.0},
-  sample_counter{0}
+  sample_counter{0},
+  novelty_gain{novelty_gain}
 {
     this->attack_coeff = 1.0 - std::exp(-1.0 / (ATTACK_TIME * this->sample_rate));
     this->release_coeff = 1.0 - std::exp(-1.0 / (RELEASE_TIME * this->sample_rate));
@@ -45,7 +46,7 @@ double EnvelopeDetector::apply(const double sample) {
     double novelty = std::max(0.0, this->current_envelope - this->previous_envelope);
     this->previous_envelope = this->current_envelope;
 
-    return novelty * 300.0;
+    return novelty * novelty_gain;
 }
 
 } // end namespace jellED

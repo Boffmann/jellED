@@ -19,6 +19,11 @@ private:
 
     // Envelope follower state
     double envelope;
+    double baseline_attack_coeff;
+    double baseline_release_coeff;
+    double dynamic_threshold_rel;
+    double min_dynamic_threshold_rel;
+    double threshold_relax_coeff;
     
     // Peak detection state
     double prev_env;

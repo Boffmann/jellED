@@ -3,36 +3,28 @@
 #include <iostream>
 #include "AudioDisplay.h"
 
-BeatDetectionProcessor::BeatDetectionProcessor(AudioDisplay* display,
-    jellED::UsbMicro* usbMicro,
-    int signalDownsampleRatio,
-    int envelopeDownsampleRatio,
-    double downsampleCutoffFrequency,
-    double automaticGainControlTargetLevel,
-    double peakDetectionAbsoluteMinThreshold,
-    double peakDetectionThresholdRel,
-    double peakDetectionMinPeakDistance,
-    double peakDetectionMaxBpm,
-    QObject* parent)
-            : QThread(parent)
-            , display_(display)
-            , usbMicro_(usbMicro)
+BeatDetectionProcessor::BeatDetectionProcessor(const Builder& builder)
+            : QThread(builder.parent_)
+            , display_(builder.display_)
+            , usbMicro_(builder.usbMicro_)
             , shouldStop_(false)
-            , signalDownsampleRatio_(signalDownsampleRatio)
-            , downsampler_(signalDownsampleRatio_, usbMicro_->getSampleRate(), downsampleCutoffFrequency)
-            , automaticGainControl_(usbMicro_->getSampleRate() / signalDownsampleRatio, automaticGainControlTargetLevel)
+            , signalDownsampleRatio_(builder.signalDownsampleRatio_)
+            , totalSamplesReceived_(0)
+            , downsampler_(builder.signalDownsampleRatio_, builder.usbMicro_->getSampleRate(), builder.downsampleCutoffFrequency_)
+            , automaticGainControl_(builder.usbMicro_->getSampleRate() / builder.signalDownsampleRatio_, builder.automaticGainControlTargetLevel_)
             , bandpassFilter_()
-            , envelopeDetector_(usbMicro_->getSampleRate() / signalDownsampleRatio, envelopeDownsampleRatio)
-            , peakDetector_(peakDetectionAbsoluteMinThreshold, peakDetectionThresholdRel, peakDetectionMinPeakDistance, peakDetectionMaxBpm, usbMicro_->getSampleRate() / signalDownsampleRatio)
+            , envelopeDetector_(builder.usbMicro_->getSampleRate() / builder.signalDownsampleRatio_, builder.envelopeDownsampleRatio_, builder.noveltyGain_)
+            , peakDetector_(builder.peakDetectionAbsoluteMinThreshold_, builder.peakDetectionThresholdRel_, builder.peakDetectionMinPeakDistance_, builder.peakDetectionMaxBpm_, builder.usbMicro_->getSampleRate() / builder.signalDownsampleRatio_)
         {
-            std::cout << "BeatDetectionProcessor constructed with signalDownsampleRatio: " << signalDownsampleRatio
-            << ", envelopeDownsampleRatio: " << envelopeDownsampleRatio
-            << ", downsampleCutoffFrequency: " << downsampleCutoffFrequency
-            << ", automaticGainControlTargetLevel: " << automaticGainControlTargetLevel
-            << ", peakDetectionAbsoluteMinThreshold: " << peakDetectionAbsoluteMinThreshold
-            << ", peakDetectionThresholdRel: " << peakDetectionThresholdRel
-            << ", peakDetectionMinPeakDistance: " << peakDetectionMinPeakDistance
-            << ", peakDetectionMaxBpm: " << peakDetectionMaxBpm
+            std::cout << "BeatDetectionProcessor constructed with signalDownsampleRatio: " << builder.signalDownsampleRatio_
+            << ", envelopeDownsampleRatio: " << builder.envelopeDownsampleRatio_
+            << ", noveltyGain: " << builder.noveltyGain_
+            << ", downsampleCutoffFrequency: " << builder.downsampleCutoffFrequency_
+            << ", automaticGainControlTargetLevel: " << builder.automaticGainControlTargetLevel_
+            << ", peakDetectionAbsoluteMinThreshold: " << builder.peakDetectionAbsoluteMinThreshold_
+            << ", peakDetectionThresholdRel: " << builder.peakDetectionThresholdRel_
+            << ", peakDetectionMinPeakDistance: " << builder.peakDetectionMinPeakDistance_
+            << ", peakDetectionMaxBpm: " << builder.peakDetectionMaxBpm_
             << std::endl;
         }
 
@@ -48,7 +40,8 @@ void BeatDetectionProcessor::run() {
             for (size_t i = 0; i < downsampledBuffer.num_samples; i++) {
                 totalSamplesReceived_++;
                 double sample = downsampledBuffer.buffer[i];
-                double amplifiedSample = automaticGainControl_.apply(sample);
+                // double amplifiedSample = automaticGainControl_.apply(sample);
+                double amplifiedSample = sample;
                 display_->addOriginalSample(amplifiedSample);
                 double filteredSample = bandpassFilter_.apply(amplifiedSample);
                 display_->addLowpassFilteredSample(filteredSample);
