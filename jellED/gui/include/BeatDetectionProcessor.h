@@ -6,6 +6,7 @@
 #include "include/bandpassFilter.h"
 #include "include/envelopeDetector.h"
 #include "include/peakdetection.h"
+#include "include/automaticGainControl.h"
 #include "include/downsampler.h"
 #include "sound/raspi/usbMicro.h"
 
@@ -20,6 +21,7 @@ public:
         int signalDownsampleRatio,
         int envelopeDownsampleRatio,
         double downsampleCutoffFrequency,
+        double automaticGainControlTargetLevel,
         double peakDetectionAbsoluteMinThreshold,
         double peakDetectionThresholdRel,
         double peakDetectionMinPeakDistance,
@@ -45,6 +47,7 @@ private:
     int signalDownsampleRatio_;
     uint32_t totalSamplesReceived_;
     jellED::Downsampler downsampler_;
+    jellED::AutomaticGainControl automaticGainControl_;
     jellED::BandpassFilter bandpassFilter_;
     jellED::EnvelopeDetector envelopeDetector_;
     jellED::PeakDetector peakDetector_;

@@ -37,6 +37,7 @@ set(SOURCES
     src/WaveformWidget.cpp
     src/EnvelopePeakWidget.cpp
     ../core/beatDetection/src/bandpassFilter.cpp
+    ../core/beatDetection/src/automaticGainControl.cpp
     ../core/beatDetection/src/downsampler.cpp
     ../core/beatDetection/src/envelopeDetector.cpp
     ../core/beatDetection/src/ringbuffer.cpp

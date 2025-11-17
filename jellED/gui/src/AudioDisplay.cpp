@@ -13,7 +13,9 @@ static constexpr int SIGNAL_DOWNSAMPLE_RATIO = 4;
 static constexpr int ENVELOPE_DOWNSAMPLE_RATIO = 2;
 static constexpr double DOWNSAMPLE_CUTOFF_FREQUENCY = 0.5;
 
-static constexpr double PEAK_DETECTION_ABSOLUTE_MIN_THRESHOLD = 0.01;
+static constexpr double AUTOMATIC_GAIN_CONTROL_TARGET_LEVEL = 0.4;
+
+static constexpr double PEAK_DETECTION_ABSOLUTE_MIN_THRESHOLD = 0.05;
 static constexpr double PEAK_DETECTION_THRESHOLD_REL = 0.1;
 static constexpr double PEAK_DETECTION_MIN_PEAK_DISTANCE = 0.4;
 static constexpr double PEAK_DETECTION_MAX_BPM = 180.0;
@@ -47,8 +49,9 @@ protected:
 
 class BeatIndicatorWidget : public QWidget {
 public:
-    explicit BeatIndicatorWidget(QWidget *parent = nullptr)
+    explicit BeatIndicatorWidget(int sampleRate, QWidget *parent = nullptr)
         : QWidget(parent),
+        indication_cycles_total_(sampleRate * BEAT_INDICATION_TIME_MS / 1000),
         m_color_off(128,128,128),
         m_color_beat(255,0,0)
     {
@@ -64,7 +67,7 @@ public:
         std::lock_guard<std::mutex> lock(dataMutex_);
         if (beat) {
             m_beat = true;
-            beat_cycles_remaining = BEAT_RESET_COUNTER;
+            beat_cycles_remaining = indication_cycles_total_;
             update();
         } else {
             beat_cycles_remaining--;
@@ -95,10 +98,11 @@ protected:
     }
 
 private:
-    constexpr static int BEAT_RESET_COUNTER = 1000;
+    constexpr static int BEAT_INDICATION_TIME_MS = 50;
     bool m_beat;
     std::mutex dataMutex_;
     int beat_cycles_remaining;
+    int indication_cycles_total_;
     QColor m_color_off;
     QColor m_color_beat;
 };
@@ -234,10 +238,19 @@ QWidget* AudioDisplay::setupParameterControls() {
     
     connect(this->downsampleCutoffFrequencySlider_, &QSlider::valueChanged, this, &AudioDisplay::onDownsampleCutoffFrequencySliderChanged);
 
-    beatIndicatorWidget_ = new BeatIndicatorWidget(this);
+    // Automatic Gain Control Target Level control
+    QGroupBox* automaticGainControlTargetLevelGroup = new QGroupBox("Automatic Gain Control Target Level", this);
+    QHBoxLayout* automaticGainControlTargetLevelLayout = new QHBoxLayout(automaticGainControlTargetLevelGroup);
+    automaticGainControlTargetLevelLayout->setSpacing(5);
+    automaticGainControlTargetLevelLayout->setContentsMargins(5, 5, 5, 5);
+    this->automaticGainControlTargetLevelTextField_ = new QLineEdit(QString::number(0.4), this);
+    automaticGainControlTargetLevelLayout->addWidget(this->automaticGainControlTargetLevelTextField_);
+
+    beatIndicatorWidget_ = new BeatIndicatorWidget(sampleRate_, this);
     
     parameterLayout->addWidget(envelopeDownsampleRateGroup);
     parameterLayout->addWidget(downsampleCutoffFrequencyGroup);
+    parameterLayout->addWidget(automaticGainControlTargetLevelGroup);
     parameterLayout->addWidget(setupPeakDetectionControls());
     parameterLayout->addWidget(applyButton);
     parameterLayout->addWidget(beatIndicatorWidget_, 0, Qt::AlignCenter);
@@ -338,6 +351,7 @@ void AudioDisplay::startBeatDetectionProcessor() {
         SIGNAL_DOWNSAMPLE_RATIO,
         ENVELOPE_DOWNSAMPLE_RATIO,
         DOWNSAMPLE_CUTOFF_FREQUENCY,
+        AUTOMATIC_GAIN_CONTROL_TARGET_LEVEL,
         PEAK_DETECTION_ABSOLUTE_MIN_THRESHOLD,
         PEAK_DETECTION_THRESHOLD_REL,
         PEAK_DETECTION_MIN_PEAK_DISTANCE,
@@ -415,6 +429,8 @@ void AudioDisplay::onApplyButtonClicked() {
     int newEnvelopeDownsampleRatio = 1 << envelopeDownsampleRateSlider_->value();
     double newDownsampleCutoffFrequency = 0.1 * downsampleCutoffFrequencySlider_->value();
 
+    double newAutomaticGainControlTargetLevel = automaticGainControlTargetLevelTextField_->text().toDouble();
+
     double newPeakDetectionAbsoluteMinThreshold = peakDetectionAbsoluteMinThresholdTextField_->text().toDouble();
     double newPeakDetectionThresholdRel = peakDetectionThresholdRelTextField_->text().toDouble();
     double newPeakDetectionMinPeakDistance = peakDetectionMinPeakDistanceTextField_->text().toDouble();
@@ -434,6 +450,7 @@ void AudioDisplay::onApplyButtonClicked() {
         SIGNAL_DOWNSAMPLE_RATIO,
         newEnvelopeDownsampleRatio,
         newDownsampleCutoffFrequency,
+        newAutomaticGainControlTargetLevel,
         newPeakDetectionAbsoluteMinThreshold,
         newPeakDetectionThresholdRel,
         newPeakDetectionMinPeakDistance,
