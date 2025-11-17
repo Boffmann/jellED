@@ -58,10 +58,13 @@ private:
     QLabel* downsampleCutoffFrequencyValueLabel_;
     QSlider* downsampleCutoffFrequencySlider_;
 
+    QLineEdit* automaticGainControlTargetLevelTextField_;
+
     QLineEdit* peakDetectionAbsoluteMinThresholdTextField_;
     QLineEdit* peakDetectionThresholdRelTextField_;
     QLineEdit* peakDetectionMinPeakDistanceTextField_;
     QLineEdit* peakDetectionMaxBpmTextField_;
+
 
     BeatIndicatorWidget* beatIndicatorWidget_;
     

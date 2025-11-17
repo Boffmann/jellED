@@ -8,6 +8,7 @@ BeatDetectionProcessor::BeatDetectionProcessor(AudioDisplay* display,
     int signalDownsampleRatio,
     int envelopeDownsampleRatio,
     double downsampleCutoffFrequency,
+    double automaticGainControlTargetLevel,
     double peakDetectionAbsoluteMinThreshold,
     double peakDetectionThresholdRel,
     double peakDetectionMinPeakDistance,
@@ -19,6 +20,7 @@ BeatDetectionProcessor::BeatDetectionProcessor(AudioDisplay* display,
             , shouldStop_(false)
             , signalDownsampleRatio_(signalDownsampleRatio)
             , downsampler_(signalDownsampleRatio_, usbMicro_->getSampleRate(), downsampleCutoffFrequency)
+            , automaticGainControl_(usbMicro_->getSampleRate() / signalDownsampleRatio, automaticGainControlTargetLevel)
             , bandpassFilter_()
             , envelopeDetector_(usbMicro_->getSampleRate() / signalDownsampleRatio, envelopeDownsampleRatio)
             , peakDetector_(peakDetectionAbsoluteMinThreshold, peakDetectionThresholdRel, peakDetectionMinPeakDistance, peakDetectionMaxBpm, usbMicro_->getSampleRate() / signalDownsampleRatio)
@@ -26,6 +28,7 @@ BeatDetectionProcessor::BeatDetectionProcessor(AudioDisplay* display,
             std::cout << "BeatDetectionProcessor constructed with signalDownsampleRatio: " << signalDownsampleRatio
             << ", envelopeDownsampleRatio: " << envelopeDownsampleRatio
             << ", downsampleCutoffFrequency: " << downsampleCutoffFrequency
+            << ", automaticGainControlTargetLevel: " << automaticGainControlTargetLevel
             << ", peakDetectionAbsoluteMinThreshold: " << peakDetectionAbsoluteMinThreshold
             << ", peakDetectionThresholdRel: " << peakDetectionThresholdRel
             << ", peakDetectionMinPeakDistance: " << peakDetectionMinPeakDistance
@@ -35,7 +38,6 @@ BeatDetectionProcessor::BeatDetectionProcessor(AudioDisplay* display,
 
 void BeatDetectionProcessor::run() {
     jellED::AudioBuffer buffer;
-    const double GAIN = 2.0;
 
     std::cout << "BeatDetectionProcessor running" << std::endl;
     
@@ -46,9 +48,9 @@ void BeatDetectionProcessor::run() {
             for (size_t i = 0; i < downsampledBuffer.num_samples; i++) {
                 totalSamplesReceived_++;
                 double sample = downsampledBuffer.buffer[i];
-                double amplifiedSample = sample * GAIN;
+                double amplifiedSample = automaticGainControl_.apply(sample);
                 display_->addOriginalSample(amplifiedSample);
-                double filteredSample = bandpassFilter_.apply(amplifiedSample);// * GAIN;
+                double filteredSample = bandpassFilter_.apply(amplifiedSample);
                 display_->addLowpassFilteredSample(filteredSample);
                 double envelopeSample = envelopeDetector_.apply(filteredSample);
                 if (envelopeSample != -1.0) {
