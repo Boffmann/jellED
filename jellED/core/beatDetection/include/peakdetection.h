@@ -13,7 +13,6 @@ private:
     double absolute_min_threshold;
     double threshold_rel;
     double min_peak_distance;
-    uint32_t sample_rate;
     double max_bpm;
     double threshold_baseline; 
 

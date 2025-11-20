@@ -51,20 +51,24 @@ def read_from_serial(should_store):
 
 def generate_butterworth():
     order = 4
-    lowcut = 50
-    highcut = 200
+    lowcut = 2000
+    highcut = 5000
     framerate = 12000
     sos = signal.butter(order, [lowcut, highcut],
                         'band', fs=framerate, output='sos')
     print(f"// Butterworth coefficients: {lowcut} Hz - {highcut} Hz, order: {order}, framerate: {framerate}"
           .format(lowcut=lowcut, highcut=highcut, order=order, framerate=framerate))
-    for o in range(0, order):
-        for i in range(0, 3):
-            print("this->numerator[{order}][{place}] = {result};".format(
-                order=o, place=i % 3, result=sos[o][i]))
-        for i in range(3, 6):
-            print("this->denominator[{order}][{place}] = {result};".format(
-                order=o, place=i % 3, result=sos[o][i]))
+
+    print(".numerator = {")
+    for o in range(0, order-1):
+        print("\t{{{first},{second},{third}}},".format(first=sos[o][0], second=sos[o][1], third=sos[o][2]))
+    print("\t{{{first},{second},{third}}}".format(first=sos[order-1][0], second=sos[order-1][1], third=sos[order-1][2]))
+    print("},")
+    print(".denominator = {")
+    for o in range(0, order-1):
+        print("\t{{{first},{second},{third}}},".format(first=sos[o][3], second=sos[o][4], third=sos[o][5]))
+    print("\t{{{first},{second},{third}}}".format(first=sos[order-1][3], second=sos[order-1][4], third=sos[order-1][5]))
+    print("}")
 
 
 def generate_test_expectations():

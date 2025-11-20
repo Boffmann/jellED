@@ -45,12 +45,23 @@ class AudioDisplay : public QMainWindow {
     Q_OBJECT
 
 private:
+    int updateRotation_;
+
     QPushButton* clearButton_;
     QPushButton* startStopButton_;
     
-    WaveformWidget* originalSamplesWaveformWidget_;
-    WaveformWidget* lowpassFilteredWaveformWidget_;
-    EnvelopePeakWidget* envelopePeakWaveformWidget_;
+    WaveformWidget* originalSamplesWaveformWidgetLow_;
+    WaveformWidget* lowpassFilteredWaveformWidgetLow_;
+    EnvelopePeakWidget* envelopePeakWaveformWidgetLow_;
+
+    WaveformWidget* originalSamplesWaveformWidgetMid_;
+    WaveformWidget* lowpassFilteredWaveformWidgetMid_;
+    EnvelopePeakWidget* envelopePeakWaveformWidgetMid_;
+
+    WaveformWidget* originalSamplesWaveformWidgetHigh_;
+    WaveformWidget* lowpassFilteredWaveformWidgetHigh_;
+    EnvelopePeakWidget* envelopePeakWaveformWidgetHigh_;
+
     WaveformProcessor* processorThread_;
     BeatDetectionProcessor* beatDetectionProcessor_;
     QLabel* infoLabel_;
@@ -67,7 +78,6 @@ private:
     QLineEdit* peakDetectionThresholdRelTextField_;
     QLineEdit* peakDetectionMinPeakDistanceTextField_;
     QLineEdit* peakDetectionMaxBpmTextField_;
-
 
     BeatIndicatorWidget* beatIndicatorWidget_;
     
@@ -101,9 +111,15 @@ public:
     void startBeatDetectionProcessor();
 
     void addOriginalSample(const double sample);
-    void addLowpassFilteredSample(const double sample);
-    void addEnvelopeFilteredSample(const double sample);
-    void addPeak();
+    void addLowpassFilteredSampleLow(const double sample);
+    void addEnvelopeFilteredSampleLow(const double sample);
+    void addLowpassFilteredSampleMid(const double sample);
+    void addEnvelopeFilteredSampleMid(const double sample);
+    void addLowpassFilteredSampleHigh(const double sample);
+    void addEnvelopeFilteredSampleHigh(const double sample);
+    void addPeakLow();
+    void addPeakMid();
+    void addPeakHigh();
 };
 
 #endif

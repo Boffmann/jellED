@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QThread>
+#include <QPainter>
 #include <vector>
 #include <mutex>
 
@@ -16,15 +17,27 @@ private:
     QColor backgroundColor_;
     QColor waveformColor_;
     QColor gridColor_;
-    std::unique_ptr<jellED::Ringbuffer> ringSampleBuffer_;
+    std::unique_ptr<jellED::Ringbuffer> windowedSampleRingBuffer_;
+
+    int bufferWriteIndex_;
+
+    QPen waveformPen_;
+    QPen gridPen_;
+    QPen centerLinePen_;
+
+    double currentWindowMin_;
+    double currentWindowMax_;
+
+    std::vector<WaveformPoint> windowedSampleData_;
     std::mutex dataMutex_;
     void drawGrid(QPainter& painter);
 
 protected:
     int sampleRate_;
     const int displaySeconds_;
+    int numSamplesInWindow_;
+    int numSamplesAdded_;
     virtual void drawWaveform(QPainter& painter);
-    WaveformPoint scaleSampleData(const uint32_t index, const std::unique_ptr<jellED::Ringbuffer>& ringBuffer) const;
     void paintEvent(QPaintEvent* event) override;
 
 public:
