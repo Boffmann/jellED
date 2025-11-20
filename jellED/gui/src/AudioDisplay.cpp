@@ -34,7 +34,6 @@ protected:
     void paintEvent(QPaintEvent *event) override {
         Q_UNUSED(event);
         QPainter painter(this);
-        painter.setRenderHint(QPainter::Antialiasing);
 
         // Rotate coordinate system
         painter.rotate(-90);
@@ -83,7 +82,6 @@ protected:
 
     void paintEvent(QPaintEvent * /*ev*/) override {
         QPainter p(this);
-        p.setRenderHint(QPainter::Antialiasing, true);
 
         qreal penW = 3.0;
         QRectF r = rect().adjusted(penW/2, penW/2, -penW/2, -penW/2);
@@ -110,6 +108,7 @@ private:
 
 AudioDisplay::AudioDisplay(std::string microphone_device_id, int displaySeconds, int refreshRate, QWidget* parent)
     : QMainWindow(parent)
+    , updateRotation_(0)
     , sampleRate_(0)
     , usbMicro_(new jellED::UsbMicro(microphone_device_id, SoundIoBackendCoreAudio))
     , displaySeconds_(displaySeconds)
@@ -330,33 +329,111 @@ QWidget* AudioDisplay::setupPeakDetectionControls() {
 
 QWidget* AudioDisplay::setupWaveformDisplays() {
     QWidget* waveboxesWidget = new QWidget(this);
-    QVBoxLayout* waveformLayout = new QVBoxLayout(waveboxesWidget);
+    QHBoxLayout* waveformLayoutsLayout = new QHBoxLayout(waveboxesWidget);
+    QVBoxLayout* waveformLayoutLow = new QVBoxLayout();
 
-    QHBoxLayout* firstWaveformLayout = new QHBoxLayout();
-    VerticalLabel* originalSamplesLabel = new VerticalLabel("Original Samples");
-    originalSamplesLabel->setFixedWidth(30);
-    originalSamplesWaveformWidget_ = new WaveformWidget(sampleRate_, displaySeconds_, this);
-    firstWaveformLayout->addWidget(originalSamplesLabel);
-    firstWaveformLayout->addWidget(originalSamplesWaveformWidget_, 1);
+    // Low frequency waveform layout
+    QLabel* lowFrequencyLabel = new QLabel("Low Frequency 50 Hz - 150 Hz");
+    lowFrequencyLabel->setAlignment(Qt::AlignCenter);
+    lowFrequencyLabel->setFixedHeight(30);
+    lowFrequencyLabel->setStyleSheet("background-color: lightgray; border: 1px solid gray;");
 
-    QHBoxLayout* secondWaveformLayout = new QHBoxLayout();
+    QHBoxLayout* firstWaveformLayoutLow = new QHBoxLayout();
+    VerticalLabel* originalSamplesLabelLow = new VerticalLabel("Original Samples");
+    originalSamplesLabelLow->setFixedWidth(30);
+    originalSamplesWaveformWidgetLow_ = new WaveformWidget(sampleRate_, displaySeconds_, this);
+    firstWaveformLayoutLow->addWidget(originalSamplesLabelLow);
+    firstWaveformLayoutLow->addWidget(originalSamplesWaveformWidgetLow_, 1);
+
+    QHBoxLayout* secondWaveformLayoutLow = new QHBoxLayout();
     VerticalLabel* lowpassFilteredSamplesLabel = new VerticalLabel("Lowpass Filtered Samples");
     lowpassFilteredSamplesLabel->setFixedWidth(30);
-    lowpassFilteredWaveformWidget_ = new WaveformWidget(sampleRate_, displaySeconds_, this);
-    secondWaveformLayout->addWidget(lowpassFilteredSamplesLabel);
-    secondWaveformLayout->addWidget(lowpassFilteredWaveformWidget_, 1);
+    lowpassFilteredWaveformWidgetLow_ = new WaveformWidget(sampleRate_, displaySeconds_, this);
+    secondWaveformLayoutLow->addWidget(lowpassFilteredSamplesLabel);
+    secondWaveformLayoutLow->addWidget(lowpassFilteredWaveformWidgetLow_, 1);
 
-    QHBoxLayout* thirdWaveformLayout = new QHBoxLayout();
+    QHBoxLayout* thirdWaveformLayoutLow = new QHBoxLayout();
     VerticalLabel* envelopeFilteredSamplesLabel = new VerticalLabel("Envelope Filtered Samples");
     envelopeFilteredSamplesLabel->setFixedWidth(30);
-    envelopePeakWaveformWidget_ = new EnvelopePeakWidget(sampleRate_, displaySeconds_, this);
-    thirdWaveformLayout->addWidget(envelopeFilteredSamplesLabel);
-    thirdWaveformLayout->addWidget(envelopePeakWaveformWidget_, 1);
+    envelopePeakWaveformWidgetLow_ = new EnvelopePeakWidget(sampleRate_, displaySeconds_, this);
+    thirdWaveformLayoutLow->addWidget(envelopeFilteredSamplesLabel);
+    thirdWaveformLayoutLow->addWidget(envelopePeakWaveformWidgetLow_, 1);
 
-    waveformLayout->addLayout(firstWaveformLayout);
-    waveformLayout->addLayout(secondWaveformLayout);
-    waveformLayout->addLayout(thirdWaveformLayout);
-    
+    waveformLayoutLow->addWidget(lowFrequencyLabel);
+    waveformLayoutLow->addLayout(firstWaveformLayoutLow);
+    waveformLayoutLow->addLayout(secondWaveformLayoutLow);
+    waveformLayoutLow->addLayout(thirdWaveformLayoutLow);
+
+    // Mid frequency waveform layout
+    QLabel* midFrequencyLabel = new QLabel("Mid Frequency 150 Hz - 500 Hz");
+    midFrequencyLabel->setAlignment(Qt::AlignCenter);
+    midFrequencyLabel->setFixedHeight(30);
+    midFrequencyLabel->setStyleSheet("background-color: lightgray; border: 1px solid gray;");
+
+    QVBoxLayout* waveformLayoutMid = new QVBoxLayout();
+    QHBoxLayout* firstWaveformLayoutMid = new QHBoxLayout();
+    VerticalLabel* originalSamplesLabelMid = new VerticalLabel("Original Samples");
+    originalSamplesLabelMid->setFixedWidth(30);
+    originalSamplesWaveformWidgetMid_ = new WaveformWidget(sampleRate_, displaySeconds_, this);
+    firstWaveformLayoutMid->addWidget(originalSamplesLabelMid);
+    firstWaveformLayoutMid->addWidget(originalSamplesWaveformWidgetMid_, 1);
+
+    QHBoxLayout* secondWaveformLayoutMid = new QHBoxLayout();
+    VerticalLabel* lowpassFilteredSamplesLabelMid = new VerticalLabel("Lowpass Filtered Samples");
+    lowpassFilteredSamplesLabelMid->setFixedWidth(30);
+    lowpassFilteredWaveformWidgetMid_ = new WaveformWidget(sampleRate_, displaySeconds_, this);
+    secondWaveformLayoutMid->addWidget(lowpassFilteredSamplesLabelMid);
+    secondWaveformLayoutMid->addWidget(lowpassFilteredWaveformWidgetMid_, 1);
+
+    QHBoxLayout* thirdWaveformLayoutMid = new QHBoxLayout();
+    VerticalLabel* envelopeFilteredSamplesLabelMid = new VerticalLabel("Envelope Filtered Samples");
+    envelopeFilteredSamplesLabelMid->setFixedWidth(30);
+    envelopePeakWaveformWidgetMid_ = new EnvelopePeakWidget(sampleRate_, displaySeconds_, this);
+    thirdWaveformLayoutMid->addWidget(envelopeFilteredSamplesLabelMid);
+    thirdWaveformLayoutMid->addWidget(envelopePeakWaveformWidgetMid_, 1);
+
+    waveformLayoutMid->addWidget(midFrequencyLabel);
+    waveformLayoutMid->addLayout(firstWaveformLayoutMid);
+    waveformLayoutMid->addLayout(secondWaveformLayoutMid);
+    waveformLayoutMid->addLayout(thirdWaveformLayoutMid);
+
+    // High frequency waveform layout
+    QLabel* highFrequencyLabel = new QLabel("High Frequency 2000 Hz - 5000 Hz");
+    highFrequencyLabel->setAlignment(Qt::AlignCenter);
+    highFrequencyLabel->setFixedHeight(30);
+    highFrequencyLabel->setStyleSheet("background-color: lightgray; border: 1px solid gray;");
+
+    QVBoxLayout* waveformLayoutHigh = new QVBoxLayout();
+    QHBoxLayout* firstWaveformLayoutHigh = new QHBoxLayout();
+    VerticalLabel* originalSamplesLabelHigh = new VerticalLabel("Original Samples");
+    originalSamplesLabelHigh->setFixedWidth(30);
+    originalSamplesWaveformWidgetHigh_ = new WaveformWidget(sampleRate_, displaySeconds_, this);
+    firstWaveformLayoutHigh->addWidget(originalSamplesLabelHigh);
+    firstWaveformLayoutHigh->addWidget(originalSamplesWaveformWidgetHigh_, 1);
+
+    QHBoxLayout* secondWaveformLayoutHigh = new QHBoxLayout();
+    VerticalLabel* lowpassFilteredSamplesLabelHigh = new VerticalLabel("Lowpass Filtered Samples");
+    lowpassFilteredSamplesLabelHigh->setFixedWidth(30);
+    lowpassFilteredWaveformWidgetHigh_ = new WaveformWidget(sampleRate_, displaySeconds_, this);
+    secondWaveformLayoutHigh->addWidget(lowpassFilteredSamplesLabelHigh);
+    secondWaveformLayoutHigh->addWidget(lowpassFilteredWaveformWidgetHigh_, 1);
+
+    QHBoxLayout* thirdWaveformLayoutHigh = new QHBoxLayout();
+    VerticalLabel* envelopeFilteredSamplesLabelHigh = new VerticalLabel("Envelope Filtered Samples");
+    envelopeFilteredSamplesLabelHigh->setFixedWidth(30);
+    envelopePeakWaveformWidgetHigh_ = new EnvelopePeakWidget(sampleRate_, displaySeconds_, this);
+    thirdWaveformLayoutHigh->addWidget(envelopeFilteredSamplesLabelHigh);
+    thirdWaveformLayoutHigh->addWidget(envelopePeakWaveformWidgetHigh_, 1);
+
+    waveformLayoutHigh->addWidget(highFrequencyLabel);
+    waveformLayoutHigh->addLayout(firstWaveformLayoutHigh);
+    waveformLayoutHigh->addLayout(secondWaveformLayoutHigh);
+    waveformLayoutHigh->addLayout(thirdWaveformLayoutHigh);
+
+    waveformLayoutsLayout->addLayout(waveformLayoutLow);
+    waveformLayoutsLayout->addLayout(waveformLayoutMid);
+    waveformLayoutsLayout->addLayout(waveformLayoutHigh);
+
     return waveboxesWidget;
 }
 
@@ -387,30 +464,75 @@ void AudioDisplay::startBeatDetectionProcessor() {
 }
 
 void AudioDisplay::addOriginalSample(const double sample) {
-    originalSamplesWaveformWidget_->addSample(sample);
+    originalSamplesWaveformWidgetLow_->addSample(sample);
+    originalSamplesWaveformWidgetMid_->addSample(sample);
+    originalSamplesWaveformWidgetHigh_->addSample(sample);
     totalSamplesReceived_++;
     currentSamplesReceived_++;
     beatIndicatorWidget_->setBeat(false); // Reset beat indicator at every sample
 }
 
-void AudioDisplay::addLowpassFilteredSample(const double sample) {
-    lowpassFilteredWaveformWidget_->addSample(sample);
+void AudioDisplay::addLowpassFilteredSampleLow(const double sample) {
+    lowpassFilteredWaveformWidgetLow_->addSample(sample);
 }
 
-void AudioDisplay::addEnvelopeFilteredSample(const double sample) {
-    envelopePeakWaveformWidget_->addSample(sample);
+void AudioDisplay::addLowpassFilteredSampleMid(const double sample) {
+    lowpassFilteredWaveformWidgetMid_->addSample(sample);
 }
 
-void AudioDisplay::addPeak() {
-    envelopePeakWaveformWidget_->addPeak();
-    beatIndicatorWidget_->setBeat(true);
+void AudioDisplay::addLowpassFilteredSampleHigh(const double sample) {
+    lowpassFilteredWaveformWidgetHigh_->addSample(sample);
+}
+
+void AudioDisplay::addEnvelopeFilteredSampleLow(const double sample) {
+    envelopePeakWaveformWidgetLow_->addSample(sample);
+}
+
+void AudioDisplay::addEnvelopeFilteredSampleMid(const double sample) {
+    envelopePeakWaveformWidgetMid_->addSample(sample);
+}
+
+void AudioDisplay::addEnvelopeFilteredSampleHigh(const double sample) {
+    envelopePeakWaveformWidgetHigh_->addSample(sample);
+}
+
+void AudioDisplay::addPeakLow() {
+    envelopePeakWaveformWidgetLow_->addPeak();
+    // beatIndicatorWidget_->setBeat(true);
+}
+
+void AudioDisplay::addPeakMid() {
+    envelopePeakWaveformWidgetMid_->addPeak();
+    // beatIndicatorWidget_->setBeat(true);
+}
+
+void AudioDisplay::addPeakHigh() {
+    envelopePeakWaveformWidgetHigh_->addPeak();
+    // beatIndicatorWidget_->setBeat(true);
 }
 
 void AudioDisplay::updateDisplay() {
-    originalSamplesWaveformWidget_->updateWidget();
-    lowpassFilteredWaveformWidget_->updateWidget();
-    envelopePeakWaveformWidget_->updateWidget();
     updateStatusBar();  // Safe to update UI here - we're in the GUI thread
+
+    switch (updateRotation_) {
+        case 0:
+            originalSamplesWaveformWidgetLow_->updateWidget();
+            lowpassFilteredWaveformWidgetLow_->updateWidget();
+            envelopePeakWaveformWidgetLow_->updateWidget();
+            break;
+        case 1:
+            originalSamplesWaveformWidgetMid_->updateWidget();
+            lowpassFilteredWaveformWidgetMid_->updateWidget();
+            envelopePeakWaveformWidgetMid_->updateWidget();
+            break;
+        case 2:
+            originalSamplesWaveformWidgetHigh_->updateWidget();
+            lowpassFilteredWaveformWidgetHigh_->updateWidget();
+            envelopePeakWaveformWidgetHigh_->updateWidget();
+            break;
+    }
+    
+    updateRotation_ = (updateRotation_ + 1) % 3;
 }
 
 void AudioDisplay::updateStatusBar() {
@@ -427,9 +549,9 @@ void AudioDisplay::updateStatusBar() {
 }
 
 void AudioDisplay::onClearClicked() {
-    originalSamplesWaveformWidget_->clearSamples();
-    lowpassFilteredWaveformWidget_->clearSamples();
-    envelopePeakWaveformWidget_->clearSamples();
+    originalSamplesWaveformWidgetLow_->clearSamples();
+    lowpassFilteredWaveformWidgetLow_->clearSamples();
+    envelopePeakWaveformWidgetLow_->clearSamples();
     currentSamplesReceived_ = 0;
     updateStatusBar();
 }
@@ -476,9 +598,15 @@ void AudioDisplay::onApplyButtonClicked() {
     double newPeakDetectionMaxBpm = peakDetectionMaxBpmTextField_->text().toDouble();
 
     // Update all waveform widgets with new sample rate
-    originalSamplesWaveformWidget_->clearSamples();
-    lowpassFilteredWaveformWidget_->clearSamples();
-    envelopePeakWaveformWidget_->clearSamples();
+    originalSamplesWaveformWidgetLow_->clearSamples();
+    lowpassFilteredWaveformWidgetLow_->clearSamples();
+    envelopePeakWaveformWidgetLow_->clearSamples();
+    originalSamplesWaveformWidgetMid_->clearSamples();
+    lowpassFilteredWaveformWidgetMid_->clearSamples();
+    envelopePeakWaveformWidgetMid_->clearSamples();
+    originalSamplesWaveformWidgetHigh_->clearSamples();
+    lowpassFilteredWaveformWidgetHigh_->clearSamples();
+    envelopePeakWaveformWidgetHigh_->clearSamples();
     
     // Reset sample counters
     currentSamplesReceived_ = 0;

@@ -43,9 +43,15 @@ private:
     uint32_t totalSamplesReceived_;
     jellED::Downsampler downsampler_;
     jellED::AutomaticGainControl automaticGainControl_;
-    jellED::BandpassFilter bandpassFilter_;
-    jellED::EnvelopeDetector envelopeDetector_;
-    jellED::PeakDetector peakDetector_;
+    jellED::BandpassFilter bandpassFilterLow_;
+    jellED::BandpassFilter bandpassFilterMid_;
+    jellED::BandpassFilter bandpassFilterHigh_;
+    jellED::EnvelopeDetector envelopeDetectorLow_;
+    jellED::EnvelopeDetector envelopeDetectorMid_;
+    jellED::EnvelopeDetector envelopeDetectorHigh_;
+    jellED::PeakDetector peakDetectorLow_;
+    jellED::PeakDetector peakDetectorMid_;
+    jellED::PeakDetector peakDetectorHigh_;
 
     friend class Builder;
 };

@@ -14,7 +14,10 @@ class EnvelopePeakWidget : public WaveformWidget {
 
 private:
     QColor peakColor_;
-    std::unique_ptr<jellED::Ringbuffer> ringPeakBuffer_;
+    std::unique_ptr<jellED::Ringbuffer> windowedPeakRingBuffer_;
+    std::vector<WaveformPoint> windowedPeakData_;
+    QPen peakPen_;
+    int peakWriteIndex_;
     std::mutex peakDataMutex_;
 
 protected:
