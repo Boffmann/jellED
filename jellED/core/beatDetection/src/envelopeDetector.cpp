@@ -25,9 +25,6 @@ double EnvelopeDetector::apply(const double sample) {
     double sample_abs = std::abs(sample);
 
     // 2. Smooth with single pole lowpass filter
-    // double alpha = std::exp(-2.0 * M_PI * ENVELOPE_CUTOFF / (sample_rate));
-    // this->current_envelope = alpha * current_envelope + (1.0 - alpha) * sample_abs;
-
     if (sample_abs > current_envelope) {
         current_envelope += attack_coeff * (sample_abs - current_envelope);
     } else {
@@ -39,8 +36,6 @@ double EnvelopeDetector::apply(const double sample) {
     if (sample_counter % downsample_factor != 0) {
         return -1.0;
     }
-
-    // return this->current_envelope;
 
     // 4. Novelty (positive derivative)
     double novelty = std::max(0.0, this->current_envelope - this->previous_envelope);

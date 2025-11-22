@@ -19,7 +19,7 @@ public:
     Ringbuffer(uint32_t max_len);
     ~Ringbuffer();
     void fill(double value);
-    double get(uint32_t index);
+    double get(uint32_t index) const;
     void append(double entry);
     void override_head_value(double value);
     void clear();

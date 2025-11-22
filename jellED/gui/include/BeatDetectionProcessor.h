@@ -10,9 +10,97 @@
 #include "include/peakdetection.h"
 #include "include/automaticGainControl.h"
 #include "include/downsampler.h"
+#include "MultibandFusion.h"
 #include "sound/raspi/usbMicro.h"
 
 class AudioDisplay;
+
+struct BandConfig {
+    const jellED::BandpassFilterCoefficients& coeffs;
+    double noveltyGain;
+    double absoluteMin;
+    double relativeThreshold;
+    double weight;
+};
+
+struct BandState {
+    jellED::BandpassFilter filter;
+    jellED::EnvelopeDetector envelope;
+    jellED::PeakDetector peakDetector;
+    double weight;
+    double rollingMedian;
+    std::deque<double> envelopeWindow;
+    bool statsReady;
+
+    BandState(const BandConfig& cfg,
+              uint32_t sampleRate,
+              uint32_t envelopeDownsampleRatio,
+              double maxBpm)
+        : filter(cfg.coeffs),
+          envelope(sampleRate, envelopeDownsampleRatio, cfg.noveltyGain),
+          peakDetector(cfg.absoluteMin, cfg.relativeThreshold, maxBpm,
+                       sampleRate),
+          weight(cfg.weight),
+          rollingMedian(0.0),
+          statsReady(false) {}
+
+    double applyBandpassFilter(double sample) {
+        return filter.apply(sample);
+    }
+
+    double applyEnvelopeFilter(double sample) {
+        double finalEnvelopeSample = envelope.apply(sample);
+        if (finalEnvelopeSample != -1.0) {
+            updateEnvelopeStats(finalEnvelopeSample);
+        }
+        return finalEnvelopeSample;
+    }
+
+    double applyPeakDetector(double sample, double currentTime) {
+        bool isPeak = peakDetector.is_peak(sample, currentTime);
+        if (isPeak) {
+            double normalized = this->normalize(sample);
+            return normalized * this->weight;
+        }
+        return 0.0;
+    }
+
+private:
+    void updateEnvelopeStats(double envelopeSample) {
+        // Only collect statistics when there's actual signal (not just noise)
+        // This prevents using the silent period to calculate the median
+        const double SIGNAL_THRESHOLD = 0.005;  // Only collect stats when envelope > 5mV equivalent
+        
+        if (envelopeSample > SIGNAL_THRESHOLD) {
+            envelopeWindow.push_back(envelopeSample);
+            if (envelopeWindow.size() > 128) envelopeWindow.pop_front();
+            
+            // Compute median from all recent envelope values
+            // Require 128 samples of actual signal (not silence)
+            if (envelopeWindow.size() >= 128) {
+                std::vector<double> tmp(envelopeWindow.begin(), envelopeWindow.end());
+                std::nth_element(tmp.begin(), tmp.begin() + tmp.size() / 2, tmp.end());
+                rollingMedian = tmp[tmp.size() / 2];
+                
+                // Only mark as ready if median is reasonable (not noise)
+                if (rollingMedian > SIGNAL_THRESHOLD * 0.5) {
+                    statsReady = true;
+                }
+            }
+        }
+    }
+
+    // Normalize peak value by envelope median, with capping to prevent extremes
+    double normalize(double peakValue) const {
+        if (!statsReady || rollingMedian < 1e-6) {
+            return 0.0;  // Not enough data yet - return 0 to prevent false positives
+        }
+        double normalized = peakValue / rollingMedian;
+        // Cap normalized value to prevent extreme scores
+        // Use 3x instead of 5x for tighter control
+        return std::min(normalized, 3.0);
+    }
+};
 
 class BeatDetectionProcessor : public QThread {
     Q_OBJECT
@@ -43,15 +131,16 @@ private:
     uint32_t totalSamplesReceived_;
     jellED::Downsampler downsampler_;
     jellED::AutomaticGainControl automaticGainControl_;
-    jellED::BandpassFilter bandpassFilterLow_;
-    jellED::BandpassFilter bandpassFilterMid_;
-    jellED::BandpassFilter bandpassFilterHigh_;
-    jellED::EnvelopeDetector envelopeDetectorLow_;
-    jellED::EnvelopeDetector envelopeDetectorMid_;
-    jellED::EnvelopeDetector envelopeDetectorHigh_;
-    jellED::PeakDetector peakDetectorLow_;
-    jellED::PeakDetector peakDetectorMid_;
-    jellED::PeakDetector peakDetectorHigh_;
+
+    BandConfig bandConfigLow_;
+    BandConfig bandConfigMid_;
+    BandConfig bandConfigHigh_;
+
+    BandState bandStateLow_;
+    BandState bandStateMid_;
+    BandState bandStateHigh_;
+
+    MultiBandFusion multibandFusion_;
 
     friend class Builder;
 };

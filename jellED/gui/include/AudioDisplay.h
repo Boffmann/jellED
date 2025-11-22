@@ -87,6 +87,7 @@ private:
     const int refreshRate_;
     uint64_t currentSamplesReceived_;
     uint64_t totalSamplesReceived_;
+    double currentDetectedBpm_;
 
     void setupUi();
     QWidget* setupInfoPanel();
@@ -120,6 +121,8 @@ public:
     void addPeakLow();
     void addPeakMid();
     void addPeakHigh();
+    void addCombinedPeak();
+    void addCurrentDetectedBpm(const double bpm);
 };
 
 #endif

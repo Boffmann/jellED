@@ -12,7 +12,6 @@ private:
     // Configuration parameters
     double absolute_min_threshold;
     double threshold_rel;
-    double min_peak_distance;
     double max_bpm;
     double threshold_baseline; 
 
@@ -32,8 +31,7 @@ private:
     double update_envelope(double sample);
 
 public:
-    PeakDetector(double absolute_min_threshold, double threshold_rel, 
-                 double min_peak_distance, double max_bpm, uint32_t sample_rate);
+    PeakDetector(double absolute_min_threshold, double threshold_rel, double max_bpm, uint32_t sample_rate);
     
     bool is_peak(double sample, double current_time);
 };

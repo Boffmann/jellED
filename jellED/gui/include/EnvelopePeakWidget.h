@@ -22,6 +22,7 @@ private:
 
 protected:
     void paintEvent(QPaintEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
     void drawWaveform(QPainter& painter) override;
 
 public:

@@ -74,9 +74,28 @@ void WaveformWidget::paintEvent(QPaintEvent* event) {
     
     // Draw background
     painter.fillRect(rect(), backgroundColor_);
-    // drawGrid(painter);
+    drawGrid(painter);
 
     drawWaveform(painter);
+}
+
+void WaveformWidget::resizeEvent(QResizeEvent* event) {
+    std::lock_guard<std::mutex> lock(dataMutex_);
+    
+    numSamplesInWindow_ = static_cast<double>(sampleRate_ * displaySeconds_) / width();
+    windowedSampleRingBuffer_ = std::make_unique<jellED::Ringbuffer>(numSamplesInWindow_);
+    windowedSampleRingBuffer_->fill(0.0);
+    
+    // Resize the data vector to match new width
+    windowedSampleData_.resize(width(), WaveformPoint(0.0f, 0.0f));
+    
+    // Reset state variables
+    bufferWriteIndex_ = 0;
+    numSamplesAdded_ = 0;
+    currentWindowMin_ = 0.0;
+    currentWindowMax_ = 0.0;
+    
+    QWidget::resizeEvent(event);
 }
 
 void WaveformWidget::drawWaveform(QPainter& painter) {
@@ -111,9 +130,6 @@ void WaveformWidget::drawWaveform(QPainter& painter) {
         float yMax = centerY - (minVal * scale);
 
         lines.append(QLineF(i, yMin, i, yMax));
-        
-        // Draw vertical line from min to max
-        // painter.drawLine(QPointF(i, yMin), QPointF(i, yMax));
     }
     painter.drawLines(lines);
 }

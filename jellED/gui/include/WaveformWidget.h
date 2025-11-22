@@ -39,6 +39,7 @@ protected:
     int numSamplesAdded_;
     virtual void drawWaveform(QPainter& painter);
     void paintEvent(QPaintEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 
 public:
     WaveformWidget(int sampleRate, int displaySeconds, QWidget* parent = nullptr);

@@ -47,7 +47,7 @@ void Ringbuffer::fill(double value) {
     }
 }
 
-double Ringbuffer::get(uint32_t index) {
+double Ringbuffer::get(uint32_t index) const {
     return this->buffer[get_position(index)];
 }
 
