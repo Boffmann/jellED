@@ -48,7 +48,6 @@ double AutomaticGainControl::apply(double sample) {
         peak_limiter_gain = std::min(1.0, peak_limiter_gain * 1.001);
     }
     
-    
     // STAGE 2: Section-level adaptation (every 2 seconds)
     section_rms = section_alpha * sample_abs + (1.0 - section_alpha) * section_rms;
     section_counter++;
@@ -80,7 +79,6 @@ double AutomaticGainControl::apply(double sample) {
         // This is a beat - boost it slightly to maintain punch
         beat_preservation = 1.2;
     }
-    
     
     // APPLY ALL STAGES
     return sample * section_gain * peak_limiter_gain * beat_preservation;

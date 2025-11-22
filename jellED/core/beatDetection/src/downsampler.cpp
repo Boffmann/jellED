@@ -29,7 +29,6 @@ void Downsampler::downsample(const AudioBuffer& in, AudioBuffer& out) {
         }
     }
     out.num_samples = out_index;
-    // out.bytes_read = samples_to_read * bytes_per_sample;
     out.samplingRate = this->sample_rate_out;
   
 }

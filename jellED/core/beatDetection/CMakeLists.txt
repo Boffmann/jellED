@@ -21,6 +21,7 @@ set(sources
   ${source_path}/downsampler.cpp
   ${source_path}/beatdetection.cpp
   ${source_path}/automaticGainControl.cpp
+  ${source_path}/tempoTracker.cpp
 )
 
 add_library(${target} ${sources})

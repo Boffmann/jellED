@@ -7,9 +7,9 @@ namespace jellED {
 
 class Downsampler {
 private:
-    int downsample_factor;      // decimation factor (integer)
-    double sample_rate_out;   // output sample rate = fs_in / factor
-    double alpha;    // smoothing parameter for 1-pole anti-alias
+    int downsample_factor;
+    double sample_rate_out;
+    double alpha;
     double z = 0.0;
 public:
     Downsampler(int downsample_factor, double sample_rate, double fc_cut_frac);

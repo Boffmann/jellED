@@ -16,10 +16,9 @@ constexpr double FALLING_THRESHOLD_SCALE = 0.85;
 namespace jellED {
 
 PeakDetector::PeakDetector(double absolute_min_threshold, double threshold_rel, 
-                           double min_peak_distance, double max_bpm, uint32_t sample_rate)
+                             double max_bpm, uint32_t sample_rate)
     : absolute_min_threshold(absolute_min_threshold),
       threshold_rel(threshold_rel),
-      min_peak_distance(min_peak_distance),
       max_bpm(max_bpm),
       threshold_baseline(absolute_min_threshold),
       envelope(absolute_min_threshold),
@@ -30,7 +29,7 @@ PeakDetector::PeakDetector(double absolute_min_threshold, double threshold_rel,
       threshold_relax_coeff(0.0),
       prev_env(0.0),
       is_rising(false),
-      last_peak_time(-min_peak_distance)
+      last_peak_time(0.0)
 {
     const double sr = static_cast<double>(sample_rate);
     auto compute_coeff = [sr](double time_constant) {
@@ -81,8 +80,7 @@ bool PeakDetector::is_peak(double envelope_sample, double current_time) {
         } else if (envelope_sample < prev_env && is_rising) {
             // Local maximum - check time-based constraints
             double min_beat_interval = 60.0 / max_bpm;  // Convert BPM to seconds
-            double effective_min_interval = std::max(min_peak_distance, min_beat_interval);
-            if (current_time - last_peak_time >= effective_min_interval) {
+            if (current_time - last_peak_time >= min_beat_interval) {
                 isPeak = true;
                 last_peak_time = current_time;
                 dynamic_threshold_rel = threshold_rel;

@@ -7,16 +7,13 @@ namespace jellED {
 
     class AutomaticGainControl {
         private:
-            // Stage 1: Fast peak limiter (prevents clipping on drops)
             double peak_limiter_gain;
             double peak_envelope;
             
-            // Stage 2: Section-adaptive gain (tracks song energy)
             double section_gain;
             double section_rms;
             uint32_t section_counter;
             
-            // Stage 3: Beat preservation (very fast local normalization)
             double local_peak;
             
             uint32_t sample_rate;
@@ -33,7 +30,6 @@ namespace jellED {
             
             double apply(double sample);
             
-            // Diagnostics
             double getSectionGain() const;
             double getPeakLimiterGain() const;
             double getCurrentRMS() const;

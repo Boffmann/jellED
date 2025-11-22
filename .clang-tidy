@@ -1,0 +1,18 @@
+---
+Checks: >
+  bugprone-*,
+  performance-*,
+  readability-*,
+  cppcoreguidelines-*,
+  -readability-magic-numbers,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -readability-identifier-length
+
+WarningsAsErrors: ''
+
+HeaderFilterRegex: '.*/jellED/.*'
+
+CheckOptions:
+  - key: readability-function-cognitive-complexity.Threshold
+    value: 25
+

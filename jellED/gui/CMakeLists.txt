@@ -3,13 +3,19 @@ project(jellEDOszilloscope)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Enable automatic MOC (Meta-Object Compiler) for Qt
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# add_compile_options(-Wall -Wextra -pedantic -Werror)
+
+# Static analysis: Run clang-tidy manually with:
+#   clang-tidy -p build src/*.cpp ../core/beatDetection/src/*.cpp
+# Config is in .clang-tidy at project root
+
+add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 # Find Qt5 packages
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
@@ -36,12 +42,14 @@ set(SOURCES
     src/BeatDetectionProcessor.cpp
     src/WaveformWidget.cpp
     src/EnvelopePeakWidget.cpp
+    src/MultibandFusion.cpp
     ../core/beatDetection/src/bandpassFilter.cpp
     ../core/beatDetection/src/automaticGainControl.cpp
     ../core/beatDetection/src/downsampler.cpp
     ../core/beatDetection/src/envelopeDetector.cpp
     ../core/beatDetection/src/ringbuffer.cpp
     ../core/beatDetection/src/peakdetection.cpp
+    ../core/beatDetection/src/tempoTracker.cpp
 )
 
 # Header files
@@ -50,6 +58,7 @@ set(HEADERS
     include/WaveformWidget.h
     include/EnvelopePeakWidget.h
     include/BeatDetectionProcessor.h
+    include/MultibandFusion.h
 )
 
 # Create executable

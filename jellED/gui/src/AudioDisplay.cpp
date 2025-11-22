@@ -10,7 +10,7 @@
 #include <iostream>
 
 static constexpr int SIGNAL_DOWNSAMPLE_RATIO = 4;
-static constexpr int ENVELOPE_DOWNSAMPLE_RATIO = 2;
+static constexpr int ENVELOPE_DOWNSAMPLE_RATIO = 1;
 static constexpr double DOWNSAMPLE_CUTOFF_FREQUENCY = 0.5;
 
 static constexpr double DEFAULT_NOVELTY_GAIN = 300.0;
@@ -22,12 +22,14 @@ static constexpr double PEAK_DETECTION_THRESHOLD_REL = 0.1;
 static constexpr double PEAK_DETECTION_MIN_PEAK_DISTANCE = 0.4;
 static constexpr double PEAK_DETECTION_MAX_BPM = 180.0;
 
+static const QString lableStyleSheet = "background-color: darkgray; border: 1px solid black; color: white;";
+
 class VerticalLabel : public QLabel
 {
 public:
     explicit VerticalLabel(const QString &text, QWidget *parent = nullptr)
         : QLabel(text, parent) {
-            setStyleSheet("background-color: lightgray; border: 1px solid gray;");
+            setStyleSheet(lableStyleSheet);
         }
 
 protected:
@@ -56,7 +58,7 @@ public:
         m_color_off(128,128,128),
         m_color_beat(255,0,0)
     {
-        setFixedSize(100,100);
+        setFixedSize(150,150);
         setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         setAutoFillBackground(false);
     }
@@ -114,7 +116,8 @@ AudioDisplay::AudioDisplay(std::string microphone_device_id, int displaySeconds,
     , displaySeconds_(displaySeconds)
     , refreshRate_(refreshRate)
     , currentSamplesReceived_(0)
-    , totalSamplesReceived_(0) {
+    , totalSamplesReceived_(0)
+    , currentDetectedBpm_(0.0) {
     setWindowTitle("jellED - Oscilloscope");
     resize(1200, 1000);
 
@@ -185,7 +188,7 @@ QWidget* AudioDisplay::setupInfoPanel() {
     connect(clearButton_, &QPushButton::clicked, this, &AudioDisplay::onClearClicked);
     infoLayout->addWidget(clearButton_);
     
-    startStopButton_ = new QPushButton("Stop", this);
+    startStopButton_ = new QPushButton("Pause", this);
     startStopButton_->setGeometry(QRect(10, 10, 100, 30));
     connect(startStopButton_, &QPushButton::clicked, this, &AudioDisplay::onStartStopClicked);
     infoLayout->addWidget(startStopButton_);
@@ -336,7 +339,7 @@ QWidget* AudioDisplay::setupWaveformDisplays() {
     QLabel* lowFrequencyLabel = new QLabel("Low Frequency 50 Hz - 150 Hz");
     lowFrequencyLabel->setAlignment(Qt::AlignCenter);
     lowFrequencyLabel->setFixedHeight(30);
-    lowFrequencyLabel->setStyleSheet("background-color: lightgray; border: 1px solid gray;");
+    lowFrequencyLabel->setStyleSheet(lableStyleSheet);
 
     QHBoxLayout* firstWaveformLayoutLow = new QHBoxLayout();
     VerticalLabel* originalSamplesLabelLow = new VerticalLabel("Original Samples");
@@ -368,7 +371,7 @@ QWidget* AudioDisplay::setupWaveformDisplays() {
     QLabel* midFrequencyLabel = new QLabel("Mid Frequency 150 Hz - 500 Hz");
     midFrequencyLabel->setAlignment(Qt::AlignCenter);
     midFrequencyLabel->setFixedHeight(30);
-    midFrequencyLabel->setStyleSheet("background-color: lightgray; border: 1px solid gray;");
+    midFrequencyLabel->setStyleSheet(lableStyleSheet);
 
     QVBoxLayout* waveformLayoutMid = new QVBoxLayout();
     QHBoxLayout* firstWaveformLayoutMid = new QHBoxLayout();
@@ -401,7 +404,7 @@ QWidget* AudioDisplay::setupWaveformDisplays() {
     QLabel* highFrequencyLabel = new QLabel("High Frequency 2000 Hz - 5000 Hz");
     highFrequencyLabel->setAlignment(Qt::AlignCenter);
     highFrequencyLabel->setFixedHeight(30);
-    highFrequencyLabel->setStyleSheet("background-color: lightgray; border: 1px solid gray;");
+    highFrequencyLabel->setStyleSheet(lableStyleSheet);
 
     QVBoxLayout* waveformLayoutHigh = new QVBoxLayout();
     QHBoxLayout* firstWaveformLayoutHigh = new QHBoxLayout();
@@ -511,6 +514,14 @@ void AudioDisplay::addPeakHigh() {
     // beatIndicatorWidget_->setBeat(true);
 }
 
+void AudioDisplay::addCombinedPeak() {
+    beatIndicatorWidget_->setBeat(true);
+}
+
+void AudioDisplay::addCurrentDetectedBpm(const double bpm) {
+    this->currentDetectedBpm_ = bpm;
+}
+
 void AudioDisplay::updateDisplay() {
     updateStatusBar();  // Safe to update UI here - we're in the GUI thread
 
@@ -536,14 +547,19 @@ void AudioDisplay::updateDisplay() {
 }
 
 void AudioDisplay::updateStatusBar() {
+    // Only update every 30 calls (~1 second at 30 FPS)
+    static int updateCounter = 0;
+    if (++updateCounter % 30 != 0) return;
     double currentSeconds = static_cast<double>(currentSamplesReceived_) / sampleRate_;
     double totalSeconds = static_cast<double>(totalSamplesReceived_) / sampleRate_;
+
     
-    QString status = QString("Samples in buffer: %1 (%2 sec) | Total samples received: %3 (%4 sec)")
+    QString status = QString("Samples in buffer: %1 (%2 sec) | Total samples received: %3 (%4 sec) | Current detected BPM: %5")
         .arg(currentSamplesReceived_, 8)
         .arg(currentSeconds, 7, 'f', 2)
         .arg(totalSamplesReceived_, 8)
-        .arg(totalSeconds, 7, 'f', 2);
+        .arg(totalSeconds, 7, 'f', 2)
+        .arg(currentDetectedBpm_, 7, 'f', 2);  // Add width 7, format 'f', precision 2
     
     statusLabel_->setText(status);
 }
@@ -552,16 +568,22 @@ void AudioDisplay::onClearClicked() {
     originalSamplesWaveformWidgetLow_->clearSamples();
     lowpassFilteredWaveformWidgetLow_->clearSamples();
     envelopePeakWaveformWidgetLow_->clearSamples();
+    originalSamplesWaveformWidgetMid_->clearSamples();
+    lowpassFilteredWaveformWidgetMid_->clearSamples();
+    envelopePeakWaveformWidgetMid_->clearSamples();
+    originalSamplesWaveformWidgetHigh_->clearSamples();
+    lowpassFilteredWaveformWidgetHigh_->clearSamples();
+    envelopePeakWaveformWidgetHigh_->clearSamples();
     currentSamplesReceived_ = 0;
     updateStatusBar();
 }
 
 void AudioDisplay::onStartStopClicked() {
-    if (startStopButton_->text() == "Start") {
-        startStopButton_->setText("Stop");
+    if (startStopButton_->text() == "Resume") {
+        startStopButton_->setText("Pause");
         onApplyButtonClicked();
     } else {
-        startStopButton_->setText("Start");
+        startStopButton_->setText("Resume");
         this->beatDetectionProcessor_->stop();
         this->beatDetectionProcessor_->wait();
     }

@@ -18,6 +18,15 @@ void EnvelopePeakWidget::paintEvent(QPaintEvent* event) {
     WaveformWidget::paintEvent(event);
 }
 
+void EnvelopePeakWidget::resizeEvent(QResizeEvent* event) {
+    std::lock_guard<std::mutex> lock(peakDataMutex_);
+    WaveformWidget::resizeEvent(event);
+    windowedPeakRingBuffer_ = std::make_unique<jellED::Ringbuffer>(numSamplesInWindow_);
+    windowedPeakRingBuffer_->fill(0.0);
+    windowedPeakData_.resize(width(), WaveformPoint(0.0f, 0.0f));
+    peakWriteIndex_ = 0;
+}
+
 void EnvelopePeakWidget::addSample(const double sample) {
     int prevSamplesAdded = numSamplesAdded_ + 1;
 
