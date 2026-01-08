@@ -5,13 +5,12 @@
 
 namespace jellED {
 
-EnvelopeDetector::EnvelopeDetector(uint32_t sample_rate, uint8_t downsample_factor, double novelty_gain)
+EnvelopeDetector::EnvelopeDetector(uint32_t sample_rate, uint8_t downsample_factor, double envelope_gain)
 : sample_rate{sample_rate},
   downsample_factor{downsample_factor},
   current_envelope{0.0},
-  previous_envelope{0.0},
   sample_counter{0},
-  novelty_gain{novelty_gain}
+  envelope_gain{envelope_gain}
 {
     this->attack_coeff = 1.0 - std::exp(-1.0 / (ATTACK_TIME * this->sample_rate));
     this->release_coeff = 1.0 - std::exp(-1.0 / (RELEASE_TIME * this->sample_rate));
@@ -24,7 +23,7 @@ double EnvelopeDetector::apply(const double sample) {
     // 1. Rectify the sample
     double sample_abs = std::abs(sample);
 
-    // 2. Smooth with single pole lowpass filter
+    // 2. Smooth with single pole lowpass filter (attack/release envelope follower)
     if (sample_abs > current_envelope) {
         current_envelope += attack_coeff * (sample_abs - current_envelope);
     } else {
@@ -37,11 +36,10 @@ double EnvelopeDetector::apply(const double sample) {
         return -1.0;
     }
 
-    // 4. Novelty (positive derivative)
-    double novelty = std::max(0.0, this->current_envelope - this->previous_envelope);
-    this->previous_envelope = this->current_envelope;
-
-    return novelty * novelty_gain;
+    // 4. Return the envelope value directly (scaled)
+    // Peak detection will find actual peaks in the envelope,
+    // which correspond to peaks in the filtered audio signal
+    return current_envelope * envelope_gain;
 }
 
 } // end namespace jellED

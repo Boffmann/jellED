@@ -1,7 +1,6 @@
 #ifndef __TEMPO_TRACKER_JELLED_H__
 #define __TEMPO_TRACKER_JELLED_H__
 
-#include <deque>
 #include <vector>
 #include <cmath>
 #include <algorithm>

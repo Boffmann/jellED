@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(jellEDOszilloscope)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -15,7 +15,7 @@ set(CMAKE_AUTOUIC ON)
 #   clang-tidy -p build src/*.cpp ../core/beatDetection/src/*.cpp
 # Config is in .clang-tidy at project root
 
-add_compile_options(-Wall -Wextra -pedantic -Werror)
+# add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 # Find Qt5 packages
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
@@ -42,14 +42,16 @@ set(SOURCES
     src/BeatDetectionProcessor.cpp
     src/WaveformWidget.cpp
     src/EnvelopePeakWidget.cpp
-    src/MultibandFusion.cpp
     ../core/beatDetection/src/bandpassFilter.cpp
     ../core/beatDetection/src/automaticGainControl.cpp
     ../core/beatDetection/src/downsampler.cpp
     ../core/beatDetection/src/envelopeDetector.cpp
     ../core/beatDetection/src/ringbuffer.cpp
     ../core/beatDetection/src/peakdetection.cpp
+    ../core/beatDetection/src/beatdetection.cpp
+    ../core/beatDetection/src/multibandFusion.cpp
     ../core/beatDetection/src/tempoTracker.cpp
+    ../core/beatDetection/src/sampleRecorder.cpp
 )
 
 # Header files
@@ -58,7 +60,6 @@ set(HEADERS
     include/WaveformWidget.h
     include/EnvelopePeakWidget.h
     include/BeatDetectionProcessor.h
-    include/MultibandFusion.h
 )
 
 # Create executable

@@ -87,6 +87,11 @@ Make sure to specify the `MC_LIB_PATH` environment variable pointing to the `μC
 export MC_LIB_PATH=<path-to-μC-Libs>
 ```
 
+
+To build the GUI module make sure to have qt5 installed and set the CMake Option
+```
+export CMAKE_PREFIX_PATH="/opt/homebrew/opt/qt@5"
+```
 ### ESP32 Setup
 
 1. **Clone the repository:**

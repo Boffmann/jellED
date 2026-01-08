@@ -11,8 +11,9 @@ private:
     double sample_rate_out;
     double alpha;
     double z = 0.0;
+    uint32_t sampleCounter_;
 public:
-    Downsampler(int downsample_factor, double sample_rate, double fc_cut_frac);
+    Downsampler(double sample_rate, int downsample_factor, double fc_cut_frac);
     void downsample(const AudioBuffer& in, AudioBuffer& out);
 };
 

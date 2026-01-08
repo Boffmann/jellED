@@ -27,6 +27,10 @@ private:
     double prev_env;
     bool is_rising;
     double last_peak_time;
+    
+    // Onset detection: track recent minimum to require valley before peak
+    double recent_min;
+    double recent_min_decay_coeff;
 
     double update_envelope(double sample);
 
