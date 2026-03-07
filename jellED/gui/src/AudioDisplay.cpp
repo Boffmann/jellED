@@ -9,6 +9,9 @@
 #include <QPainterPath>
 #include <iostream>
 
+#include "sound/raspi/usbMicro.h"
+#include "sound/raspi/waveStreamer.h"
+
 static constexpr int SIGNAL_DOWNSAMPLE_RATIO = 4;
 static constexpr int ENVELOPE_DOWNSAMPLE_RATIO = 1;
 static constexpr double DOWNSAMPLE_CUTOFF_FREQUENCY = 0.5;
@@ -20,7 +23,7 @@ static constexpr double AUTOMATIC_GAIN_CONTROL_TARGET_LEVEL = 0.4;
 static constexpr double PEAK_DETECTION_ABSOLUTE_MIN_THRESHOLD = 0.05;
 static constexpr double PEAK_DETECTION_THRESHOLD_REL = 0.1;
 static constexpr double PEAK_DETECTION_MIN_PEAK_DISTANCE = 0.4;
-static constexpr double PEAK_DETECTION_MAX_BPM = 180.0;
+static constexpr double PEAK_DETECTION_MAX_BPM = 250.0;
 
 static const QString lableStyleSheet = "background-color: darkgray; border: 1px solid black; color: white;";
 
@@ -112,7 +115,8 @@ AudioDisplay::AudioDisplay(std::string microphone_device_id, int displaySeconds,
     : QMainWindow(parent)
     , updateRotation_(0)
     , sampleRate_(0)
-    , usbMicro_(new jellED::UsbMicro(microphone_device_id, SoundIoBackendCoreAudio))
+    // , soundInput_(new jellED::UsbMicro(microphone_device_id, SoundIoBackendCoreAudio))
+    , soundInput_(new jellED::WaveStreamer("/Users/tjabben/Documents/techno-drums-loop-120-bpm-1-44100.wav"))
     , displaySeconds_(displaySeconds)
     , refreshRate_(refreshRate)
     , currentSamplesReceived_(0)
@@ -121,11 +125,11 @@ AudioDisplay::AudioDisplay(std::string microphone_device_id, int displaySeconds,
     setWindowTitle("jellED - Oscilloscope");
     resize(1200, 1000);
 
-    usbMicro_->initialize();
+    soundInput_->initialize();
 
     jellED::UsbMicro::print_available_input_devices(SoundIoBackendCoreAudio);
 
-    this->sampleRate_ = usbMicro_->getSampleRate() / SIGNAL_DOWNSAMPLE_RATIO;
+    this->sampleRate_ = soundInput_->getSampleRate() / SIGNAL_DOWNSAMPLE_RATIO;
     std::cout << "Sample rate: " << sampleRate_ << std::endl;
 
     processorThread_ = new WaveformProcessor(sampleRate_, this);
@@ -147,7 +151,7 @@ AudioDisplay::~AudioDisplay() {
     delete beatDetectionProcessor_;
 
     // Clean up USB microphone
-    delete usbMicro_;
+    delete soundInput_;
 }
 
 void AudioDisplay::setupUi() {
@@ -449,20 +453,17 @@ void AudioDisplay::setupStatusBar() {
 }
 
 void AudioDisplay::startBeatDetectionProcessor() {
-    this->beatDetectionProcessor_ = BeatDetectionProcessor::Builder()
-        .setDisplay(this)
-        .setUsbMicro(usbMicro_)
-        .setSignalDownsampleRatio(SIGNAL_DOWNSAMPLE_RATIO)
+    jellED::BeatDetector* beatDetector = jellED::BeatDetector::Builder(soundInput_->getSampleRate() / SIGNAL_DOWNSAMPLE_RATIO)
         .setEnvelopeDownsampleRatio(ENVELOPE_DOWNSAMPLE_RATIO)
         .setNoveltyGain(DEFAULT_NOVELTY_GAIN)
-        .setDownsampleCutoffFrequency(DOWNSAMPLE_CUTOFF_FREQUENCY)
-        .setAutomaticGainControlTargetLevel(AUTOMATIC_GAIN_CONTROL_TARGET_LEVEL)
         .setPeakDetectionAbsoluteMinThreshold(PEAK_DETECTION_ABSOLUTE_MIN_THRESHOLD)
         .setPeakDetectionThresholdRel(PEAK_DETECTION_THRESHOLD_REL)
         .setPeakDetectionMinPeakDistance(PEAK_DETECTION_MIN_PEAK_DISTANCE)
         .setPeakDetectionMaxBpm(PEAK_DETECTION_MAX_BPM)
-        .setParent(this)
         .build();
+
+    this->beatDetectionProcessor_ = new BeatDetectionProcessor(this, soundInput_, beatDetector, DOWNSAMPLE_CUTOFF_FREQUENCY, AUTOMATIC_GAIN_CONTROL_TARGET_LEVEL, SIGNAL_DOWNSAMPLE_RATIO, this);
+    
     this->beatDetectionProcessor_->start();
 }
 
@@ -634,20 +635,29 @@ void AudioDisplay::onApplyButtonClicked() {
     currentSamplesReceived_ = 0;
 
     // Create and start a new thread with the new parameters
-    this->beatDetectionProcessor_ = BeatDetectionProcessor::Builder()
-        .setDisplay(this)
-        .setUsbMicro(usbMicro_)
-        .setSignalDownsampleRatio(SIGNAL_DOWNSAMPLE_RATIO)
+
+    std::cout << "BeatDetectionProcessor constructed with signalDownsampleRatio: " << SIGNAL_DOWNSAMPLE_RATIO
+    << ", envelopeDownsampleRatio: " << newEnvelopeDownsampleRatio
+    << ", noveltyGain: " << newNoveltyGain
+    << ", downsampleCutoffFrequency: " << newAutomaticGainControlTargetLevel
+    << ", automaticGainControlTargetLevel: " << newAutomaticGainControlTargetLevel
+    << ", peakDetectionAbsoluteMinThreshold: " << newPeakDetectionAbsoluteMinThreshold
+    << ", peakDetectionThresholdRel: " << newPeakDetectionThresholdRel
+    << ", peakDetectionMinPeakDistance: " << newPeakDetectionMinPeakDistance
+    << ", peakDetectionMaxBpm: " << newPeakDetectionMaxBpm
+    << std::endl;
+
+    jellED::BeatDetector* beatDetector = jellED::BeatDetector::Builder(soundInput_->getSampleRate() / SIGNAL_DOWNSAMPLE_RATIO)
         .setEnvelopeDownsampleRatio(newEnvelopeDownsampleRatio)
         .setNoveltyGain(newNoveltyGain)
-        .setDownsampleCutoffFrequency(newDownsampleCutoffFrequency)
-        .setAutomaticGainControlTargetLevel(newAutomaticGainControlTargetLevel)
         .setPeakDetectionAbsoluteMinThreshold(newPeakDetectionAbsoluteMinThreshold)
         .setPeakDetectionThresholdRel(newPeakDetectionThresholdRel)
         .setPeakDetectionMinPeakDistance(newPeakDetectionMinPeakDistance)
         .setPeakDetectionMaxBpm(newPeakDetectionMaxBpm)
-        .setParent(this)
         .build();
+
+    this->beatDetectionProcessor_ = new BeatDetectionProcessor(this, soundInput_, beatDetector, newDownsampleCutoffFrequency, newAutomaticGainControlTargetLevel, SIGNAL_DOWNSAMPLE_RATIO, this);
+    
     this->beatDetectionProcessor_->start();
     
     updateStatusBar();

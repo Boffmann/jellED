@@ -82,7 +82,7 @@ private:
     BeatIndicatorWidget* beatIndicatorWidget_;
     
     int sampleRate_;
-    jellED::UsbMicro* usbMicro_;
+    jellED::SoundInput* soundInput_;
     const int displaySeconds_;
     const int refreshRate_;
     uint64_t currentSamplesReceived_;

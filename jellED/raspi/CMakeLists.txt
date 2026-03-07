@@ -65,7 +65,6 @@ set(BUILD_BEATDETECTION_TESTS OFF CACHE BOOL "Build BeatDetection tests" FORCE)
 # Add core libraries as subdirectories
 # This automatically builds all core libraries and makes them available as targets
 add_subdirectory(${PROJECT_ROOT_DIR_PATH}/../core/beatDetection ${CMAKE_BINARY_DIR}/core/beatDetection)
-add_subdirectory(${PROJECT_ROOT_DIR_PATH}/../core/patternEngine ${CMAKE_BINARY_DIR}/core/patternEngine)
 add_subdirectory($ENV{MC_LIB_PATH}/serial/raspi ${CMAKE_BINARY_DIR}/serial/raspi)
 add_subdirectory($ENV{MC_LIB_PATH}/sound/raspi ${CMAKE_BINARY_DIR}/sound/raspi)
 add_subdirectory($ENV{MC_LIB_PATH}/pushButton ${CMAKE_BINARY_DIR}/pushButton)
@@ -73,7 +72,6 @@ add_subdirectory($ENV{MC_LIB_PATH}/pushButton ${CMAKE_BINARY_DIR}/pushButton)
 set(include_path
     "${PROJECT_ROOT_DIR_PATH}/../core"
     "${PROJECT_ROOT_DIR_PATH}/../core/beatDetection"
-    "${PROJECT_ROOT_DIR_PATH}/../core/patternEngine"
     "${PROJECT_ROOT_DIR_PATH}"
     "$ENV{MC_LIB_PATH}"
     "/usr/local/include"
@@ -102,11 +100,10 @@ target_include_directories(${target}
 
 target_link_libraries(${target}
   PRIVATE
-  soundio
-  ${GPIODCXX_LIBRARIES}
-  BeatDetection
-  PatternEngine
-  raspi_serial
   raspi_sound
+  BeatDetection
+  raspi_serial
   pushButton
+  ${GPIODCXX_LIBRARIES}
+  soundio
 )

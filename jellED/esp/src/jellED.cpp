@@ -7,11 +7,16 @@
 #include "EspUart.h"
 #include "uartProtocol.h"
 
-constexpr uint8_t LED_PIN = 13;
-constexpr uint16_t NUM_LEDS = 5;
+constexpr uint16_t NUM_LEDS = 10;
 constexpr unsigned long PATTERN_DURATION_MICROS = 5000000;
-constexpr uint8_t ESP_UART_TX_PIN = 17;
-constexpr uint8_t ESP_UART_RX_PIN = 16;
+// az-delivery-devkit-v4
+// constexpr uint8_t LED_PIN = 13;
+// constexpr uint8_t ESP_UART_TX_PIN = 17;
+// constexpr uint8_t ESP_UART_RX_PIN = 16;
+// esp32-c3-devkitm-1
+constexpr uint8_t LED_PIN = 2;
+constexpr uint8_t ESP_UART_TX_PIN = 21;
+constexpr uint8_t ESP_UART_RX_PIN = 20;
 constexpr uint32_t ESP_UART_BAUD_RATE = 115200;
 
 jellED::WS2812 strip = jellED::WS2812(LED_PIN, NUM_LEDS);
@@ -20,11 +25,9 @@ jellED::PatternEngine patternEngine =
     jellED::PatternEngine(espUtils, NUM_LEDS, PATTERN_DURATION_MICROS);
 
 jellED::SerialConfig espSerialConfig;
-jellED::EspUart espUart("Uart Receiver", UART_NUM_2, ESP_UART_TX_PIN, ESP_UART_RX_PIN);
+jellED::EspUart espUart("Uart Receiver", UART_NUM_0, ESP_UART_TX_PIN, ESP_UART_RX_PIN);
 
 void setup() {
-  Serial.begin(115200);
-   Serial.println(" ");
   strip.initialize();
   strip.setBrightness(255);
   espUart.initialize(espSerialConfig, ESP_UART_BAUD_RATE);
@@ -36,15 +39,7 @@ uint8_t receivedBuffer;
 uint8_t uart_read_int() {
    int available = espUart.available();
    if (available > 0) {
-      // Serial.println("Available: " + (String)available);
       int received = espUart.receive(&receivedBuffer, std::min(available, maxLength));
-       if (received > 0) {
-            Serial.println("Received: " + (String)receivedBuffer + " (" + received + " bytes)");
-        } else if (received == 0) {
-            Serial.println("No data available");
-        } else {
-            Serial.println("Error receiving message");
-        }
       espUart.flush();
       if (received > 0) {
         return receivedBuffer;
@@ -70,5 +65,8 @@ void loop() {
   }
   strip.show();
   is_beat = false;
-  delay(10);
+  // Removed delay(10) - was adding up to 10ms latency to beat detection
+  // The strip.show() already takes time for WS2812 protocol (~30µs per LED)
+  // If CPU usage is too high, use delay(1) instead
+  delay(1);
 }
