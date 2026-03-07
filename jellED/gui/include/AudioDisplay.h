@@ -3,11 +3,10 @@
 
 #include <QMainWindow>
 #include <QLabel>
-#include <QSlider>
-#include <QLineEdit>
 #include "WaveformWidget.h"
 #include "EnvelopePeakWidget.h"
 #include "BeatDetectionProcessor.h"
+#include "ConfiguratorWindow.h"
 
 class QPushButton;
 class BeatIndicatorWidget;
@@ -49,6 +48,8 @@ private:
 
     QPushButton* clearButton_;
     QPushButton* startStopButton_;
+    QPushButton* muteButton_;
+    QPushButton* configureButton_;
     
     WaveformWidget* originalSamplesWaveformWidgetLow_;
     WaveformWidget* lowpassFilteredWaveformWidgetLow_;
@@ -66,23 +67,14 @@ private:
     BeatDetectionProcessor* beatDetectionProcessor_;
     QLabel* infoLabel_;
     QLabel* statusLabel_;
-    QLabel* envelopeDownsampleRateValueLabel_;
-    QSlider* envelopeDownsampleRateSlider_;
-    QLabel* downsampleCutoffFrequencyValueLabel_;
-    QSlider* downsampleCutoffFrequencySlider_;
-
-    QLineEdit* automaticGainControlTargetLevelTextField_;
-    QLineEdit* noveltyGainTextField_;
-
-    QLineEdit* peakDetectionAbsoluteMinThresholdTextField_;
-    QLineEdit* peakDetectionThresholdRelTextField_;
-    QLineEdit* peakDetectionMinPeakDistanceTextField_;
-    QLineEdit* peakDetectionMaxBpmTextField_;
 
     BeatIndicatorWidget* beatIndicatorWidget_;
+    ConfiguratorWindow* configuratorWindow_;
     
     int sampleRate_;
     jellED::SoundInput* soundInput_;
+    AudioInputMode currentInputMode_;
+    std::string currentSourcePath_;
     const int displaySeconds_;
     const int refreshRate_;
     uint64_t currentSamplesReceived_;
@@ -91,19 +83,17 @@ private:
 
     void setupUi();
     QWidget* setupInfoPanel();
-    QWidget* setupParameterControls();
-    QWidget* setupPeakDetectionControls();
     QWidget* setupWaveformDisplays();
     void setupStatusBar();
 
 private slots:
     void onClearClicked();
     void onStartStopClicked();
+    void onMuteClicked();
     void updateDisplay();
     void updateStatusBar();
-    void onEnvelopeDownsampleRateSliderChanged(int value);
-    void onDownsampleCutoffFrequencySliderChanged(int value);
-    void onApplyButtonClicked();
+    void onConfigureClicked();
+    void onApplyConfig(const jellED::BeatDetectionConfig& config);
 
 public:
     AudioDisplay(std::string microphone_device_id, int displaySeconds = 10, int refreshRate = 30, QWidget* parent = nullptr);
@@ -121,6 +111,9 @@ public:
     void addPeakLow();
     void addPeakMid();
     void addPeakHigh();
+    void setThresholdLow(double threshold);
+    void setThresholdMid(double threshold);
+    void setThresholdHigh(double threshold);
     void addCombinedPeak();
     void addCurrentDetectedBpm(const double bpm);
 };

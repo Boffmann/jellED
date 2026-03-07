@@ -28,6 +28,9 @@ public:
     
     bool push(const BandPeak& peak);
 
+    void setCoincidenceWindow(double window);
+    void setMaxBpm(double maxBpm);
+
 private:
     double coincidenceWindow_;
     double lastBeatTime_;

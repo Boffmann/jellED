@@ -12,8 +12,9 @@ static constexpr bool DEBUG_BEAT_DETECTION = false;
 
 namespace jellED {
 
-BeatDetector::BeatDetector(const Builder& builder)
-    : sampleRate_(builder.sampleRate_)
+BeatDetector::BeatDetector(int sampleRate, const BeatDetectionConfig& config)
+    : sampleRate_(sampleRate)
+    , config_(config)
     , totalSamplesReceived_(0)
     , filteredSampleLow_(0.0)
     , filteredSampleMid_(0.0)
@@ -25,25 +26,101 @@ BeatDetector::BeatDetector(const Builder& builder)
     , peakDetectedMid_(false)
     , peakDetectedHigh_(false)
     , currentTime_(0.0)
-    // , platformUtils(builder.platformUtils) // TODO 
-    // BandConfig: {coefficients, envelopeGain, absoluteMin, relativeThreshold, weight}
-    // Now detecting peaks in envelope directly (not novelty), so gains are ~1.0
-    , bandConfigLow_{BANDPASS_FILTER_COEFFICIENTS_LOW, 1.0, 0.05, 0.15, 1.0}   // Low freq (kick)
-    , bandConfigMid_{BANDPASS_FILTER_COEFFICIENTS_MID, 1.0, 0.03, 0.15, 0.5}   // Mid freq
-    , bandConfigHigh_{BANDPASS_FILTER_COEFFICIENTS_HIGH, 1.0, 0.02, 0.15, 0.3} // High freq (hi-hats)
-    , bandStateLow_(bandConfigLow_, sampleRate_, builder.envelopeDownsampleRatio_, builder.peakDetectionMaxBpm_)
-    , bandStateMid_(bandConfigMid_, sampleRate_, builder.envelopeDownsampleRatio_, builder.peakDetectionMaxBpm_)
-    , bandStateHigh_(bandConfigHigh_, sampleRate_, builder.envelopeDownsampleRatio_, builder.peakDetectionMaxBpm_)
-    , multibandFusion_(0.15, builder.peakDetectionMaxBpm_)
+    , bandConfigLow_{BANDPASS_FILTER_COEFFICIENTS_LOW, 1.0,
+                     config.absoluteMinThresholdLow,
+                     config.thresholdRelLow,
+                     config.bandWeightLow,
+                     config.envelopeAttackTimeLow, config.envelopeReleaseTimeLow,
+                     config.baselineAttackTimeLow, config.baselineReleaseTimeLow,
+                     config.thresholdRelaxTimeLow, config.onsetRatioLow,
+                     config.minRelativeThresholdFactor,
+                     config.risingThresholdScale, config.fallingThresholdScale}
+    , bandConfigMid_{BANDPASS_FILTER_COEFFICIENTS_MID, 1.0,
+                     config.absoluteMinThresholdMid,
+                     config.thresholdRelMid,
+                     config.bandWeightMid,
+                     config.envelopeAttackTimeMid, config.envelopeReleaseTimeMid,
+                     config.baselineAttackTimeMid, config.baselineReleaseTimeMid,
+                     config.thresholdRelaxTimeMid, config.onsetRatioMid,
+                     config.minRelativeThresholdFactor,
+                     config.risingThresholdScale, config.fallingThresholdScale}
+    , bandConfigHigh_{BANDPASS_FILTER_COEFFICIENTS_HIGH, 1.0,
+                      config.absoluteMinThresholdHigh,
+                      config.thresholdRelHigh,
+                      config.bandWeightHigh,
+                      config.envelopeAttackTimeHigh, config.envelopeReleaseTimeHigh,
+                      config.baselineAttackTimeHigh, config.baselineReleaseTimeHigh,
+                      config.thresholdRelaxTimeHigh, config.onsetRatioHigh,
+                      config.minRelativeThresholdFactor,
+                      config.risingThresholdScale, config.fallingThresholdScale}
+    , bandStateLow_(bandConfigLow_, sampleRate_, config.envelopeDownsampleRatio, config.peakDetectionMaxBpm)
+    , bandStateMid_(bandConfigMid_, sampleRate_, config.envelopeDownsampleRatio, config.peakDetectionMaxBpm)
+    , bandStateHigh_(bandConfigHigh_, sampleRate_, config.envelopeDownsampleRatio, config.peakDetectionMaxBpm)
+    , multibandFusion_(config.coincidenceWindow, config.peakDetectionMaxBpm)
 {
     std::cout << "BeatDetector initialized:" << std::endl;
     std::cout << "  Sample Rate: " << sampleRate_ << " Hz" << std::endl;
-    std::cout << "  Max BPM: " << builder.peakDetectionMaxBpm_ << std::endl;
-    std::cout << "  Min Beat Interval: " << (60.0 / builder.peakDetectionMaxBpm_) << " s" << std::endl;
-    std::cout << "  Coincidence Window: 0.15 s" << std::endl;
+    std::cout << "  Max BPM: " << config.peakDetectionMaxBpm << std::endl;
+    std::cout << "  Min Beat Interval: " << (60.0 / config.peakDetectionMaxBpm) << " s" << std::endl;
+    std::cout << "  Coincidence Window: " << config.coincidenceWindow << " s" << std::endl;
+    std::cout << "  Band Weights: L=" << config.bandWeightLow << " M=" << config.bandWeightMid << " H=" << config.bandWeightHigh << std::endl;
+    std::cout << "  Envelope Attack: L=" << config.envelopeAttackTimeLow << "s M=" << config.envelopeAttackTimeMid << "s H=" << config.envelopeAttackTimeHigh << "s" << std::endl;
+    std::cout << "  Envelope Release: L=" << config.envelopeReleaseTimeLow << "s M=" << config.envelopeReleaseTimeMid << "s H=" << config.envelopeReleaseTimeHigh << "s" << std::endl;
 }
 
 BeatDetector::~BeatDetector() {
+}
+
+bool BeatDetector::applyConfig(const BeatDetectionConfig& newConfig) {
+    if (newConfig.envelopeDownsampleRatio != config_.envelopeDownsampleRatio) {
+        return false;
+    }
+
+    bandStateLow_.weight = newConfig.bandWeightLow;
+    bandStateMid_.weight = newConfig.bandWeightMid;
+    bandStateHigh_.weight = newConfig.bandWeightHigh;
+
+    bandStateLow_.peakDetector.setAbsoluteMinThreshold(newConfig.absoluteMinThresholdLow);
+    bandStateLow_.peakDetector.setThresholdRel(newConfig.thresholdRelLow);
+    bandStateLow_.peakDetector.setMaxBpm(newConfig.peakDetectionMaxBpm);
+    bandStateLow_.peakDetector.setOnsetRatio(newConfig.onsetRatioLow);
+    bandStateLow_.peakDetector.setTimingParams(
+        newConfig.baselineAttackTimeLow, newConfig.baselineReleaseTimeLow,
+        newConfig.thresholdRelaxTimeLow);
+
+    bandStateMid_.peakDetector.setAbsoluteMinThreshold(newConfig.absoluteMinThresholdMid);
+    bandStateMid_.peakDetector.setThresholdRel(newConfig.thresholdRelMid);
+    bandStateMid_.peakDetector.setMaxBpm(newConfig.peakDetectionMaxBpm);
+    bandStateMid_.peakDetector.setOnsetRatio(newConfig.onsetRatioMid);
+    bandStateMid_.peakDetector.setTimingParams(
+        newConfig.baselineAttackTimeMid, newConfig.baselineReleaseTimeMid,
+        newConfig.thresholdRelaxTimeMid);
+
+    bandStateHigh_.peakDetector.setAbsoluteMinThreshold(newConfig.absoluteMinThresholdHigh);
+    bandStateHigh_.peakDetector.setThresholdRel(newConfig.thresholdRelHigh);
+    bandStateHigh_.peakDetector.setMaxBpm(newConfig.peakDetectionMaxBpm);
+    bandStateHigh_.peakDetector.setOnsetRatio(newConfig.onsetRatioHigh);
+    bandStateHigh_.peakDetector.setTimingParams(
+        newConfig.baselineAttackTimeHigh, newConfig.baselineReleaseTimeHigh,
+        newConfig.thresholdRelaxTimeHigh);
+
+    // Global peak detector params (same for all bands)
+    bandStateLow_.peakDetector.setMinRelativeThresholdFactor(newConfig.minRelativeThresholdFactor);
+    bandStateLow_.peakDetector.setHysteresisScales(newConfig.risingThresholdScale, newConfig.fallingThresholdScale);
+    bandStateMid_.peakDetector.setMinRelativeThresholdFactor(newConfig.minRelativeThresholdFactor);
+    bandStateMid_.peakDetector.setHysteresisScales(newConfig.risingThresholdScale, newConfig.fallingThresholdScale);
+    bandStateHigh_.peakDetector.setMinRelativeThresholdFactor(newConfig.minRelativeThresholdFactor);
+    bandStateHigh_.peakDetector.setHysteresisScales(newConfig.risingThresholdScale, newConfig.fallingThresholdScale);
+
+    bandStateLow_.envelope.setTimings(newConfig.envelopeAttackTimeLow, newConfig.envelopeReleaseTimeLow);
+    bandStateMid_.envelope.setTimings(newConfig.envelopeAttackTimeMid, newConfig.envelopeReleaseTimeMid);
+    bandStateHigh_.envelope.setTimings(newConfig.envelopeAttackTimeHigh, newConfig.envelopeReleaseTimeHigh);
+
+    multibandFusion_.setCoincidenceWindow(newConfig.coincidenceWindow);
+    multibandFusion_.setMaxBpm(newConfig.peakDetectionMaxBpm);
+
+    config_ = newConfig;
+    return true;
 }
 
 bool BeatDetector::is_beat(const double sample) {
@@ -68,9 +145,6 @@ bool BeatDetector::is_beat(const double sample) {
         if (strength > 0.0) {
             this->peakDetectedLow_ = true;
             anyPeakDetected = true;
-            // if (multibandFusion_.push({this->currentTime_, strength, BAND_ID::LOW})) {
-            //     anyPeakDetected = true;
-            // }
         }
     }
 
@@ -78,9 +152,6 @@ bool BeatDetector::is_beat(const double sample) {
         double strength = bandStateMid_.applyPeakDetector(this->envelopeSampleMid_, this->currentTime_);
         if (strength > 0.0) {
             this->peakDetectedMid_ = true;
-            // if (multibandFusion_.push({this->currentTime_, strength, BAND_ID::MID})) {
-            //     anyPeakDetected = true;
-            // }
         }
     }
 
@@ -88,9 +159,6 @@ bool BeatDetector::is_beat(const double sample) {
         double strength = bandStateHigh_.applyPeakDetector(this->envelopeSampleHigh_, this->currentTime_);
         if (strength > 0.0) {
             this->peakDetectedHigh_ = true;
-            // if (multibandFusion_.push({this->currentTime_, strength, BAND_ID::HIGH})) {
-            //     anyPeakDetected = true;
-            // }
         }
     }
 
@@ -138,6 +206,18 @@ bool BeatDetector::isPeakMid() {
 
 bool BeatDetector::isPeakHigh() {
     return this->peakDetectedHigh_;
+}
+
+double BeatDetector::getThresholdLow() {
+    return this->bandStateLow_.peakDetector.getLastThreshold();
+}
+
+double BeatDetector::getThresholdMid() {
+    return this->bandStateMid_.peakDetector.getLastThreshold();
+}
+
+double BeatDetector::getThresholdHigh() {
+    return this->bandStateHigh_.peakDetector.getLastThreshold();
 }
 
 double BeatDetector::getCurrentTime() {

@@ -93,4 +93,12 @@ bool MultiBandFusion::push(const BandPeak& peak) {
     return false;
 }
 
+void MultiBandFusion::setCoincidenceWindow(double window) {
+    coincidenceWindow_ = window;
+}
+
+void MultiBandFusion::setMaxBpm(double maxBpm) {
+    minBeatInterval_ = SECONDS_PER_MINUTE / maxBpm;
+}
+
 } // namespace jellED

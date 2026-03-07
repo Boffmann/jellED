@@ -39,6 +39,7 @@ set(include_path
 set(SOURCES
     src/main.cpp
     src/AudioDisplay.cpp
+    src/ConfiguratorWindow.cpp
     src/BeatDetectionProcessor.cpp
     src/WaveformWidget.cpp
     src/EnvelopePeakWidget.cpp
@@ -57,6 +58,7 @@ set(SOURCES
 # Header files
 set(HEADERS
     include/AudioDisplay.h
+    include/ConfiguratorWindow.h
     include/WaveformWidget.h
     include/EnvelopePeakWidget.h
     include/BeatDetectionProcessor.h

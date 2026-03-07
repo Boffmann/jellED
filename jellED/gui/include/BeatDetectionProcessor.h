@@ -17,9 +17,7 @@ public:
     explicit BeatDetectionProcessor(
         AudioDisplay* display,
         jellED::SoundInput* soundInput,
-        jellED::BeatDetector* beatDetector,
-        double downsampleCutoffFrequency,
-        double automaticGainControlTargetLevel,
+        const jellED::BeatDetectionConfig& config,
         int signalDownsampleRatio,
         QObject* parent);
 

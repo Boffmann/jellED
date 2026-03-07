@@ -2,10 +2,28 @@
 #define __PEAKDETECTION_JELLED_H__
 
 #include "include/ringbuffer.h"
+#include <cstdint>
 #include <vector>
 #include <memory>
 
 namespace jellED {
+
+struct PeakDetectorConfig {
+    double absoluteMinThreshold;
+    double thresholdRel;
+    double maxBpm;
+
+    // Per-band timing — see BeatDetectionConfig for descriptions
+    double baselineAttackTime;
+    double baselineReleaseTime;
+    double thresholdRelaxTime;
+    double onsetRatio;
+
+    // Global tuning — see BeatDetectionConfig for descriptions
+    double minRelativeThresholdFactor;
+    double risingThresholdScale;
+    double fallingThresholdScale;
+};
 
 class PeakDetector {
 private:
@@ -13,6 +31,10 @@ private:
     double absolute_min_threshold;
     double threshold_rel;
     double max_bpm;
+    double onset_ratio;
+    double min_relative_threshold_factor;
+    double rising_threshold_scale;
+    double falling_threshold_scale;
     double threshold_baseline; 
 
     // Envelope follower state
@@ -32,12 +54,28 @@ private:
     double recent_min;
     double recent_min_decay_coeff;
 
+    // Last computed threshold (updated each is_peak call)
+    double last_threshold_;
+
+    uint32_t sample_rate_;
+
     double update_envelope(double sample);
 
 public:
-    PeakDetector(double absolute_min_threshold, double threshold_rel, double max_bpm, uint32_t sample_rate);
+    PeakDetector(const PeakDetectorConfig& config, uint32_t sample_rate);
     
     bool is_peak(double sample, double current_time);
+
+    double getLastThreshold() const { return last_threshold_; }
+
+    void setAbsoluteMinThreshold(double threshold);
+    void setThresholdRel(double threshold);
+    void setMaxBpm(double bpm);
+    void setOnsetRatio(double ratio);
+    void setTimingParams(double baselineAttackTime, double baselineReleaseTime,
+                         double thresholdRelaxTime);
+    void setHysteresisScales(double risingScale, double fallingScale);
+    void setMinRelativeThresholdFactor(double factor);
 };
 
 } // end namespace jellED
