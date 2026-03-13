@@ -104,6 +104,7 @@ private:
     QColor m_color_beat;
 };
 
+
 AudioDisplay::AudioDisplay(std::string microphone_device_id, int displaySeconds, int refreshRate, QWidget* parent)
     : QMainWindow(parent)
     , updateRotation_(0)
@@ -115,7 +116,13 @@ AudioDisplay::AudioDisplay(std::string microphone_device_id, int displaySeconds,
     , refreshRate_(refreshRate)
     , currentSamplesReceived_(0)
     , totalSamplesReceived_(0)
-    , currentDetectedBpm_(0.0) {
+    , currentDetectedBpm_(0.0)
+    , currentVolumeLow_(0.0)
+    , currentVolumeMid_(0.0)
+    , currentVolumeHigh_(0.0)
+    , currentOverallVolume_(0.0)
+    , currentVolumeTrend_(0.0)
+    , currentSpectralTilt_(0.0) {
     setWindowTitle("jellED - Oscilloscope");
     resize(1200, 1000);
 
@@ -163,7 +170,34 @@ void AudioDisplay::setupUi() {
     waveformsAndIndicatorLayout->addWidget(setupWaveformDisplays(), 1);
 
     beatIndicatorWidget_ = new BeatIndicatorWidget(sampleRate_, this);
-    waveformsAndIndicatorLayout->addWidget(beatIndicatorWidget_, 0, Qt::AlignCenter);
+
+    volumeLowWidget_     = new VolumeDisplayWidget("LOW",  this);
+    volumeMidWidget_     = new VolumeDisplayWidget("MID",  this);
+    volumeHighWidget_    = new VolumeDisplayWidget("HIGH", this);
+    volumeOverallWidget_ = new VolumeDisplayWidget("ALL",  this);
+    volumeTrendWidget_   = new BipolarLedWidget("TREND",
+                               QColor(50, 220, 50),  "BUILD",
+                               QColor(220, 60, 60),  "FADE",
+                               this);
+    spectralTiltWidget_  = new BipolarLedWidget("TILT",
+                               QColor(255, 140, 0),  "BASS",
+                               QColor(80, 160, 255), "TREB",
+                               this);
+
+    QHBoxLayout* metersRow = new QHBoxLayout();
+    metersRow->setSpacing(4);
+    metersRow->addWidget(volumeLowWidget_);
+    metersRow->addWidget(volumeMidWidget_);
+    metersRow->addWidget(volumeHighWidget_);
+    metersRow->addWidget(volumeOverallWidget_);
+
+    QVBoxLayout* sidePanel = new QVBoxLayout();
+    sidePanel->addWidget(beatIndicatorWidget_, 0, Qt::AlignHCenter);
+    sidePanel->addLayout(metersRow);
+    sidePanel->addWidget(volumeTrendWidget_);
+    sidePanel->addWidget(spectralTiltWidget_);
+    sidePanel->addStretch();
+    waveformsAndIndicatorLayout->addLayout(sidePanel);
 
     mainLayout->addWidget(waveformsAndIndicatorWidget, 1);
 
@@ -400,6 +434,13 @@ void AudioDisplay::addCurrentDetectedBpm(const double bpm) {
 void AudioDisplay::updateDisplay() {
     updateStatusBar();
 
+    volumeLowWidget_->setValue(currentVolumeLow_.load());
+    volumeMidWidget_->setValue(currentVolumeMid_.load());
+    volumeHighWidget_->setValue(currentVolumeHigh_.load());
+    volumeOverallWidget_->setValue(currentOverallVolume_.load());
+    volumeTrendWidget_->setValue(currentVolumeTrend_.load());
+    spectralTiltWidget_->setValue(currentSpectralTilt_.load());
+
     switch (updateRotation_) {
         case 0:
             originalSamplesWaveformWidgetLow_->updateWidget();
@@ -477,6 +518,13 @@ void AudioDisplay::onConfigureClicked() {
     configuratorWindow_->raise();
     configuratorWindow_->activateWindow();
 }
+
+void AudioDisplay::setVolumeLow(double volume)    { currentVolumeLow_.store(volume); }
+void AudioDisplay::setVolumeMid(double volume)    { currentVolumeMid_.store(volume); }
+void AudioDisplay::setVolumeHigh(double volume)   { currentVolumeHigh_.store(volume); }
+void AudioDisplay::setOverallVolume(double volume){ currentOverallVolume_.store(volume); }
+void AudioDisplay::setVolumeTrend(double trend)   { currentVolumeTrend_.store(trend); }
+void AudioDisplay::setSpectralTilt(double tilt)   { currentSpectralTilt_.store(tilt); }
 
 void AudioDisplay::onApplyConfig(const jellED::BeatDetectionConfig& config) {
     this->beatDetectionProcessor_->stop();

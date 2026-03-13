@@ -89,6 +89,8 @@ struct BandState {
         return 0.0;
     }
 
+    double getVolume() const { return rollingMedian; }
+
 private:
     void updateEnvelopeStats(double envelopeSample) {
         const double SIGNAL_THRESHOLD = 0.005;
@@ -142,6 +144,13 @@ public:
     double getThresholdHigh();
     double getCurrentTime();
 
+    double getVolumeLow() const;
+    double getVolumeMid() const;
+    double getVolumeHigh() const;
+    double getOverallLevel() const;
+    double getVolumeTrend() const;
+    double getSpectralTilt() const;
+
 private:
     int sampleRate_;
     BeatDetectionConfig config_;
@@ -167,6 +176,11 @@ private:
     BandState bandStateHigh_;
 
     MultiBandFusion multibandFusion_;
+
+    double shortTermEnergy_;
+    double longTermEnergy_;
+    double shortTermCoeff_;
+    double longTermCoeff_;
 };
 
 } // namespace jellED

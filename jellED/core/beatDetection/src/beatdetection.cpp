@@ -4,6 +4,7 @@
 #include "include/envelopeDetector.h"
 
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <iomanip>
 
@@ -57,6 +58,10 @@ BeatDetector::BeatDetector(int sampleRate, const BeatDetectionConfig& config)
     , bandStateMid_(bandConfigMid_, sampleRate_, config.envelopeDownsampleRatio, config.peakDetectionMaxBpm)
     , bandStateHigh_(bandConfigHigh_, sampleRate_, config.envelopeDownsampleRatio, config.peakDetectionMaxBpm)
     , multibandFusion_(config.coincidenceWindow, config.peakDetectionMaxBpm)
+    , shortTermEnergy_(0.0)
+    , longTermEnergy_(0.0)
+    , shortTermCoeff_(1.0 - std::exp(-1.0 / (sampleRate * 0.05)))
+    , longTermCoeff_ (1.0 - std::exp(-1.0 / (sampleRate * 2.0)))
 {
     std::cout << "BeatDetector initialized:" << std::endl;
     std::cout << "  Sample Rate: " << sampleRate_ << " Hz" << std::endl;
@@ -125,6 +130,10 @@ bool BeatDetector::applyConfig(const BeatDetectionConfig& newConfig) {
 
 bool BeatDetector::is_beat(const double sample) {
     this->totalSamplesReceived_++;
+
+    const double absSample = std::abs(sample);
+    shortTermEnergy_ += shortTermCoeff_ * (absSample - shortTermEnergy_);
+    longTermEnergy_  += longTermCoeff_  * (absSample - longTermEnergy_);
 
     this->filteredSampleLow_ = this->bandStateLow_.applyBandpassFilter(sample);
     this->filteredSampleMid_ = this->bandStateMid_.applyBandpassFilter(sample);
@@ -222,6 +231,35 @@ double BeatDetector::getThresholdHigh() {
 
 double BeatDetector::getCurrentTime() {
     return this->currentTime_;
+}
+
+double BeatDetector::getVolumeLow() const {
+    return bandStateLow_.getVolume();
+}
+
+double BeatDetector::getVolumeMid() const {
+    return bandStateMid_.getVolume();
+}
+
+double BeatDetector::getVolumeHigh() const {
+    return bandStateHigh_.getVolume();
+}
+
+double BeatDetector::getOverallLevel() const {
+    return shortTermEnergy_;
+}
+
+double BeatDetector::getVolumeTrend() const {
+    if (longTermEnergy_ < 1e-6) return 0.0;
+    return (shortTermEnergy_ / longTermEnergy_) - 1.0;
+}
+
+double BeatDetector::getSpectralTilt() const {
+    const double low  = bandStateLow_.getVolume();
+    const double high = bandStateHigh_.getVolume();
+    const double sum  = low + high;
+    if (sum < 1e-6) return 0.0;
+    return (low - high) / sum;
 }
 
 } // end namespace jellED

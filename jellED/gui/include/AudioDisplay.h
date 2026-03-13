@@ -3,10 +3,13 @@
 
 #include <QMainWindow>
 #include <QLabel>
+#include <atomic>
 #include "WaveformWidget.h"
 #include "EnvelopePeakWidget.h"
 #include "BeatDetectionProcessor.h"
 #include "ConfiguratorWindow.h"
+#include "VolumeDisplayWidget.h"
+#include "BipolarLedWidget.h"
 
 class QPushButton;
 class BeatIndicatorWidget;
@@ -69,8 +72,21 @@ private:
     QLabel* statusLabel_;
 
     BeatIndicatorWidget* beatIndicatorWidget_;
+    VolumeDisplayWidget* volumeLowWidget_;
+    VolumeDisplayWidget* volumeMidWidget_;
+    VolumeDisplayWidget* volumeHighWidget_;
+    VolumeDisplayWidget* volumeOverallWidget_;
+    BipolarLedWidget*    volumeTrendWidget_;
+    BipolarLedWidget*    spectralTiltWidget_;
     ConfiguratorWindow* configuratorWindow_;
-    
+
+    std::atomic<double> currentVolumeLow_;
+    std::atomic<double> currentVolumeMid_;
+    std::atomic<double> currentVolumeHigh_;
+    std::atomic<double> currentOverallVolume_;
+    std::atomic<double> currentVolumeTrend_;
+    std::atomic<double> currentSpectralTilt_;
+
     int sampleRate_;
     jellED::SoundInput* soundInput_;
     AudioInputMode currentInputMode_;
@@ -116,6 +132,13 @@ public:
     void setThresholdHigh(double threshold);
     void addCombinedPeak();
     void addCurrentDetectedBpm(const double bpm);
+
+    void setVolumeLow(double volume);
+    void setVolumeMid(double volume);
+    void setVolumeHigh(double volume);
+    void setOverallVolume(double volume);
+    void setVolumeTrend(double trend);
+    void setSpectralTilt(double tilt);
 };
 
 #endif
