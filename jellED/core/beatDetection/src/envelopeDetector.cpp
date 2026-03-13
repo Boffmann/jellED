@@ -5,15 +5,16 @@
 
 namespace jellED {
 
-EnvelopeDetector::EnvelopeDetector(uint32_t sample_rate, uint8_t downsample_factor, double envelope_gain)
+EnvelopeDetector::EnvelopeDetector(uint32_t sample_rate, uint8_t downsample_factor, double envelope_gain,
+                                   double attack_time, double release_time)
 : sample_rate{sample_rate},
   downsample_factor{downsample_factor},
   current_envelope{0.0},
   sample_counter{0},
   envelope_gain{envelope_gain}
 {
-    this->attack_coeff = 1.0 - std::exp(-1.0 / (ATTACK_TIME * this->sample_rate));
-    this->release_coeff = 1.0 - std::exp(-1.0 / (RELEASE_TIME * this->sample_rate));
+    this->attack_coeff = 1.0 - std::exp(-1.0 / (attack_time * this->sample_rate));
+    this->release_coeff = 1.0 - std::exp(-1.0 / (release_time * this->sample_rate));
 }
 
 EnvelopeDetector::~EnvelopeDetector() {
@@ -40,6 +41,11 @@ double EnvelopeDetector::apply(const double sample) {
     // Peak detection will find actual peaks in the envelope,
     // which correspond to peaks in the filtered audio signal
     return current_envelope * envelope_gain;
+}
+
+void EnvelopeDetector::setTimings(double attackTime, double releaseTime) {
+    attack_coeff = 1.0 - std::exp(-1.0 / (attackTime * sample_rate));
+    release_coeff = 1.0 - std::exp(-1.0 / (releaseTime * sample_rate));
 }
 
 } // end namespace jellED

@@ -125,62 +125,6 @@ struct AudioLevelStats {
         active.reset();
         active.lastAGCGain = snapshot.lastAGCGain;
     }
-    
-    // Called from print thread - prints the snapshot (call reset() first to take snapshot)
-    void print() {
-        std::lock_guard<std::mutex> lock(snapshotMutex);
-        const Stats& s = snapshot;
-        
-        std::cout << "\n========== AUDIO LEVEL REPORT (Mac) ==========" << std::endl;
-        std::cout << std::fixed << std::setprecision(6);
-        
-        if (s.sampleCount > 0) {
-            double rms = std::sqrt(s.sumSquares / s.sampleCount);
-            double avgAbs = s.sumAbsolute / s.sampleCount;
-            double rmsDb = 20.0 * std::log10(std::max(rms, 1e-10));
-            double peakDb = 20.0 * std::log10(std::max(s.peakLevel, 1e-10));
-            
-            std::cout << "[Raw Audio]" << std::endl;
-            std::cout << "  Samples:    " << s.sampleCount << std::endl;
-            std::cout << "  Range:      [" << s.minSample << " to " << s.maxSample << "]" << std::endl;
-            std::cout << "  Peak:       " << s.peakLevel << " (" << std::setprecision(1) << peakDb << " dB)" << std::endl;
-            std::cout << std::setprecision(6);
-            std::cout << "  RMS:        " << rms << " (" << std::setprecision(1) << rmsDb << " dB)" << std::endl;
-            std::cout << std::setprecision(6);
-            std::cout << "  Avg |x|:    " << avgAbs << std::endl;
-        }
-        
-        if (s.afterAGCCount > 0) {
-            double rmsAgc = std::sqrt(s.sumSquaresAfterAGC / s.afterAGCCount);
-            double rmsDbAgc = 20.0 * std::log10(std::max(rmsAgc, 1e-10));
-            double peakDbAgc = 20.0 * std::log10(std::max(s.peakAfterAGC, 1e-10));
-            
-            std::cout << "[After AGC (normalized)]" << std::endl;
-            std::cout << "  Samples:    " << s.afterAGCCount << std::endl;
-            std::cout << "  Range:      [" << s.minAfterAGC << " to " << s.maxAfterAGC << "]" << std::endl;
-            std::cout << "  Peak:       " << s.peakAfterAGC << " (" << std::setprecision(1) << peakDbAgc << " dB)" << std::endl;
-            std::cout << std::setprecision(6);
-            std::cout << "  RMS:        " << rmsAgc << " (" << std::setprecision(1) << rmsDbAgc << " dB)" << std::endl;
-        }
-        
-        if (s.agcGainCount > 0) {
-            double avgGain = s.sumAGCGain / s.agcGainCount;
-            double avgGainDb = 20.0 * std::log10(std::max(avgGain, 1e-10));
-            double minGainDb = 20.0 * std::log10(std::max(s.minAGCGain, 1e-10));
-            double maxGainDb = 20.0 * std::log10(std::max(s.maxAGCGain, 1e-10));
-            
-            std::cout << "[AGC Gain]" << std::endl;
-            std::cout << "  Current:    " << std::setprecision(2) << s.lastAGCGain << "x (" 
-                      << std::setprecision(1) << (20.0 * std::log10(std::max(s.lastAGCGain, 1e-10))) << " dB)" << std::endl;
-            std::cout << std::setprecision(2);
-            std::cout << "  Range:      [" << s.minAGCGain << "x to " << s.maxAGCGain << "x] ("
-                      << std::setprecision(1) << minGainDb << " to " << maxGainDb << " dB)" << std::endl;
-            std::cout << std::setprecision(2);
-            std::cout << "  Average:    " << avgGain << "x (" << std::setprecision(1) << avgGainDb << " dB)" << std::endl;
-        }
-        
-        std::cout << "==============================================\n" << std::endl;
-    }
 };
 
 static AudioLevelStats audioLevelStats;
@@ -190,18 +134,17 @@ static std::thread* audioLevelThread = nullptr;
 BeatDetectionProcessor::BeatDetectionProcessor(
     AudioDisplay* display,
     jellED::SoundInput* soundInput,
-    jellED::BeatDetector* beatDetector,
-    double downsampleCutoffFrequency,
-    double automaticGainControlTargetLevel,
+    const jellED::BeatDetectionConfig& config,
     int signalDownsampleRatio,
     QObject* parent)
             : QThread(parent)
             , display_(display)
             , soundInput_(soundInput)
             , shouldStop_(false)
-            , beatDetector_(beatDetector)
-            , downsampler_(soundInput->getSampleRate(), signalDownsampleRatio, downsampleCutoffFrequency)
-            , automaticGainControl_(soundInput->getSampleRate() / signalDownsampleRatio, automaticGainControlTargetLevel)
+            , beatDetector_(new jellED::BeatDetector(
+                  soundInput->getSampleRate() / signalDownsampleRatio, config))
+            , downsampler_(soundInput->getSampleRate(), signalDownsampleRatio, config.downsampleCutoffFrequency)
+            , automaticGainControl_(soundInput->getSampleRate() / signalDownsampleRatio, config.automaticGainControlTargetLevel)
         {}
 
 void BeatDetectionProcessor::run() {
@@ -219,7 +162,6 @@ void BeatDetectionProcessor::run() {
                 while(true) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(AUDIO_LEVEL_REPORT_INTERVAL_MS));
                     audioLevelStats.reset();  // Take snapshot first
-                    audioLevelStats.print();  // Print from snapshot (doesn't block main thread)
                 }
             });
         }
@@ -262,6 +204,7 @@ void BeatDetectionProcessor::run() {
                 display_->addLowpassFilteredSampleMid(this->beatDetector_->getFilteredSampleMid());
                 display_->addLowpassFilteredSampleHigh(this->beatDetector_->getFilteredSampleHigh());
 
+                display_->setThresholdLow(this->beatDetector_->getThresholdLow());
                 if (this->beatDetector_->getEnvelopeLow() != -1.0) {
                     display_->addEnvelopeFilteredSampleLow(this->beatDetector_->getEnvelopeLow());
                     if (this->beatDetector_->isPeakLow()) {
@@ -271,6 +214,7 @@ void BeatDetectionProcessor::run() {
                     display_->addEnvelopeFilteredSampleLow(0.0);
                 }
 
+                display_->setThresholdMid(this->beatDetector_->getThresholdMid());
                 if (this->beatDetector_->getEnvelopeMid() != -1.0) {
                     display_->addEnvelopeFilteredSampleMid(this->beatDetector_->getEnvelopeMid());
                     if (this->beatDetector_->isPeakMid()) {
@@ -280,6 +224,7 @@ void BeatDetectionProcessor::run() {
                     display_->addEnvelopeFilteredSampleMid(0.0);
                 }
 
+                display_->setThresholdHigh(this->beatDetector_->getThresholdHigh());
                 if (this->beatDetector_->getEnvelopeHigh() != -1.0) {
                     display_->addEnvelopeFilteredSampleHigh(this->beatDetector_->getEnvelopeHigh());
                     if (this->beatDetector_->isPeakHigh()) {

@@ -2,6 +2,7 @@
 #define _BEAT_DETECTOR_JELLED_H_
 
 #include <stdint.h>
+#include "include/beatDetectionConfig.h"
 #include "include/ringbuffer.h"
 #include "include/automaticGainControl.h"
 #include "include/bandpassFilter.h"
@@ -14,10 +15,23 @@ namespace jellED {
 
 struct BandConfig {
     const BandpassFilterCoefficients& coeffs;
-    double envelopeGain;      // Scales the envelope output (1.0 = no scaling)
-    double absoluteMin;       // Minimum envelope value to consider as a peak
-    double relativeThreshold; // Peak must exceed baseline by this fraction
-    double weight;            // Weight for multiband fusion
+    double envelopeGain;
+    double absoluteMin;
+    double relativeThreshold;
+    double weight;
+    double envelopeAttackTime;
+    double envelopeReleaseTime;
+
+    // Peak detector timing (per-band)
+    double baselineAttackTime;
+    double baselineReleaseTime;
+    double thresholdRelaxTime;
+    double onsetRatio;
+
+    // Peak detector tuning (global, same for all bands)
+    double minRelativeThresholdFactor;
+    double risingThresholdScale;
+    double fallingThresholdScale;
 };
 
 struct BandState {
@@ -34,9 +48,15 @@ struct BandState {
               uint32_t envelopeDownsampleRatio,
               double maxBpm)
         : filter(cfg.coeffs),
-          envelope(sampleRate, envelopeDownsampleRatio, cfg.envelopeGain),
-          peakDetector(cfg.absoluteMin, cfg.relativeThreshold, maxBpm,
-                       sampleRate),
+          envelope(sampleRate, envelopeDownsampleRatio, cfg.envelopeGain,
+                   cfg.envelopeAttackTime, cfg.envelopeReleaseTime),
+          peakDetector(PeakDetectorConfig{
+              cfg.absoluteMin, cfg.relativeThreshold, maxBpm,
+              cfg.baselineAttackTime, cfg.baselineReleaseTime,
+              cfg.thresholdRelaxTime, cfg.onsetRatio,
+              cfg.minRelativeThresholdFactor,
+              cfg.risingThresholdScale, cfg.fallingThresholdScale
+          }, sampleRate),
           weight(cfg.weight),
           rollingMedian(0.0),
           statsReady(false) {
@@ -71,19 +91,14 @@ struct BandState {
 
 private:
     void updateEnvelopeStats(double envelopeSample) {
-        // Only collect statistics when there's actual signal (not just noise)
-        // This prevents using the silent period to calculate the median
-        const double SIGNAL_THRESHOLD = 0.005;  // Only collect stats when envelope > 5mV equivalent
+        const double SIGNAL_THRESHOLD = 0.005;
         
         if (envelopeSample > SIGNAL_THRESHOLD) {
             envelopeWindow->append(envelopeSample);
             
-            // Compute median from all recent envelope values
-            // Require 128 samples of actual signal (not silence)
             if (envelopeWindow-> size() >= 128) {
                 rollingMedian = envelopeWindow->median();
                 
-                // Only mark as ready if median is reasonable (not noise)
                 if (rollingMedian > SIGNAL_THRESHOLD * 0.5) {
                     statsReady = true;
                 }
@@ -91,10 +106,9 @@ private:
         }
     }
 
-    // Normalize peak value by envelope median, with capping to prevent extremes
     double normalize(double peakValue) const {
         if (!statsReady || rollingMedian < 1e-6) {
-            return 0.0;  // Not enough data yet
+            return 0.0;
         }
         return peakValue / rollingMedian;
     }
@@ -103,10 +117,16 @@ private:
 class BeatDetector {
 
 public:
-    class Builder;
-
+    explicit BeatDetector(int sampleRate, const BeatDetectionConfig& config);
     ~BeatDetector();
+
     bool is_beat(const double sample);
+
+    // Applies hot parameter changes in-place without losing internal state.
+    // Returns true if all changes were applied successfully.
+    // Returns false if a structural parameter changed that requires reconstruction
+    // (currently only envelopeDownsampleRatio).
+    bool applyConfig(const BeatDetectionConfig& newConfig);
 
     double getFilteredSampleLow();
     double getFilteredSampleMid();
@@ -117,14 +137,14 @@ public:
     bool isPeakLow();
     bool isPeakMid();
     bool isPeakHigh();
+    double getThresholdLow();
+    double getThresholdMid();
+    double getThresholdHigh();
     double getCurrentTime();
 
 private:
-
-    // Private constructor - use Builder to construct
-    BeatDetector(const Builder& builder);
-
     int sampleRate_;
+    BeatDetectionConfig config_;
     uint32_t totalSamplesReceived_;
 
     double filteredSampleLow_;
@@ -138,8 +158,6 @@ private:
     bool peakDetectedHigh_;
     double currentTime_;
 
-    // IPlatformUtils& platformUtils; // TODO
-
     BandConfig bandConfigLow_;
     BandConfig bandConfigMid_;
     BandConfig bandConfigHigh_;
@@ -149,67 +167,6 @@ private:
     BandState bandStateHigh_;
 
     MultiBandFusion multibandFusion_;
-
-    friend class Builder;
-};
-
-class BeatDetector::Builder {
-public:
-    Builder(int sampleRate)
-        : sampleRate_(sampleRate)
-        , envelopeDownsampleRatio_(1)
-        , noveltyGain_(1.0)
-        , peakDetectionAbsoluteMinThreshold_(0.1)
-        , peakDetectionThresholdRel_(0.5)
-        , peakDetectionMinPeakDistance_(0.3)
-        , peakDetectionMaxBpm_(200.0) {}
-
-    // Allow BeatDetector to access builder's private state
-    friend class BeatDetector;
-
-    Builder& setEnvelopeDownsampleRatio(int ratio) {
-        envelopeDownsampleRatio_ = ratio;
-        return *this;
-    }
-
-    Builder& setNoveltyGain(double gain) {
-        noveltyGain_ = gain;
-        return *this;
-    }
-
-    Builder& setPeakDetectionAbsoluteMinThreshold(double threshold) {
-        peakDetectionAbsoluteMinThreshold_ = threshold;
-        return *this;
-    }
-
-    Builder& setPeakDetectionThresholdRel(double threshold) {
-        peakDetectionThresholdRel_ = threshold;
-        return *this;
-    }
-
-    Builder& setPeakDetectionMinPeakDistance(double distance) {
-        peakDetectionMinPeakDistance_ = distance;
-        return *this;
-    }
-
-    Builder& setPeakDetectionMaxBpm(double bpm) {
-        peakDetectionMaxBpm_ = bpm;
-        return *this;
-    }
-
-    BeatDetector* build() {
-        return new BeatDetector(*this);
-    }
-
-private:
-
-    int sampleRate_;
-    int envelopeDownsampleRatio_;
-    double noveltyGain_;
-    double peakDetectionAbsoluteMinThreshold_;
-    double peakDetectionThresholdRel_;
-    double peakDetectionMinPeakDistance_;
-    double peakDetectionMaxBpm_;
 };
 
 } // namespace jellED

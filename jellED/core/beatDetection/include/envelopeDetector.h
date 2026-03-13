@@ -6,11 +6,18 @@
 namespace jellED {
 
 class EnvelopeDetector : public FilterStage {
-private:
-    // Attack/release times for envelope follower
-    static constexpr double ATTACK_TIME = 0.005;   // 5ms attack - fast enough to catch transients
-    static constexpr double RELEASE_TIME = 0.050;  // 50ms release - smooth decay between beats
+public:
+    static constexpr double DEFAULT_ATTACK_TIME = 0.005;   // 5ms attack - fast enough to catch transients
+    static constexpr double DEFAULT_RELEASE_TIME = 0.050;  // 50ms release - smooth decay between beats
 
+    EnvelopeDetector(uint32_t sample_rate, uint8_t downsample_factor = 1, double envelope_gain = 1.0,
+                     double attack_time = DEFAULT_ATTACK_TIME, double release_time = DEFAULT_RELEASE_TIME);
+    ~EnvelopeDetector();
+    double apply(const double sample);
+
+    void setTimings(double attackTime, double releaseTime);
+
+private:
     double attack_coeff;
     double release_coeff;
     
@@ -19,12 +26,6 @@ private:
     double current_envelope;
     uint8_t sample_counter;
     double envelope_gain;
-
-public:
-    // envelope_gain scales the output envelope (useful for normalizing across frequency bands)
-    EnvelopeDetector(uint32_t sample_rate, uint8_t downsample_factor = 1, double envelope_gain = 1.0);
-    ~EnvelopeDetector();
-    double apply(const double sample);
 };
 
 } // namespace jellED

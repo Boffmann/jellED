@@ -22,18 +22,6 @@
 using namespace jellED;
 
 static constexpr int SIGNAL_DOWNSAMPLE_RATIO = 4;
-static constexpr int ENVELOPE_DOWNSAMPLE_RATIO = 1;
-static constexpr double DOWNSAMPLE_CUTOFF_FREQUENCY = 0.5;
-
-static constexpr double DEFAULT_NOVELTY_GAIN = 300.0;
-
-static constexpr double AUTOMATIC_GAIN_CONTROL_TARGET_LEVEL = 0.4;
-
-// With AGC enabled, thresholds should match Mac (AGC normalizes input levels)
-static constexpr double PEAK_DETECTION_ABSOLUTE_MIN_THRESHOLD = 0.05;
-static constexpr double PEAK_DETECTION_THRESHOLD_REL = 0.1;
-static constexpr double PEAK_DETECTION_MIN_PEAK_DISTANCE = 0.4;
-static constexpr double PEAK_DETECTION_MAX_BPM = 180.0;
 
 constexpr uint32_t ESP_UART_BAUD_RATE = 115200;
 constexpr bool MODE_SEND = true;
@@ -178,21 +166,20 @@ int main () {
         }
     });
 
-    Downsampler downsampler(usbMicro.getSampleRate(), SIGNAL_DOWNSAMPLE_RATIO, DOWNSAMPLE_CUTOFF_FREQUENCY);
-    AutomaticGainControl automaticGainControl(usbMicro.getSampleRate() / SIGNAL_DOWNSAMPLE_RATIO, AUTOMATIC_GAIN_CONTROL_TARGET_LEVEL);
+    BeatDetectionConfig config;
+    config.thresholdRelLow = 0.1;
+    config.thresholdRelMid = 0.1;
+    config.thresholdRelHigh = 0.1;
+    config.peakDetectionMaxBpm = 180.0;
+
+    Downsampler downsampler(usbMicro.getSampleRate(), SIGNAL_DOWNSAMPLE_RATIO, config.downsampleCutoffFrequency);
+    AutomaticGainControl automaticGainControl(usbMicro.getSampleRate() / SIGNAL_DOWNSAMPLE_RATIO, config.automaticGainControlTargetLevel);
     jellED::SampleRecorder recorder(12000 * 5, "output.wav", 12000);
 
     std::cout << "Microphone sample rate: " << usbMicro.getSampleRate() << " Hz" << std::endl;
     std::cout << "Beat detection sample rate: " << (usbMicro.getSampleRate() / SIGNAL_DOWNSAMPLE_RATIO) << " Hz" << std::endl;
 
-    BeatDetector* beatDetector = BeatDetector::Builder(usbMicro.getSampleRate() / SIGNAL_DOWNSAMPLE_RATIO)
-        .setEnvelopeDownsampleRatio(ENVELOPE_DOWNSAMPLE_RATIO)
-        .setNoveltyGain(DEFAULT_NOVELTY_GAIN)
-        .setPeakDetectionAbsoluteMinThreshold(PEAK_DETECTION_ABSOLUTE_MIN_THRESHOLD)
-        .setPeakDetectionThresholdRel(PEAK_DETECTION_THRESHOLD_REL)
-        .setPeakDetectionMinPeakDistance(PEAK_DETECTION_MIN_PEAK_DISTANCE)
-        .setPeakDetectionMaxBpm(PEAK_DETECTION_MAX_BPM)
-        .build();
+    BeatDetector* beatDetector = new BeatDetector(usbMicro.getSampleRate() / SIGNAL_DOWNSAMPLE_RATIO, config);
 
 
     usbMicro.drain_audio_buffer();
