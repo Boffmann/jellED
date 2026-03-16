@@ -3,38 +3,37 @@
 
 namespace jellED {
 
-Pattern::Pattern(IPlatformUtils& pUtils, const int length)
-    : max_length{length},
-    pUtils(pUtils) {
-    this->colors = (pattern_color*) malloc(sizeof(pattern_color) * this->max_length);
+Pattern::Pattern(int length)
+    : length_{length},
+      colors_{(pattern_color*) malloc(sizeof(pattern_color) * length)} {
 }
 
-Pattern::~Pattern(){
-    if (this->colors != nullptr) {
-        free(this->colors);
+Pattern::~Pattern() {
+    if (colors_ != nullptr) {
+        free(colors_);
     }
 }
 
-void Pattern::set_color(const pattern_color color, const int color_index) {
-    if (color_index > max_length) {
-        for (int i = 0; i < this->max_length; ++i) {
-            this->colors[i] = RED;
-        }
+void Pattern::set_color(const pattern_color& color, int index) {
+    if (index < 0 || index >= length_) {
         return;
     }
-    this->colors[color_index] = color;
+    colors_[index] = color;
 }
 
-const int Pattern::get_length() const {
-    return this->max_length;
-}
-
-const pattern_color& Pattern::get_color(const int color_index) const {
-    if (0 <= color_index && color_index < this->max_length) {
-        return this->colors[color_index];
+const pattern_color& Pattern::get_color(int index) const {
+    if (index >= 0 && index < length_) {
+        return colors_[index];
     }
-    pUtils.logger().log("Added too many colors");
-    return RED;
+    return colors_[0];
+}
+
+pattern_color* Pattern::data() {
+    return colors_;
+}
+
+int Pattern::get_length() const {
+    return length_;
 }
 
 } // end namespace jellED

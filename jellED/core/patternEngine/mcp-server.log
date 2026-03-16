@@ -1,0 +1,41 @@
+2026-03-16 16:54:01.815 [debug] Initializing ConfigManager from environment variables
+2026-03-16 16:54:01.816 [debug] Loaded config from environment (sensitive data redacted):
+2026-03-16 16:54:01.816 [debug] {
+  "host": "wiki.corp.adobe.com",
+  "authMethod": "[REDACTED]",
+  "port": 1984,
+  "assetsOutputDir": "./cursor-wiki-mcp/assets",
+  "assets": {
+    "extractAssets": false,
+    "outputDir": "./cursor-wiki-mcp/assets",
+    "filenamePrefix": "asset-",
+    "createOutputDirs": true,
+    "useAbsolutePath": true,
+    "assetTypes": [
+      "image",
+      "pdf",
+      "document",
+      "attachment",
+      "plantuml"
+    ]
+  }
+}
+2026-03-16 16:54:01.816 [debug] ConfigManager initialized
+2026-03-16 16:54:01.984 [debug] Created temp directory: /Users/tjabben/repos/personal/jellED/jellED/core/patternEngine/.temp_wiki_content
+2026-03-16 16:54:01.986 [info] Initializing MCP Server...
+2026-03-16 16:54:01.986 [info] 📦 Build ID: unknown
+2026-03-16 16:54:01.986 [info] 📦 Version: unknown
+2026-03-16 16:54:01.987 [info] 📦 Build Date: unknown
+2026-03-16 16:54:01.987 [info] 📦 Timestamp: 1773676441985
+2026-03-16 16:54:01.990 [debug] Creating authenticated Confluence client via AuthenticationManager
+2026-03-16 16:54:01.990 [debug] Normalized host: wiki.corp.adobe.com
+2026-03-16 16:54:01.990 [info] Using Personal Access Token authentication method
+2026-03-16 16:54:01.991 [info] Confluence client created successfully for host: wiki.corp.adobe.com
+2026-03-16 16:54:01.991 [info] Registered expert-wiki-editing-workflow prompt
+2026-03-16 16:54:01.991 [info] Registered plantuml_diagram_creator prompt
+2026-03-16 16:54:01.991 [info] Registered prompts: expert_wiki_editing_workflow, plantuml_diagram_creator
+2026-03-16 16:54:01.991 [info] Prompt "expert_wiki_editing_workflow" registered: has description=true, has callback=true
+2026-03-16 16:54:01.991 [info] Prompt "plantuml_diagram_creator" registered: has description=true, has callback=true
+2026-03-16 16:54:01.991 [info] MCP Server initialized successfully
+2026-03-16 16:54:01.992 [info] Wiki MCP Server connected via stdio
+2026-03-16 16:54:01.992 [info] Wiki MCP Server started successfully with stdio transport

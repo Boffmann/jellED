@@ -22,6 +22,9 @@ set(sources
   ${pattern_source_path}/pattern.cpp
   ${pattern_source_path}/patternBlueprint.cpp
   ${pattern_source_path}/rainbowPattern.cpp
+  ${pattern_source_path}/breathingGlowPattern.cpp
+  ${pattern_source_path}/pulseFlashPattern.cpp
+  ${pattern_source_path}/sparklePattern.cpp
 )
 
 add_library(${target} ${sources})
