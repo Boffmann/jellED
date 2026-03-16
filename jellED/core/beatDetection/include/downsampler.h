@@ -8,12 +8,12 @@ namespace jellED {
 class Downsampler {
 private:
     int downsample_factor;
-    double sample_rate_out;
-    double alpha;
-    double z = 0.0;
+    float sample_rate_out;
+    float alpha;
+    float z = 0.0f;
     uint32_t sampleCounter_;
 public:
-    Downsampler(double sample_rate, int downsample_factor, double fc_cut_frac);
+    Downsampler(float sample_rate, int downsample_factor, float fc_cut_frac);
     void downsample(const AudioBuffer& in, AudioBuffer& out);
 };
 

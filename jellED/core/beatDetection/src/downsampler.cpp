@@ -4,7 +4,7 @@
 
 namespace jellED {
 
-Downsampler::Downsampler(double sample_rate_in, int downsample_factor, double fc_cut_frac)
+Downsampler::Downsampler(float sample_rate_in, int downsample_factor, float fc_cut_frac)
     : downsample_factor(downsample_factor)
     , sampleCounter_(0)
 {
@@ -13,10 +13,10 @@ Downsampler::Downsampler(double sample_rate_in, int downsample_factor, double fc
     }
     this->sample_rate_out = sample_rate_in / downsample_factor;
     // Note: alpha/z no longer used in simple decimation mode
-    double nyq_new = sample_rate_out * 0.5;
-    double fc = std::max(1.0, fc_cut_frac * nyq_new);
-    alpha = std::exp(-2.0 * M_PI * fc / sample_rate_in);
-    z = 0.0;
+    float nyq_new = sample_rate_out * 0.5f;
+    float fc = std::max(1.0f, fc_cut_frac * nyq_new);
+    alpha = std::exp(-2.0f * static_cast<float>(M_PI) * fc / sample_rate_in);
+    z = 0.0f;
 }
 
 void Downsampler::downsample(const AudioBuffer& in, AudioBuffer& out) {

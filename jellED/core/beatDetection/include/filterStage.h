@@ -9,7 +9,7 @@ class FilterStage {
 public:
     FilterStage(){};
     virtual ~FilterStage(){}
-    virtual double apply(const double sample) = 0;
+    virtual float apply(const float sample) = 0;
 };
 
 } // namespace jellED

@@ -7,32 +7,32 @@ namespace jellED {
 
     class AutomaticGainControl {
         private:
-            double peak_limiter_gain;
-            double peak_envelope;
-            
-            double section_gain;
-            double section_rms;
+            float peak_limiter_gain;
+            float peak_envelope;
+
+            float section_gain;
+            float section_rms;
             uint32_t section_counter;
-            
-            double local_peak;
-            
+
+            float local_peak;
+
             uint32_t sample_rate;
-            double target_level;
-            
+            float target_level;
+
             // Coefficients
-            double peak_attack_coeff;
-            double peak_release_coeff;
-            double section_alpha;
-            double local_alpha;
-            
+            float peak_attack_coeff;
+            float peak_release_coeff;
+            float section_alpha;
+            float local_alpha;
+
         public:
-            AutomaticGainControl(uint32_t sample_rate, double target_level);
-            
-            double apply(double sample);
-            
-            double getSectionGain() const;
-            double getPeakLimiterGain() const;
-            double getCurrentRMS() const;
+            AutomaticGainControl(uint32_t sample_rate, float target_level);
+
+            float apply(float sample);
+
+            float getSectionGain() const;
+            float getPeakLimiterGain() const;
+            float getCurrentRMS() const;
         };
 
 } // end namespace jellED

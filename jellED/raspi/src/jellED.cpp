@@ -30,7 +30,7 @@ constexpr uint8_t PUSH_BUTTON_PIN = 4;
 
 // Volume quantization scale: maps envelope amplitude [0, 0.5] → [0, 255].
 // Tune if LEDs are too dim (lower) or always saturate (raise).
-static constexpr double VOLUME_SCALE = 512.0;
+static constexpr float VOLUME_SCALE = 512.0f;
 
 // Send a volume packet every N downsampled samples (12 kHz / 25 Hz = 480).
 static constexpr int VOLUME_UPDATE_INTERVAL = 480;
@@ -57,14 +57,14 @@ void uart_send_features(const UartFeatures& features) {
     }
 }
 
-// Quantise double volume [0, ∞) to [0, 255] using VOLUME_SCALE.
-static inline uint8_t quantizeVolume(double v) {
-    return static_cast<uint8_t>(std::min(255.0, std::max(0.0, v * VOLUME_SCALE)));
+// Quantise float volume [0, ∞) to [0, 255] using VOLUME_SCALE.
+static inline uint8_t quantizeVolume(float v) {
+    return static_cast<uint8_t>(std::min(255.0f, std::max(0.0f, v * VOLUME_SCALE)));
 }
 
 // Quantise spectral tilt [-1, 1] to [0, 255]:  0=treble-heavy, 255=bass-heavy.
-static inline uint8_t quantizeTilt(double tilt) {
-    return static_cast<uint8_t>(std::min(255.0, std::max(0.0, (tilt + 1.0) * 127.5)));
+static inline uint8_t quantizeTilt(float tilt) {
+    return static_cast<uint8_t>(std::min(255.0f, std::max(0.0f, (tilt + 1.0f) * 127.5f)));
 }
 
 UartFeatures buildUartFeatures(BeatDetector& detector, bool isBeat) {
@@ -195,7 +195,7 @@ int main() {
     config.thresholdRelHigh = 0.1;
     config.peakDetectionMaxBpm = 180.0;
 
-    Downsampler downsampler(usbMicro.getSampleRate(), SIGNAL_DOWNSAMPLE_RATIO,
+    Downsampler downsampler(static_cast<float>(usbMicro.getSampleRate()), SIGNAL_DOWNSAMPLE_RATIO,
                             config.downsampleCutoffFrequency);
     AutomaticGainControl automaticGainControl(
         usbMicro.getSampleRate() / SIGNAL_DOWNSAMPLE_RATIO,

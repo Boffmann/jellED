@@ -8,17 +8,17 @@ namespace jellED {
 // WARNING: Keep this false in production - stdout can block the audio thread on Raspberry Pi!
 static constexpr bool DEBUG_MULTIBAND_FUSION = false;
 
-constexpr double SECONDS_PER_MINUTE = 60.0;
+constexpr float SECONDS_PER_MINUTE = 60.0f;
 
-MultiBandFusion::MultiBandFusion(double coincidenceWindow, double maxBpm)
-    : coincidenceWindow_(coincidenceWindow), 
-      lastBeatTime_(-1.0), 
+MultiBandFusion::MultiBandFusion(float coincidenceWindow, float maxBpm)
+    : coincidenceWindow_(coincidenceWindow),
+      lastBeatTime_(-1.0f),
       minBeatInterval_(SECONDS_PER_MINUTE / maxBpm),
       head_(0),
       count_(0) {}
 
-void MultiBandFusion::removeExpiredPeaks(double currentTime) {
-    double cutoffTime = currentTime - coincidenceWindow_;
+void MultiBandFusion::removeExpiredPeaks(float currentTime) {
+    float cutoffTime = currentTime - coincidenceWindow_;
     
     // Remove peaks from head that are too old
     while (count_ > 0 && peaks_[head_].time < cutoffTime) {
@@ -48,31 +48,31 @@ bool MultiBandFusion::push(const BandPeak& peak) {
     
     // Analyze peaks in window
     bool hasLow = false;
-    double totalStrength = 0.0;
-    
+    float totalStrength = 0.0f;
+
     for (size_t i = 0; i < count_; ++i) {
         size_t idx = (head_ + i) % MAX_PEAKS;
         const BandPeak& p = peaks_[idx];
-        
+
         if (p.bandId == BAND_ID::LOW) {
             hasLow = true;
         }
         totalStrength += p.strength;
     }
-    
+
     size_t numPeaks = count_;
-    
+
     // Apply kick drum (low band) bonus
-    double kickBonus = hasLow ? 0.5 : 0.0;
-    
+    float kickBonus = hasLow ? 0.5f : 0.0f;
+
     // Adaptive threshold based on number of peaks and kick presence
-    double threshold = 1.5 - (static_cast<double>(numPeaks) * 0.2) - kickBonus;
-    threshold = std::max(0.3, threshold);
-    
+    float threshold = 1.5f - (static_cast<float>(numPeaks) * 0.2f) - kickBonus;
+    threshold = std::max(0.3f, threshold);
+
     if (numPeaks >= 2 && totalStrength > threshold) {
         // Check minimum beat interval to prevent double-triggering
-        double timeSinceLastBeat = peak.time - lastBeatTime_;
-        if (lastBeatTime_ >= 0.0 && timeSinceLastBeat < minBeatInterval_) {
+        float timeSinceLastBeat = peak.time - lastBeatTime_;
+        if (lastBeatTime_ >= 0.0f && timeSinceLastBeat < minBeatInterval_) {
             if constexpr (DEBUG_MULTIBAND_FUSION) {
                 std::cout << "[MultiBand] BLOCKED: timeSince=" << std::fixed << std::setprecision(4) 
                           << timeSinceLastBeat << "s < minInterval=" << minBeatInterval_ << "s" << std::endl;
@@ -93,11 +93,11 @@ bool MultiBandFusion::push(const BandPeak& peak) {
     return false;
 }
 
-void MultiBandFusion::setCoincidenceWindow(double window) {
+void MultiBandFusion::setCoincidenceWindow(float window) {
     coincidenceWindow_ = window;
 }
 
-void MultiBandFusion::setMaxBpm(double maxBpm) {
+void MultiBandFusion::setMaxBpm(float maxBpm) {
     minBeatInterval_ = SECONDS_PER_MINUTE / maxBpm;
 }
 

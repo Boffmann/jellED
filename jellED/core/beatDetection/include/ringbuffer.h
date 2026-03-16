@@ -7,9 +7,9 @@ namespace jellED {
 
 class Ringbuffer {
 private:
-    double* buffer;
-    double* scratch_buffer;  // For calculating median
-    double* tail;
+    float* buffer;
+    float* scratch_buffer;  // For calculating median
+    float* tail;
     uint32_t head_position;
     uint32_t max_len;
     uint32_t current_size;
@@ -19,15 +19,15 @@ private:
 public:
     Ringbuffer(uint32_t max_len, bool initializeScratchBuffer = false);
     ~Ringbuffer();
-    void fill(double value);
-    double get(uint32_t index) const;
-    void append(double entry);
-    void override_head_value(double value);
+    void fill(float value);
+    float get(uint32_t index) const;
+    void append(float entry);
+    void override_head_value(float value);
     void clear();
     uint32_t size() const;
-    double min() const;
-    double max() const;
-    double median() const;
+    float min() const;
+    float max() const;
+    float median() const;
 };
 
 } // end namespace jellED
