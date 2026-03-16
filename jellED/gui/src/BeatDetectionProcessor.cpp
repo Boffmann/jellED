@@ -234,6 +234,13 @@ void BeatDetectionProcessor::run() {
                     display_->addEnvelopeFilteredSampleHigh(0.0);
                 }
 
+                display_->setVolumeLow(this->beatDetector_->getVolumeLow());
+                display_->setVolumeMid(this->beatDetector_->getVolumeMid());
+                display_->setVolumeHigh(this->beatDetector_->getVolumeHigh());
+                display_->setOverallVolume(this->beatDetector_->getOverallLevel());
+                display_->setVolumeTrend(this->beatDetector_->getVolumeTrend());
+                display_->setSpectralTilt(this->beatDetector_->getSpectralTilt());
+
                 if (anyBeatDetected) {
                     if constexpr (ENABLE_BEAT_TIMING_DEBUG) {
                         logBeatTiming(this->beatDetector_->getCurrentTime());

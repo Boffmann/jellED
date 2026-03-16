@@ -43,6 +43,8 @@ set(SOURCES
     src/BeatDetectionProcessor.cpp
     src/WaveformWidget.cpp
     src/EnvelopePeakWidget.cpp
+    src/VolumeDisplayWidget.cpp
+    src/BipolarLedWidget.cpp
     ../core/beatDetection/src/bandpassFilter.cpp
     ../core/beatDetection/src/automaticGainControl.cpp
     ../core/beatDetection/src/downsampler.cpp
@@ -62,6 +64,8 @@ set(HEADERS
     include/WaveformWidget.h
     include/EnvelopePeakWidget.h
     include/BeatDetectionProcessor.h
+    include/VolumeDisplayWidget.h
+    include/BipolarLedWidget.h
 )
 
 # Create executable
