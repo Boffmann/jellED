@@ -17,17 +17,17 @@ BeatDetector::BeatDetector(int sampleRate, const BeatDetectionConfig& config)
     : sampleRate_(sampleRate)
     , config_(config)
     , totalSamplesReceived_(0)
-    , filteredSampleLow_(0.0)
-    , filteredSampleMid_(0.0)
-    , filteredSampleHigh_(0.0)
-    , envelopeSampleLow_(0.0)
-    , envelopeSampleMid_(0.0)
-    , envelopeSampleHigh_(0.0)
+    , filteredSampleLow_(0.0f)
+    , filteredSampleMid_(0.0f)
+    , filteredSampleHigh_(0.0f)
+    , envelopeSampleLow_(0.0f)
+    , envelopeSampleMid_(0.0f)
+    , envelopeSampleHigh_(0.0f)
     , peakDetectedLow_(false)
     , peakDetectedMid_(false)
     , peakDetectedHigh_(false)
-    , currentTime_(0.0)
-    , bandConfigLow_{BANDPASS_FILTER_COEFFICIENTS_LOW, 1.0,
+    , currentTime_(0.0f)
+    , bandConfigLow_{BANDPASS_FILTER_COEFFICIENTS_LOW, 1.0f,
                      config.absoluteMinThresholdLow,
                      config.thresholdRelLow,
                      config.bandWeightLow,
@@ -36,7 +36,7 @@ BeatDetector::BeatDetector(int sampleRate, const BeatDetectionConfig& config)
                      config.thresholdRelaxTimeLow, config.onsetRatioLow,
                      config.minRelativeThresholdFactor,
                      config.risingThresholdScale, config.fallingThresholdScale}
-    , bandConfigMid_{BANDPASS_FILTER_COEFFICIENTS_MID, 1.0,
+    , bandConfigMid_{BANDPASS_FILTER_COEFFICIENTS_MID, 1.0f,
                      config.absoluteMinThresholdMid,
                      config.thresholdRelMid,
                      config.bandWeightMid,
@@ -45,7 +45,7 @@ BeatDetector::BeatDetector(int sampleRate, const BeatDetectionConfig& config)
                      config.thresholdRelaxTimeMid, config.onsetRatioMid,
                      config.minRelativeThresholdFactor,
                      config.risingThresholdScale, config.fallingThresholdScale}
-    , bandConfigHigh_{BANDPASS_FILTER_COEFFICIENTS_HIGH, 1.0,
+    , bandConfigHigh_{BANDPASS_FILTER_COEFFICIENTS_HIGH, 1.0f,
                       config.absoluteMinThresholdHigh,
                       config.thresholdRelHigh,
                       config.bandWeightHigh,
@@ -58,10 +58,10 @@ BeatDetector::BeatDetector(int sampleRate, const BeatDetectionConfig& config)
     , bandStateMid_(bandConfigMid_, sampleRate_, config.envelopeDownsampleRatio, config.peakDetectionMaxBpm)
     , bandStateHigh_(bandConfigHigh_, sampleRate_, config.envelopeDownsampleRatio, config.peakDetectionMaxBpm)
     , multibandFusion_(config.coincidenceWindow, config.peakDetectionMaxBpm)
-    , shortTermEnergy_(0.0)
-    , longTermEnergy_(0.0)
-    , shortTermCoeff_(1.0 - std::exp(-1.0 / (sampleRate * 0.05)))
-    , longTermCoeff_ (1.0 - std::exp(-1.0 / (sampleRate * 2.0)))
+    , shortTermEnergy_(0.0f)
+    , longTermEnergy_(0.0f)
+    , shortTermCoeff_(1.0f - std::exp(-1.0f / (sampleRate * 0.05f)))
+    , longTermCoeff_ (1.0f - std::exp(-1.0f / (sampleRate * 2.0f)))
 {
     std::cout << "BeatDetector initialized:" << std::endl;
     std::cout << "  Sample Rate: " << sampleRate_ << " Hz" << std::endl;
@@ -128,10 +128,10 @@ bool BeatDetector::applyConfig(const BeatDetectionConfig& newConfig) {
     return true;
 }
 
-bool BeatDetector::is_beat(const double sample) {
+bool BeatDetector::is_beat(const float sample) {
     this->totalSamplesReceived_++;
 
-    const double absSample = std::abs(sample);
+    const float absSample = std::abs(sample);
     shortTermEnergy_ += shortTermCoeff_ * (absSample - shortTermEnergy_);
     longTermEnergy_  += longTermCoeff_  * (absSample - longTermEnergy_);
 
@@ -143,30 +143,30 @@ bool BeatDetector::is_beat(const double sample) {
     this->envelopeSampleMid_ = this->bandStateMid_.applyEnvelopeFilter(this->filteredSampleMid_);
     this->envelopeSampleHigh_ = this->bandStateHigh_.applyEnvelopeFilter(this->filteredSampleHigh_);
 
-    this->currentTime_ = static_cast<double>(this->totalSamplesReceived_) / this->sampleRate_;
+    this->currentTime_ = static_cast<float>(this->totalSamplesReceived_) / this->sampleRate_;
     bool anyPeakDetected = false;
     this->peakDetectedLow_ = false;
     this->peakDetectedMid_ = false;
     this->peakDetectedHigh_ = false;
 
-    if (this->envelopeSampleLow_ != -1.0) {
-        double strength = bandStateLow_.applyPeakDetector(this->envelopeSampleLow_, this->currentTime_);
-        if (strength > 0.0) {
+    if (this->envelopeSampleLow_ != -1.0f) {
+        float strength = bandStateLow_.applyPeakDetector(this->envelopeSampleLow_, this->currentTime_);
+        if (strength > 0.0f) {
             this->peakDetectedLow_ = true;
             anyPeakDetected = true;
         }
     }
 
-    if (this->envelopeSampleMid_ != -1.0) {
-        double strength = bandStateMid_.applyPeakDetector(this->envelopeSampleMid_, this->currentTime_);
-        if (strength > 0.0) {
+    if (this->envelopeSampleMid_ != -1.0f) {
+        float strength = bandStateMid_.applyPeakDetector(this->envelopeSampleMid_, this->currentTime_);
+        if (strength > 0.0f) {
             this->peakDetectedMid_ = true;
         }
     }
 
-    if (this->envelopeSampleHigh_ != -1.0) {
-        double strength = bandStateHigh_.applyPeakDetector(this->envelopeSampleHigh_, this->currentTime_);
-        if (strength > 0.0) {
+    if (this->envelopeSampleHigh_ != -1.0f) {
+        float strength = bandStateHigh_.applyPeakDetector(this->envelopeSampleHigh_, this->currentTime_);
+        if (strength > 0.0f) {
             this->peakDetectedHigh_ = true;
         }
     }
@@ -181,27 +181,27 @@ bool BeatDetector::is_beat(const double sample) {
     return anyPeakDetected;
 }
 
-double BeatDetector::getFilteredSampleLow() {
+float BeatDetector::getFilteredSampleLow() {
     return this->filteredSampleLow_;
 }
 
-double BeatDetector::getFilteredSampleMid() {
+float BeatDetector::getFilteredSampleMid() {
     return this->filteredSampleMid_;
 }
 
-double BeatDetector::getFilteredSampleHigh() {
+float BeatDetector::getFilteredSampleHigh() {
     return this->filteredSampleHigh_;
 }
 
-double BeatDetector::getEnvelopeLow() {
+float BeatDetector::getEnvelopeLow() {
     return this->envelopeSampleLow_;
 }
 
-double BeatDetector::getEnvelopeMid() {
+float BeatDetector::getEnvelopeMid() {
     return this->envelopeSampleMid_;
 }
 
-double BeatDetector::getEnvelopeHigh() {
+float BeatDetector::getEnvelopeHigh() {
     return this->envelopeSampleHigh_;
 }
 
@@ -217,48 +217,48 @@ bool BeatDetector::isPeakHigh() {
     return this->peakDetectedHigh_;
 }
 
-double BeatDetector::getThresholdLow() {
+float BeatDetector::getThresholdLow() {
     return this->bandStateLow_.peakDetector.getLastThreshold();
 }
 
-double BeatDetector::getThresholdMid() {
+float BeatDetector::getThresholdMid() {
     return this->bandStateMid_.peakDetector.getLastThreshold();
 }
 
-double BeatDetector::getThresholdHigh() {
+float BeatDetector::getThresholdHigh() {
     return this->bandStateHigh_.peakDetector.getLastThreshold();
 }
 
-double BeatDetector::getCurrentTime() {
+float BeatDetector::getCurrentTime() {
     return this->currentTime_;
 }
 
-double BeatDetector::getVolumeLow() const {
+float BeatDetector::getVolumeLow() const {
     return bandStateLow_.getVolume();
 }
 
-double BeatDetector::getVolumeMid() const {
+float BeatDetector::getVolumeMid() const {
     return bandStateMid_.getVolume();
 }
 
-double BeatDetector::getVolumeHigh() const {
+float BeatDetector::getVolumeHigh() const {
     return bandStateHigh_.getVolume();
 }
 
-double BeatDetector::getOverallLevel() const {
+float BeatDetector::getOverallLevel() const {
     return shortTermEnergy_;
 }
 
-double BeatDetector::getVolumeTrend() const {
-    if (longTermEnergy_ < 1e-6) return 0.0;
-    return (shortTermEnergy_ / longTermEnergy_) - 1.0;
+float BeatDetector::getVolumeTrend() const {
+    if (longTermEnergy_ < 1e-6f) return 0.0f;
+    return (shortTermEnergy_ / longTermEnergy_) - 1.0f;
 }
 
-double BeatDetector::getSpectralTilt() const {
-    const double low  = bandStateLow_.getVolume();
-    const double high = bandStateHigh_.getVolume();
-    const double sum  = low + high;
-    if (sum < 1e-6) return 0.0;
+float BeatDetector::getSpectralTilt() const {
+    const float low  = bandStateLow_.getVolume();
+    const float high = bandStateHigh_.getVolume();
+    const float sum  = low + high;
+    if (sum < 1e-6f) return 0.0f;
     return (low - high) / sum;
 }
 

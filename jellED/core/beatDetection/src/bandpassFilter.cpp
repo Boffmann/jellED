@@ -33,10 +33,10 @@ BandpassFilter::~BandpassFilter() {
     }
 }
 
-double BandpassFilter::applyBandpass(double sample, uint8_t section) {
+float BandpassFilter::applyBandpass(float sample, uint8_t section) {
     this->prev_samples_per_section[section]->append(sample);
 
-    double filteredSample = 0.0;
+    float filteredSample = 0.0f;
     filteredSample +=
         this->coefficients.numerator[section][0] * this->prev_samples_per_section[section]->get(2);
     filteredSample +=
@@ -49,15 +49,13 @@ double BandpassFilter::applyBandpass(double sample, uint8_t section) {
     filteredSample -=
         this->coefficients.denominator[section][2] * this->prev_filtered_per_section[section]->get(1);
 
-    filteredSample *= 1.0 / this->coefficients.denominator[section][0];
-
     this->prev_filtered_per_section[section]->append(filteredSample);
 
     return filteredSample;
 }
 
-double BandpassFilter::apply(const double sample) {
-    double filtered_sample = sample;
+float BandpassFilter::apply(const float sample) {
+    float filtered_sample = sample;
     for (int section = 0; section < NUM_SECTIONS; ++section) {
         filtered_sample = applyBandpass(filtered_sample, section);
     }

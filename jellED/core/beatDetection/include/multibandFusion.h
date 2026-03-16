@@ -13,8 +13,8 @@ enum class BAND_ID : int {
 };
 
 struct BandPeak {
-    double time;
-    double strength;
+    float time;
+    float strength;
     BAND_ID bandId;
 };
 
@@ -24,24 +24,24 @@ public:
     // 3 bands × ~3 peaks each = 9, round up for safety
     static constexpr size_t MAX_PEAKS = 16;
 
-    explicit MultiBandFusion(double coincidenceWindow, double maxBpm);
-    
+    explicit MultiBandFusion(float coincidenceWindow, float maxBpm);
+
     bool push(const BandPeak& peak);
 
-    void setCoincidenceWindow(double window);
-    void setMaxBpm(double maxBpm);
+    void setCoincidenceWindow(float window);
+    void setMaxBpm(float maxBpm);
 
 private:
-    double coincidenceWindow_;
-    double lastBeatTime_;
-    double minBeatInterval_;
+    float coincidenceWindow_;
+    float lastBeatTime_;
+    float minBeatInterval_;
     
     // Fixed-size circular buffer for peaks
     BandPeak peaks_[MAX_PEAKS];
     size_t head_;       // Index of oldest element
     size_t count_;      // Number of valid elements
     
-    void removeExpiredPeaks(double currentTime);
+    void removeExpiredPeaks(float currentTime);
     void addPeak(const BandPeak& peak);
 };
 

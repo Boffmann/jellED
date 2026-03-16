@@ -9,73 +9,73 @@
 namespace jellED {
 
 struct PeakDetectorConfig {
-    double absoluteMinThreshold;
-    double thresholdRel;
-    double maxBpm;
+    float absoluteMinThreshold;
+    float thresholdRel;
+    float maxBpm;
 
     // Per-band timing — see BeatDetectionConfig for descriptions
-    double baselineAttackTime;
-    double baselineReleaseTime;
-    double thresholdRelaxTime;
-    double onsetRatio;
+    float baselineAttackTime;
+    float baselineReleaseTime;
+    float thresholdRelaxTime;
+    float onsetRatio;
 
     // Global tuning — see BeatDetectionConfig for descriptions
-    double minRelativeThresholdFactor;
-    double risingThresholdScale;
-    double fallingThresholdScale;
+    float minRelativeThresholdFactor;
+    float risingThresholdScale;
+    float fallingThresholdScale;
 };
 
 class PeakDetector {
 private:
     // Configuration parameters
-    double absolute_min_threshold;
-    double threshold_rel;
-    double max_bpm;
-    double onset_ratio;
-    double min_relative_threshold_factor;
-    double rising_threshold_scale;
-    double falling_threshold_scale;
-    double threshold_baseline; 
+    float absolute_min_threshold;
+    float threshold_rel;
+    float max_bpm;
+    float onset_ratio;
+    float min_relative_threshold_factor;
+    float rising_threshold_scale;
+    float falling_threshold_scale;
+    float threshold_baseline;
 
     // Envelope follower state
-    double envelope;
-    double baseline_attack_coeff;
-    double baseline_release_coeff;
-    double dynamic_threshold_rel;
-    double min_dynamic_threshold_rel;
-    double threshold_relax_coeff;
-    
+    float envelope;
+    float baseline_attack_coeff;
+    float baseline_release_coeff;
+    float dynamic_threshold_rel;
+    float min_dynamic_threshold_rel;
+    float threshold_relax_coeff;
+
     // Peak detection state
-    double prev_env;
+    float prev_env;
     bool is_rising;
-    double last_peak_time;
-    
+    float last_peak_time;
+
     // Onset detection: track recent minimum to require valley before peak
-    double recent_min;
-    double recent_min_decay_coeff;
+    float recent_min;
+    float recent_min_decay_coeff;
 
     // Last computed threshold (updated each is_peak call)
-    double last_threshold_;
+    float last_threshold_;
 
     uint32_t sample_rate_;
 
-    double update_envelope(double sample);
+    float update_envelope(float sample);
 
 public:
     PeakDetector(const PeakDetectorConfig& config, uint32_t sample_rate);
-    
-    bool is_peak(double sample, double current_time);
 
-    double getLastThreshold() const { return last_threshold_; }
+    bool is_peak(float sample, float current_time);
 
-    void setAbsoluteMinThreshold(double threshold);
-    void setThresholdRel(double threshold);
-    void setMaxBpm(double bpm);
-    void setOnsetRatio(double ratio);
-    void setTimingParams(double baselineAttackTime, double baselineReleaseTime,
-                         double thresholdRelaxTime);
-    void setHysteresisScales(double risingScale, double fallingScale);
-    void setMinRelativeThresholdFactor(double factor);
+    float getLastThreshold() const { return last_threshold_; }
+
+    void setAbsoluteMinThreshold(float threshold);
+    void setThresholdRel(float threshold);
+    void setMaxBpm(float bpm);
+    void setOnsetRatio(float ratio);
+    void setTimingParams(float baselineAttackTime, float baselineReleaseTime,
+                         float thresholdRelaxTime);
+    void setHysteresisScales(float risingScale, float fallingScale);
+    void setMinRelativeThresholdFactor(float factor);
 };
 
 } // end namespace jellED

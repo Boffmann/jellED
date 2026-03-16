@@ -17,6 +17,14 @@ set(PROJECT_ROOT_DIR_PATH    "${CMAKE_CURRENT_SOURCE_DIR}")
 add_compile_options(-std=c++17)
 # add_compile_options(-Wall -Wextra -pedantic -Werror)
 
+# Optimization flags
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
+    # Raspberry Pi Zero: ARMv6 with single-precision VFP hardware only
+    add_compile_options(-O3 -march=armv6zk -mtune=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard -ffast-math)
+else()
+    add_compile_options(-O3 -ffast-math)
+endif()
+
 # Add memory sanitizer for debug builds
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_options(-fsanitize=address -fsanitize=leak -g)
