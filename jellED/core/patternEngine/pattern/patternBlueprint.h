@@ -1,33 +1,30 @@
 #ifndef _PATTERN_BLUEPRINT_H_
 #define _PATTERN_BLUEPRINT_H_
 
-#include "pattern.h"
-#include "pattern/patternType.h"
-#include "pUtils/ILogger.h"
+#include "audioFeatures.h"
+#include "pattern_colors.h"
+#include "patternType.h"
 
 namespace jellED {
 
 class PatternBlueprint {
 protected:
     const PatternType pattern_type;
-    const int num_leds;
     const unsigned long pattern_duration_micros;
-    // The colors representing the finally generated pattern for the moment
-    pattern_color* colors;
     unsigned long pattern_start_time_micros;
     bool should_react_to_beat;
     unsigned long time_of_last_beat;
 
-    virtual void init() = 0;
 public:
-    PatternBlueprint(unsigned long startTime, PatternType patternType, int num_leds, unsigned long pattern_duration_micros);
-    virtual ~PatternBlueprint();
-    PatternType get_pattern_type();
-    int get_num_leds();
-    const pattern_color& get_color(int index);
+    PatternBlueprint(unsigned long startTime, PatternType patternType, unsigned long pattern_duration_micros);
+    virtual ~PatternBlueprint() = default;
+
+    PatternType get_pattern_type() const;
     void shouldReactToBeat(bool should_react, unsigned long current_time_micros);
-    
-    virtual void update_pattern(bool is_beat, unsigned long current_time_micros) = 0;
+
+    // Writes the current frame into `output[0..num_leds-1]`.
+    virtual void update_pattern(const AudioFeatures& features, unsigned long current_time_micros,
+                                pattern_color* output, int num_leds) = 0;
 };
 
 } // namespace jellED

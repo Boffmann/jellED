@@ -4,7 +4,11 @@
 namespace jellED {
 
 enum class PatternType : int {
-    RAINBOW
+    RAINBOW         = 0,
+    BREATHING_GLOW  = 1,
+    PULSE_FLASH     = 2,
+    SPARKLE         = 3,
+    _COUNT
 };
 
 namespace PatternTypeCast {
