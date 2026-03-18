@@ -17,11 +17,34 @@ set(PROJECT_ROOT_DIR_PATH    "${CMAKE_CURRENT_SOURCE_DIR}")
 add_compile_options(-std=c++17)
 # add_compile_options(-Wall -Wextra -pedantic -Werror)
 
-# Optimization flags
+# You can check which OS/arch your Pi Zero 2 is running with uname -m — it'll print armv7l
+#   (32-bit) or aarch64 (64-bit). Just uncomment the matching line and comment out the original Zero
+#   one.
+# Optimization flags — uncomment the block matching your target hardware.
+#
+# Pi Zero (original): ARM1176JZF-S, ARMv6, single-core 1 GHz.
+#   VFP unit is single-precision only — double arithmetic falls back to software.
+#   float is ~5-10x faster than double. No SIMD.
+#
+# Pi Zero 2 W: Cortex-A53, ARMv8-A, quad-core 1 GHz.
+#   Full hardware double-precision FPU (VFPv4) and 128-bit NEON SIMD.
+#   float and double both hardware-accelerated; float still preferred for
+#   NEON throughput (4 floats vs 2 doubles per 128-bit register).
+#   Two sub-options: 32-bit (armv7l) or 64-bit OS (aarch64).
+
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
-    # Raspberry Pi Zero: ARMv6 with single-precision VFP hardware only
+
+    # ── Pi Zero (original) ───────────────────────────────────────────────────
     add_compile_options(-O3 -march=armv6zk -mtune=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard -ffast-math)
+
+    # ── Pi Zero 2 W — 32-bit OS (armv7l) ────────────────────────────────────
+    # add_compile_options(-O3 -march=armv8-a -mtune=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard -ffast-math)
+
+    # ── Pi Zero 2 W — 64-bit OS (aarch64) ───────────────────────────────────
+    # add_compile_options(-O3 -march=armv8-a+crc -mtune=cortex-a53 -ffast-math)
+
 else()
+    # ── Development machine (macOS / x86-64 Linux) ───────────────────────────
     add_compile_options(-O3 -ffast-math)
 endif()
 

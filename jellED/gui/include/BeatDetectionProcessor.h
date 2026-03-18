@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include "beatdetection.h"
 #include "include/downsampler.h"
+#include "include/noiseGate.h"
 #include "sound/soundinput.h"
 
 class AudioDisplay;
@@ -41,6 +42,7 @@ private:
     jellED::BeatDetector* beatDetector_;
 
     jellED::Downsampler downsampler_;
+    jellED::NoiseGate noiseGate_;
     jellED::AutomaticGainControl automaticGainControl_;
 };
 

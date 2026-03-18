@@ -1,66 +1,45 @@
 #include "include/bandpassFilter.h"
 
-#include <iostream>
+#include <cstring>
 
 namespace jellED {
 
 BandpassFilter::BandpassFilter(const BandpassFilterCoefficients& coefficients)
-: coefficients(coefficients),
-  prev_samples_per_section{nullptr},
-  prev_filtered_per_section{nullptr}
+    : coefficients(coefficients)
 {
-    this->prev_samples_per_section = (Ringbuffer**) malloc(sizeof(Ringbuffer*) * NUM_SECTIONS);
-    this->prev_filtered_per_section = (Ringbuffer**) malloc(sizeof(Ringbuffer*) * NUM_SECTIONS);
-
-    for (int ring_buffer_index = 0; ring_buffer_index < NUM_SECTIONS; ring_buffer_index++) {
-        this->prev_samples_per_section[ring_buffer_index] = new Ringbuffer(3);
-        this->prev_filtered_per_section[ring_buffer_index] = new Ringbuffer(3);
-    }
+    std::memset(w, 0, sizeof(w));
 }
 
-BandpassFilter::~BandpassFilter() {
-    if (this->prev_samples_per_section != nullptr) {
-        for (int ring_buffer_index = 0; ring_buffer_index < NUM_SECTIONS; ring_buffer_index++) {
-            delete this->prev_samples_per_section[ring_buffer_index];
-        }
-        free(prev_samples_per_section);
-    }
-    if (this->prev_filtered_per_section != nullptr) {
-        for (int ring_buffer_index = 0; ring_buffer_index < NUM_SECTIONS; ring_buffer_index++) {
-            delete this->prev_filtered_per_section[ring_buffer_index];
-        }
-        free(prev_filtered_per_section);
-    }
-}
-
-float BandpassFilter::applyBandpass(float sample, uint8_t section) {
-    this->prev_samples_per_section[section]->append(sample);
-
-    float filteredSample = 0.0f;
-    filteredSample +=
-        this->coefficients.numerator[section][0] * this->prev_samples_per_section[section]->get(2);
-    filteredSample +=
-        this->coefficients.numerator[section][1] * this->prev_samples_per_section[section]->get(1);
-    filteredSample +=
-        this->coefficients.numerator[section][2] * this->prev_samples_per_section[section]->get(0);
-
-    filteredSample -=
-        this->coefficients.denominator[section][1] * this->prev_filtered_per_section[section]->get(2);
-    filteredSample -=
-        this->coefficients.denominator[section][2] * this->prev_filtered_per_section[section]->get(1);
-
-    this->prev_filtered_per_section[section]->append(filteredSample);
-
-    return filteredSample;
-}
-
+// Applies the filter as a cascade of NUM_SECTIONS second-order sections (biquads).
+//
+// Each section implements the standard IIR difference equation:
+//   y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2]
+//         - a1*y[n-1] - a2*y[n-2]
+//
+// This is computed using Direct Form II Transposed (TDF-II), which is
+// algebraically equivalent but uses only 2 state variables per section
+// instead of 4, and requires no ring buffer or index arithmetic:
+//
+//   y[n]   = b0*x[n] + w[0]          <- output
+//   w[0]  += b1*x[n] - a1*y[n]       <- update state (w[1] feeds in from previous step)
+//   w[1]   = b2*x[n] - a2*y[n]       <- update state
+//
+// w[s][0] and w[s][1] hold the two delay-line values for section s.
 float BandpassFilter::apply(const float sample) {
-    float filtered_sample = sample;
-    for (int section = 0; section < NUM_SECTIONS; ++section) {
-        filtered_sample = applyBandpass(filtered_sample, section);
-    }
+    float x = sample;
+    for (int s = 0; s < NUM_SECTIONS; ++s) {
+        const float b0 = coefficients.numerator[s][0];
+        const float b1 = coefficients.numerator[s][1];
+        const float b2 = coefficients.numerator[s][2];
+        const float a1 = coefficients.denominator[s][1];
+        const float a2 = coefficients.denominator[s][2];
 
-    return filtered_sample;
+        const float y = b0 * x + w[s][0];
+        w[s][0] = b1 * x - a1 * y + w[s][1];
+        w[s][1] = b2 * x - a2 * y;
+        x = y;
+    }
+    return x;
 }
 
 } // end namespace jellED

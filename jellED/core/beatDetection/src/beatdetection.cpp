@@ -161,6 +161,7 @@ bool BeatDetector::is_beat(const float sample) {
         float strength = bandStateMid_.applyPeakDetector(this->envelopeSampleMid_, this->currentTime_);
         if (strength > 0.0f) {
             this->peakDetectedMid_ = true;
+            // anyPeakDetected = true;
         }
     }
 
@@ -168,6 +169,7 @@ bool BeatDetector::is_beat(const float sample) {
         float strength = bandStateHigh_.applyPeakDetector(this->envelopeSampleHigh_, this->currentTime_);
         if (strength > 0.0f) {
             this->peakDetectedHigh_ = true;
+            // anyPeakDetected = true;
         }
     }
 
