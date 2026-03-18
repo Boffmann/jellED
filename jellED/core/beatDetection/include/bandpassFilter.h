@@ -2,7 +2,6 @@
 #define __BANDPASS_FILTER_JELLED_H__
 
 #include "filterStage.h"
-#include "ringbuffer.h"
 
 namespace jellED {
 
@@ -64,15 +63,12 @@ static const BandpassFilterCoefficients BANDPASS_FILTER_COEFFICIENTS_HIGH = {
 class BandpassFilter : public FilterStage {
 private:
     const BandpassFilterCoefficients& coefficients;
-
-    float applyBandpass(float sample, uint8_t section);
-    Ringbuffer** prev_samples_per_section;
-    Ringbuffer** prev_filtered_per_section;
+    // Direct Form II Transposed state: w[section][0..1]
+    float w[NUM_SECTIONS][2];
 
 public:
-    BandpassFilter(const BandpassFilterCoefficients& coefficients);
-    ~BandpassFilter();
-    float apply(const float sample);
+    explicit BandpassFilter(const BandpassFilterCoefficients& coefficients);
+    float apply(const float sample) override;
 
 };
 
