@@ -48,6 +48,7 @@ private:
     QSlider* downsampleCutoffFrequencySlider_;
 
     QLineEdit* automaticGainControlTargetLevelTextField_;
+    QLineEdit* noiseGateThresholdTextField_;
 
     QLineEdit* absoluteMinThresholdLowTextField_;
     QLineEdit* absoluteMinThresholdMidTextField_;

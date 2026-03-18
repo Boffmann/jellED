@@ -55,6 +55,7 @@ set(SOURCES
     ../core/beatDetection/src/multibandFusion.cpp
     ../core/beatDetection/src/tempoTracker.cpp
     ../core/beatDetection/src/sampleRecorder.cpp
+    ../core/beatDetection/src/noiseGate.cpp
 )
 
 # Header files

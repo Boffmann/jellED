@@ -24,6 +24,7 @@ set(sources
   ${source_path}/multibandFusion.cpp
   ${source_path}/tempoTracker.cpp
   ${source_path}/sampleRecorder.cpp
+  ${source_path}/noiseGate.cpp
 )
 
 add_library(${target} ${sources})
