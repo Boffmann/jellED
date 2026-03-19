@@ -7,6 +7,7 @@ struct BeatDetectionConfig {
     int envelopeDownsampleRatio = 1;
     float downsampleCutoffFrequency = 0.5;
     float automaticGainControlTargetLevel = 0.4;
+    float noiseGateThreshold = 0.005;
     float absoluteMinThresholdLow = 0.05;
     float absoluteMinThresholdMid = 0.05;
     float absoluteMinThresholdHigh = 0.05;

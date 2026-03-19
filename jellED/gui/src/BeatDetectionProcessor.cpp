@@ -144,6 +144,7 @@ BeatDetectionProcessor::BeatDetectionProcessor(
             , beatDetector_(new jellED::BeatDetector(
                   soundInput->getSampleRate() / signalDownsampleRatio, config))
             , downsampler_(soundInput->getSampleRate(), signalDownsampleRatio, config.downsampleCutoffFrequency)
+            , noiseGate_(soundInput->getSampleRate() / signalDownsampleRatio, config.noiseGateThreshold)
             , automaticGainControl_(soundInput->getSampleRate() / signalDownsampleRatio, config.automaticGainControlTargetLevel)
         {}
 
@@ -182,9 +183,9 @@ void BeatDetectionProcessor::run() {
             downsampler_.downsample(buffer, downsampledBuffer);
             for (size_t i = 0; i < downsampledBuffer.num_samples; i++) {
 
-                // Apply Automatic Gain Control for consistent levels across environments
-                //double sample = automaticGainControl_.apply(downsampledBuffer.buffer[i]);
-                double sample = downsampledBuffer.buffer[i];
+                // Signal chain: noise gate -> AGC
+                float gated = noiseGate_.apply(downsampledBuffer.buffer[i]);
+                double sample = automaticGainControl_.apply(gated);
 
                 // if (recorder.addSample(sample)) {
                 //     // File was written (target reached)

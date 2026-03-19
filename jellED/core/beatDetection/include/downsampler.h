@@ -10,7 +10,8 @@ private:
     int downsample_factor;
     float sample_rate_out;
     float alpha;
-    float z = 0.0f;
+    float z1 = 0.0f;  // first pole state
+    float z2 = 0.0f;  // second pole state (cascaded for -12 dB/octave)
     uint32_t sampleCounter_;
 public:
     Downsampler(float sample_rate, int downsample_factor, float fc_cut_frac);

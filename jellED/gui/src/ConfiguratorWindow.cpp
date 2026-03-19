@@ -42,6 +42,7 @@ static QJsonObject configToJson(const jellED::BeatDetectionConfig& c) {
     obj["envelopeDownsampleRatio"] = c.envelopeDownsampleRatio;
     obj["downsampleCutoffFrequency"] = c.downsampleCutoffFrequency;
     obj["automaticGainControlTargetLevel"] = c.automaticGainControlTargetLevel;
+    obj["noiseGateThreshold"] = c.noiseGateThreshold;
     obj["absoluteMinThresholdLow"] = c.absoluteMinThresholdLow;
     obj["absoluteMinThresholdMid"] = c.absoluteMinThresholdMid;
     obj["absoluteMinThresholdHigh"] = c.absoluteMinThresholdHigh;
@@ -96,6 +97,7 @@ static bool jsonToConfig(const QJsonObject& obj, jellED::BeatDetectionConfig& c)
     c.envelopeDownsampleRatio = getInt("envelopeDownsampleRatio", DEFAULTS.envelopeDownsampleRatio);
     c.downsampleCutoffFrequency = getDouble("downsampleCutoffFrequency", DEFAULTS.downsampleCutoffFrequency);
     c.automaticGainControlTargetLevel = getDouble("automaticGainControlTargetLevel", DEFAULTS.automaticGainControlTargetLevel);
+    c.noiseGateThreshold = getDouble("noiseGateThreshold", DEFAULTS.noiseGateThreshold);
     c.absoluteMinThresholdLow = getDouble("absoluteMinThresholdLow", DEFAULTS.absoluteMinThresholdLow);
     c.absoluteMinThresholdMid = getDouble("absoluteMinThresholdMid", DEFAULTS.absoluteMinThresholdMid);
     c.absoluteMinThresholdHigh = getDouble("absoluteMinThresholdHigh", DEFAULTS.absoluteMinThresholdHigh);
@@ -144,6 +146,7 @@ jellED::BeatDetectionConfig ConfiguratorWindow::currentConfig() const {
     config.envelopeDownsampleRatio = 1 << envelopeDownsampleRateSlider_->value();
     config.downsampleCutoffFrequency = 0.1 * downsampleCutoffFrequencySlider_->value();
     config.automaticGainControlTargetLevel = automaticGainControlTargetLevelTextField_->text().toDouble();
+    config.noiseGateThreshold = noiseGateThresholdTextField_->text().toDouble();
     config.absoluteMinThresholdLow = absoluteMinThresholdLowTextField_->text().toDouble();
     config.absoluteMinThresholdMid = absoluteMinThresholdMidTextField_->text().toDouble();
     config.absoluteMinThresholdHigh = absoluteMinThresholdHighTextField_->text().toDouble();
@@ -194,6 +197,7 @@ void ConfiguratorWindow::applyConfigToUi(const jellED::BeatDetectionConfig& conf
     downsampleCutoffFrequencyValueLabel_->setText(QString::number(config.downsampleCutoffFrequency));
 
     automaticGainControlTargetLevelTextField_->setText(QString::number(config.automaticGainControlTargetLevel));
+    noiseGateThresholdTextField_->setText(QString::number(config.noiseGateThreshold));
     absoluteMinThresholdLowTextField_->setText(QString::number(config.absoluteMinThresholdLow));
     absoluteMinThresholdMidTextField_->setText(QString::number(config.absoluteMinThresholdMid));
     absoluteMinThresholdHighTextField_->setText(QString::number(config.absoluteMinThresholdHigh));
@@ -467,13 +471,24 @@ QWidget* ConfiguratorWindow::setupDownsampleControls() {
 }
 
 QWidget* ConfiguratorWindow::setupGainControls() {
-    QGroupBox* group = new QGroupBox("Automatic Gain Control Target Level", this);
+    QGroupBox* group = new QGroupBox("Signal Conditioning", this);
     group->setStyleSheet(STYLE_GENERAL);
     QHBoxLayout* layout = new QHBoxLayout(group);
-    layout->setSpacing(5);
+    layout->setSpacing(10);
     layout->setContentsMargins(5, 5, 5, 5);
+
+    QVBoxLayout* agcCol = new QVBoxLayout();
+    agcCol->addWidget(new QLabel("AGC Target Level", this));
     automaticGainControlTargetLevelTextField_ = new QLineEdit(QString::number(DEFAULTS.automaticGainControlTargetLevel), this);
-    layout->addWidget(automaticGainControlTargetLevelTextField_);
+    agcCol->addWidget(automaticGainControlTargetLevelTextField_);
+    layout->addLayout(agcCol);
+
+    QVBoxLayout* gateCol = new QVBoxLayout();
+    gateCol->addWidget(new QLabel("Noise Gate Threshold", this));
+    noiseGateThresholdTextField_ = new QLineEdit(QString::number(DEFAULTS.noiseGateThreshold), this);
+    gateCol->addWidget(noiseGateThresholdTextField_);
+    layout->addLayout(gateCol);
+
     return group;
 }
 
