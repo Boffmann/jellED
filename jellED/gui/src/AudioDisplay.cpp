@@ -109,7 +109,8 @@ AudioDisplay::AudioDisplay(std::string microphone_device_id, int displaySeconds,
     : QMainWindow(parent)
     , updateRotation_(0)
     , sampleRate_(0)
-    , soundInput_(new jellED::WaveStreamer(DEFAULT_WAV_FILE))
+    // , soundInput_(new jellED::WaveStreamer(DEFAULT_WAV_FILE))
+    , soundInput_(new jellED::UsbMicro(microphone_device_id, SoundIoBackendCoreAudio))
     , currentInputMode_(AudioInputMode::WavFile)
     , currentSourcePath_(DEFAULT_WAV_FILE)
     , displaySeconds_(displaySeconds)
@@ -130,6 +131,8 @@ AudioDisplay::AudioDisplay(std::string microphone_device_id, int displaySeconds,
 
     this->sampleRate_ = soundInput_->getSampleRate() / SIGNAL_DOWNSAMPLE_RATIO;
     std::cout << "Sample rate: " << sampleRate_ << std::endl;
+
+    jellED::UsbMicro::print_available_input_devices(SoundIoBackendCoreAudio);
 
     processorThread_ = new WaveformProcessor(sampleRate_, this);
     connect(processorThread_, &WaveformProcessor::displayDataReady, 

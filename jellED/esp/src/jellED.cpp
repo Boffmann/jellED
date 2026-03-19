@@ -9,6 +9,7 @@
 
 constexpr uint16_t NUM_LEDS              = 10;
 constexpr unsigned long PATTERN_DURATION_MICROS = 5000000;
+constexpr unsigned long BRIGHTNESS_DECAY_MICROS = 1000000;
 // az-delivery-devkit-v4
 // constexpr uint8_t LED_PIN = 13;
 // constexpr uint8_t ESP_UART_TX_PIN = 17;
@@ -21,8 +22,7 @@ constexpr uint32_t ESP_UART_BAUD_RATE = 115200;
 
 jellED::WS2812 strip = jellED::WS2812(LED_PIN, NUM_LEDS);
 jellED::EspPlatformUtils espUtils;
-jellED::PatternEngine patternEngine =
-    jellED::PatternEngine(espUtils, NUM_LEDS, PATTERN_DURATION_MICROS);
+jellED::PatternEngine patternEngine(espUtils, NUM_LEDS, PATTERN_DURATION_MICROS, BRIGHTNESS_DECAY_MICROS);
 
 jellED::SerialConfig espSerialConfig;
 jellED::EspUart espUart("Uart Receiver", UART_NUM_0, ESP_UART_TX_PIN, ESP_UART_RX_PIN);
