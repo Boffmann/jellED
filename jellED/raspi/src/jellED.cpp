@@ -267,7 +267,6 @@ int main() {
 
                 if (isBeat) {
                     // Beat detected: build full feature packet and wake UART thread.
-                    std::cout << "Beat!" << std::endl;
                     {
                         std::lock_guard<std::mutex> lock(beat_ready_mutex);
                         latest_features      = buildUartFeatures(*beatDetector, true);
@@ -275,6 +274,7 @@ int main() {
                         beat_ready           = true;
                     }
                     beat_ready_cv.notify_one();
+                    std::cout << "Beat!" << std::endl;
                 }
 
                 // Periodic volume update: keep latest_features current so the

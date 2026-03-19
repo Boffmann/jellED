@@ -49,13 +49,24 @@ bool uart_read_packet(jellED::UartFeatures& out) {
   return jellED::uart_parse_packet(rxBuf, out);
 }
 
+bool uart_read_latest(jellED::UartFeatures& out) {
+  bool got_any = false;
+  while (espUart.available() >= jellED::UART_PACKET_SIZE) {
+    int got = espUart.receive(rxBuf, jellED::UART_PACKET_SIZE);
+    if (got == jellED::UART_PACKET_SIZE && jellED::uart_parse_packet(rxBuf, out)) {
+      got_any = true;
+    }
+  }
+  return got_any;
+}
+
 // Persistent audio features — volume data outlives a single loop iteration so
 // continuous patterns (breathing glow, etc.) always have current values.
 static jellED::AudioFeatures persistentFeatures{};
 
 void loop() {
   jellED::UartFeatures received{};
-  if (uart_read_packet(received)) {
+  if (uart_read_latest(received)) {
     // Full packet received: update all fields including beat flags.
     persistentFeatures.volumeLow    = received.volumeLow;
     persistentFeatures.volumeMid    = received.volumeMid;
