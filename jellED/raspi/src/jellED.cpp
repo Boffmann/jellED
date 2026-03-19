@@ -4,6 +4,8 @@
 #include "sound/raspi/usbMicro.h"
 #include "sound/audiobuffer.h"
 #include "include/downsampler.h"
+#include "include/noiseGate.h"
+#include "include/automaticGainControl.h"
 #include "include/sampleRecorder.h"
 #include "beatdetection.h"
 #include "uartProtocol.h"
@@ -194,12 +196,14 @@ int main() {
     config.thresholdRelMid  = 0.1;
     config.thresholdRelHigh = 0.1;
     config.peakDetectionMaxBpm = 180.0;
+    config.noiseGateThreshold = 0.005;
 
     Downsampler downsampler(static_cast<float>(usbMicro.getSampleRate()), SIGNAL_DOWNSAMPLE_RATIO,
                             config.downsampleCutoffFrequency);
     AutomaticGainControl automaticGainControl(
         usbMicro.getSampleRate() / SIGNAL_DOWNSAMPLE_RATIO,
         config.automaticGainControlTargetLevel);
+    NoiseGate noiseGate(usbMicro.getSampleRate() / SIGNAL_DOWNSAMPLE_RATIO, config.noiseGateThreshold);
     jellED::SampleRecorder recorder(12000 * 5, "output.wav", 12000);
 
     std::cout << "Microphone sample rate: " << usbMicro.getSampleRate() << " Hz" << std::endl;
@@ -251,7 +255,9 @@ int main() {
 
             for (int i = 0; i < downsampledBuffer.num_samples; i++) {
                 samplesRecordedTime++;
-                double sample = downsampledBuffer.buffer[i];
+                float gated = noiseGate.apply(downsampledBuffer.buffer[i]);
+                double sample = automaticGainControl_.apply(gated);
+                // double sample = downsampledBuffer.buffer[i];
 
                 if (recorder.addSample(sample)) {
                     recorder.setEnabled(false);
