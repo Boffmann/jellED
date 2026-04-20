@@ -6,15 +6,26 @@ namespace jellED {
 BreathingGlowPattern::BreathingGlowPattern(unsigned long startTime,
                                            unsigned long pattern_duration_micros)
     : PatternBlueprint(startTime, PatternType::BREATHING_GLOW, pattern_duration_micros),
-      smoothed_brightness(0.0f),
+      brightness_filter_(0.0f, BRIGHTNESS_TAU_RISE_S, BRIGHTNESS_TAU_DECAY_S),
+      last_update_micros_(0),
       beat_brightness(0.0f) {}
 
 void BreathingGlowPattern::update_pattern(const AudioFeatures& features,
                                           unsigned long current_time_micros,
                                           pattern_color* output, int num_leds) {
     // ── Smoothed brightness from bass volume ──────────────────────────────────
-    float target = static_cast<float>(features.volumeLow);
-    smoothed_brightness = SMOOTHING_ALPHA * target + (1.0f - SMOOTHING_ALPHA) * smoothed_brightness;
+    // Time-aware smoothing: compute dt in seconds so the filter behaviour is
+    // consistent regardless of how often update_pattern is called.
+    float dt_seconds;
+    if (last_update_micros_ == 0) {
+        dt_seconds = 0.0f;  // first call — no time has elapsed, filter just holds
+    } else {
+        dt_seconds = static_cast<float>(current_time_micros - last_update_micros_) * 1e-6f;
+    }
+    last_update_micros_ = current_time_micros;
+
+    const float target = static_cast<float>(features.volumeLow);
+    const float smoothed_brightness = brightness_filter_.update(target, dt_seconds);
 
     // ── Beat spike ────────────────────────────────────────────────────────────
     if (features.isBeat() && should_react_to_beat) {

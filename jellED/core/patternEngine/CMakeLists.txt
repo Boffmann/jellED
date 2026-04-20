@@ -33,3 +33,7 @@ target_include_directories(${target}
   PUBLIC
   ${include_path}
 )
+
+# Link against shared DSP primitives (ExpFilter etc.). INTERFACE library
+# auto-propagates include paths to consumers.
+target_link_libraries(${target} PUBLIC JellEDDsp)

@@ -8,6 +8,12 @@ add_compile_options(-std=c++17)
 # Set core libraries directory
 set(CORE_LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
+# Add Dsp library (header-only general DSP primitives — must come before
+# beatDetection and patternEngine so they can link against it).
+if(EXISTS ${CORE_LIBS_DIR}/dsp/CMakeLists.txt)
+    add_subdirectory(${CORE_LIBS_DIR}/dsp ${CMAKE_BINARY_DIR}/core/dsp)
+endif()
+
 # Add BeatDetection library
 if(EXISTS ${CORE_LIBS_DIR}/beatDetection/CMakeLists.txt)
     add_subdirectory(${CORE_LIBS_DIR}/beatDetection ${CMAKE_BINARY_DIR}/core/beatDetection)

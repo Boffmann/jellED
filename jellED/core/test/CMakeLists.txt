@@ -24,6 +24,11 @@ add_executable(beatDetection_test
     beatDetection/ringbuffer_test.cpp
 )
 
+# Dsp Tests Executable (header-only primitives like ExpFilter).
+add_executable(dsp_test
+    dsp/expFilter_test.cpp
+)
+
 target_link_libraries(pattern_test
     GTest::gtest_main
     PatternEngine
@@ -36,5 +41,11 @@ target_link_libraries(beatDetection_test
     TestUtils
 )
 
+target_link_libraries(dsp_test
+    GTest::gtest_main
+    JellEDDsp
+)
+
 gtest_discover_tests(pattern_test)
 gtest_discover_tests(beatDetection_test)
+gtest_discover_tests(dsp_test)
