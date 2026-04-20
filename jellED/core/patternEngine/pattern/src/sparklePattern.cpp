@@ -1,4 +1,5 @@
 #include "sparklePattern.h"
+#include "expFilter.h"
 #include "pattern_colors.h"
 
 namespace jellED {
@@ -6,6 +7,7 @@ namespace jellED {
 SparklePattern::SparklePattern(unsigned long startTime, int num_leds,
                                unsigned long pattern_duration_micros)
     : PatternBlueprint(startTime, PatternType::SPARKLE, pattern_duration_micros),
+      last_update_micros_(0),
       rng_state(0xDEADBEEFu) {
     int capped = (num_leds > MAX_LEDS) ? MAX_LEDS : num_leds;
     for (int i = 0; i < capped; ++i) {
@@ -21,20 +23,35 @@ uint32_t SparklePattern::xorshift32() {
 }
 
 void SparklePattern::update_pattern(const AudioFeatures& features,
-                                    unsigned long /*current_time_micros*/,
+                                    unsigned long current_time_micros,
                                     pattern_color* output, int num_leds) {
     int leds = (num_leds > MAX_LEDS) ? MAX_LEDS : num_leds;
 
+    // ── dt bookkeeping ────────────────────────────────────────────────────────
+    float dt_seconds;
+    if (last_update_micros_ == 0) {
+        dt_seconds = 0.0f;
+    } else {
+        dt_seconds = static_cast<float>(current_time_micros - last_update_micros_) * 1e-6f;
+    }
+    last_update_micros_ = current_time_micros;
+
+    // Shared decay coefficient — one exp() call amortized over all LEDs.
+    // Each sparkle_level shrinks by (1-alpha) per frame, which is the
+    // exponential decay that ExpFilter would apply with input=0.
+    const float alpha_decay = ExpFilter<float>::alphaFromDt(SPARKLE_TAU_DECAY_S, dt_seconds);
+    const float decay_factor = 1.0f - alpha_decay;
+
     // Sparkle probability scales with treble volume: more highs → more sparks
-    float high_norm = static_cast<float>(features.volumeHigh) / 255.0f;
-    float spawn_prob = SPARKLE_THRESHOLD + high_norm * 0.08f;
+    const float high_norm = static_cast<float>(features.volumeHigh) / 255.0f;
+    const float spawn_prob = SPARKLE_THRESHOLD + high_norm * 0.08f;
 
     // Base glow tracks bass volume (dim warm white)
-    float base = static_cast<float>(features.volumeLow) / 255.0f * BASE_GLOW_SCALE;
+    const float base = static_cast<float>(features.volumeLow) / 255.0f * BASE_GLOW_SCALE;
 
     for (int i = 0; i < leds; ++i) {
-        // Decay existing sparkle
-        sparkle_level[i] *= SPARKLE_DECAY;
+        // Decay existing sparkle (time-aware; equivalent to ExpFilter toward 0)
+        sparkle_level[i] *= decay_factor;
 
         // Randomly ignite new sparkle
         float rnd = static_cast<float>(xorshift32()) / static_cast<float>(0xFFFFFFFFu);
