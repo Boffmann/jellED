@@ -24,6 +24,11 @@ AutomaticGainControl::AutomaticGainControl(uint32_t sample_rate, float target_le
     // Stage 2: Update continuously with 1 second time constant
     section_alpha = 1.0f - std::exp(-1.0f / (1.0f * sample_rate));
 
+    // Stage 2 gain smoothing: asymmetric - fast drop (20ms) protects against sudden
+    // loudness; slow rise (250ms) prevents pumping noise up between beats.
+    section_gain_drop_coeff = 1.0f - std::exp(-1.0f / (0.020f * sample_rate));
+    section_gain_rise_coeff = 1.0f - std::exp(-1.0f / (0.250f * sample_rate));
+
     // Stage 3: Fast local tracking (100ms)
     local_alpha = 1.0f - std::exp(-1.0f / (0.1f * sample_rate));
 }
@@ -51,9 +56,13 @@ float AutomaticGainControl::apply(float sample) {
         // 20x = 26dB, enough for quiet USB mics on Raspberry Pi
         desired_gain = std::max(0.1f, std::min(20.0f, desired_gain));
 
-        // Smooth gain changes (avoid sudden jumps)
-        // Slower adaptation for more stability
-        section_gain = 0.995f * section_gain + 0.005f * desired_gain;
+        // Asymmetric smoothing: drop fast when signal gets louder (desired_gain falls);
+        // rise slowly when signal gets quieter, so quiet gaps between beats don't
+        // amplify noise before the next transient arrives.
+        float gain_coeff = (desired_gain < section_gain)
+            ? section_gain_drop_coeff
+            : section_gain_rise_coeff;
+        section_gain = (1.0f - gain_coeff) * section_gain + gain_coeff * desired_gain;
     }
 
     // STAGE 3: Peak limiter - fast reduction if output would clip
