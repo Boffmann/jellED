@@ -34,8 +34,15 @@ constexpr uint8_t PUSH_BUTTON_PIN = 4;
 // Tune if LEDs are too dim (lower) or always saturate (raise).
 static constexpr float VOLUME_SCALE = 512.0f;
 
-// Send a volume packet every N downsampled samples (12 kHz / 25 Hz = 480).
-static constexpr int VOLUME_UPDATE_INTERVAL = 480;
+// Send a volume packet every N downsampled samples (12 kHz / 100 Hz = 120).
+// Rate justification: envelope release time ~50 ms gives ~20 Hz signal
+// bandwidth; Nyquist requires ≥40 Hz sampling. 100 Hz leaves comfortable
+// headroom and costs ~6% of the 115200-baud UART line rate (7 B × 100 Hz).
+static constexpr int VOLUME_UPDATE_INTERVAL = 120;
+
+// UART sender thread timeout: must match VOLUME_UPDATE_INTERVAL cadence so
+// volume-only packets go out at the same rate the main thread updates them.
+static constexpr int UART_THREAD_TIMEOUT_MS = 10;
 
 std::string microphone_device_id = "hw:CARD=Device,DEV=0";
 
@@ -156,7 +163,8 @@ int main() {
     UartFeatures latest_features;
 
     // ── UART sender thread ────────────────────────────────────────────────────
-    // Wakes immediately on a beat, or after 40 ms to send a volume-only update.
+    // Wakes immediately on a beat, or after UART_THREAD_TIMEOUT_MS to send a
+    // volume-only update. Timeout cadence determines the packet rate.
     std::thread beat_uart_thread([&]() {
         while (true) {
             UartFeatures to_send;
@@ -167,7 +175,7 @@ int main() {
                 std::unique_lock<std::mutex> lock(beat_ready_mutex);
                 beat_occurred = beat_ready_cv.wait_for(
                     lock,
-                    std::chrono::milliseconds(40),
+                    std::chrono::milliseconds(UART_THREAD_TIMEOUT_MS),
                     [&] { return beat_ready; }
                 );
                 to_send = latest_features;
@@ -278,7 +286,7 @@ int main() {
                 }
 
                 // Periodic volume update: keep latest_features current so the
-                // 40 ms timeout always sends fresh volume data to the ESP.
+                // UART thread's timeout always sends fresh volume data to the ESP.
                 if (++volumeUpdateCounter >= VOLUME_UPDATE_INTERVAL) {
                     volumeUpdateCounter = 0;
                     std::lock_guard<std::mutex> lock(beat_ready_mutex);
