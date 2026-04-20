@@ -59,6 +59,14 @@ public:
     float getTauRise() const { return tau_rise_; }
     float getTauDecay() const { return tau_decay_; }
 
+    // Compute the blend coefficient α for a given time constant and elapsed
+    // time step. Useful when decaying many independent values with a shared
+    // tau (e.g. a sparkle array) — avoids allocating a filter per element
+    // while keeping the same time-aware semantics.
+    static float alphaFromDt(float tau_seconds, float dt_seconds) {
+        return 1.0f - std::exp(-dt_seconds / tau_seconds);
+    }
+
 private:
     T value_;
     float tau_rise_;

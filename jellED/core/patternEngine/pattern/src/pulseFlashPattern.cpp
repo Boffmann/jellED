@@ -6,24 +6,33 @@ namespace jellED {
 PulseFlashPattern::PulseFlashPattern(unsigned long startTime,
                                      unsigned long pattern_duration_micros)
     : PatternBlueprint(startTime, PatternType::PULSE_FLASH, pattern_duration_micros),
-      flash_r(0.0f), flash_g(0.0f), flash_b(0.0f),
-      flash_level(0.0f),
-      ambient_brightness(0.0f) {}
+      flash_filter_(0.0f, FLASH_TAU_RISE_S, FLASH_TAU_DECAY_S),
+      ambient_filter_(0.0f, AMBIENT_TAU_RISE_S, AMBIENT_TAU_DECAY_S),
+      last_update_micros_(0),
+      flash_r(0.0f), flash_g(0.0f), flash_b(0.0f) {}
 
 void PulseFlashPattern::update_pattern(const AudioFeatures& features,
                                        unsigned long current_time_micros,
                                        pattern_color* output, int num_leds) {
-    // ── Ambient: smoothed average of all bands ─────────────────────────────────
-    float overall = (static_cast<float>(features.volumeLow)
-                   + static_cast<float>(features.volumeMid)
-                   + static_cast<float>(features.volumeHigh)) / 3.0f;
-    ambient_brightness = AMBIENT_SMOOTHING * overall
-                       + (1.0f - AMBIENT_SMOOTHING) * ambient_brightness;
+    // ── dt bookkeeping ────────────────────────────────────────────────────────
+    float dt_seconds;
+    if (last_update_micros_ == 0) {
+        dt_seconds = 0.0f;
+    } else {
+        dt_seconds = static_cast<float>(current_time_micros - last_update_micros_) * 1e-6f;
+    }
+    last_update_micros_ = current_time_micros;
 
-    // ── Beat flash ────────────────────────────────────────────────────────────
+    // ── Ambient: slow asymmetric smoother over all-bands average ─────────────
+    const float overall = (static_cast<float>(features.volumeLow)
+                         + static_cast<float>(features.volumeMid)
+                         + static_cast<float>(features.volumeHigh)) / 3.0f;
+    const float ambient_brightness = ambient_filter_.update(overall, dt_seconds);
+
+    // ── Beat flash: instant snap on beat, exponential decay afterwards ────────
     if (features.isBeat() && should_react_to_beat) {
         time_of_last_beat = current_time_micros;
-        flash_level = 255.0f;
+        flash_filter_.reset(255.0f);
 
         uint8_t flags = features.beatFlags;
         int bands = ((flags & AudioFeatures::BEAT_LOW)  ? 1 : 0)
@@ -41,19 +50,15 @@ void PulseFlashPattern::update_pattern(const AudioFeatures& features,
         }
     }
 
-    // ── Decay flash linearly over FLASH_DECAY_MICROS ──────────────────────────
-    if (flash_level > 0.0f) {
-        unsigned long elapsed = current_time_micros - time_of_last_beat;
-        float fraction = 1.0f - static_cast<float>(elapsed) / FLASH_DECAY_MICROS;
-        flash_level = (fraction > 0.0f) ? 255.0f * fraction : 0.0f;
-    }
+    // Decay the flash toward 0. Because input < current, τ_decay applies.
+    const float flash_level = flash_filter_.update(0.0f, dt_seconds);
 
-    // ── Composite: flash on top of dim ambient ─────────────────────────────────
-    float ambient_scale = ambient_brightness / 255.0f * 0.3f; // ambient at 30% max
+    // ── Composite: flash on top of dim ambient ────────────────────────────────
+    const float ambient_scale = ambient_brightness / 255.0f * 0.3f; // ambient at 30% max
     uint8_t br;
     uint8_t r, g, b;
-    if (flash_level > 0.0f) {
-        float fl = flash_level / 255.0f;
+    if (flash_level > 1.0f) {  // below ~0.4% brightness, not worth computing
+        const float fl = flash_level / 255.0f;
         r = static_cast<uint8_t>(flash_r * fl);
         g = static_cast<uint8_t>(flash_g * fl);
         b = static_cast<uint8_t>(flash_b * fl);

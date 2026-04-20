@@ -1,4 +1,7 @@
 #include "rainbowPattern.h"
+
+#include <cmath>
+
 #include "pattern_colors.h"
 
 namespace jellED {
@@ -36,15 +39,20 @@ void RainbowPattern::update_pattern(const AudioFeatures& features, unsigned long
     pattern_color final_color;
 
     if (this->should_react_to_beat) {
-        const unsigned long time_since_beat = current_time_micros - this->time_of_last_beat;
-        const float decay_t = (time_since_beat >= this->brightness_decay_micros)
-            ? 1.0f
-            : (float)time_since_beat / this->brightness_decay_micros;
-        const uint8_t brightness = is_beat ? 255 : mix(base_color.brightness, 0, decay_t);
-        final_color = pattern_color{base_color.red, base_color.green, base_color.blue, brightness};
         if (is_beat) {
             this->time_of_last_beat = current_time_micros;
         }
+        // Stateless exponential decay from 255 at time_of_last_beat.
+        // tau = brightness_decay_micros / 3 gives ~5% residual after the old
+        // "full-decay" duration — visually similar to the prior linear behaviour
+        // but with a more natural curve.
+        const unsigned long time_since_beat = current_time_micros - this->time_of_last_beat;
+        const float tau_s = static_cast<float>(this->brightness_decay_micros) * 1e-6f / 3.0f;
+        const float dt_s  = static_cast<float>(time_since_beat) * 1e-6f;
+        float flash = 255.0f * std::exp(-dt_s / tau_s);
+        if (flash < 0.0f) flash = 0.0f;
+        final_color = pattern_color{base_color.red, base_color.green, base_color.blue,
+                                    static_cast<uint8_t>(flash)};
     } else {
         final_color = base_color;
     }
