@@ -54,21 +54,29 @@ def generate_butterworth():
     lowcut = 2000
     highcut = 5000
     framerate = 12000
+    name = "BANDPASS_FILTER_COEFFICIENTS_HIGH"
     sos = signal.butter(order, [lowcut, highcut],
                         'band', fs=framerate, output='sos')
-    print(f"// Butterworth coefficients: {lowcut} Hz - {highcut} Hz, order: {order}, framerate: {framerate}"
-          .format(lowcut=lowcut, highcut=highcut, order=order, framerate=framerate))
 
-    print(".numerator = {")
-    for o in range(0, order-1):
-        print("\t{{{first},{second},{third}}},".format(first=sos[o][0], second=sos[o][1], third=sos[o][2]))
-    print("\t{{{first},{second},{third}}}".format(first=sos[order-1][0], second=sos[order-1][1], third=sos[order-1][2]))
-    print("},")
-    print(".denominator = {")
-    for o in range(0, order-1):
-        print("\t{{{first},{second},{third}}},".format(first=sos[o][3], second=sos[o][4], third=sos[o][5]))
-    print("\t{{{first},{second},{third}}}".format(first=sos[order-1][3], second=sos[order-1][4], third=sos[order-1][5]))
-    print("}")
+    def fmt_coeff(v):
+        return f"{v:.8e}f" if abs(v) < 0.001 and v != 0 else f"{v}f"
+
+    def fmt_row(a, b, c):
+        return f"{{{fmt_coeff(a)},{fmt_coeff(b)},{fmt_coeff(c)}}}"
+
+    print(f"static const BandpassFilterCoefficients {name} = {{")
+    print(f"    // Butterworth coefficients: {lowcut} Hz - {highcut} Hz, order: {order}, framerate: {framerate}")
+    print("    .numerator = {")
+    for o in range(order):
+        comma = "," if o < order - 1 else ""
+        print(f"        {fmt_row(sos[o][0], sos[o][1], sos[o][2])}{comma}")
+    print("    },")
+    print("    .denominator = {")
+    for o in range(order):
+        comma = "," if o < order - 1 else ""
+        print(f"        {fmt_row(sos[o][3], sos[o][4], sos[o][5])}{comma}")
+    print("    }")
+    print("};")
 
 
 def generate_test_expectations():
