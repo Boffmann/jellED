@@ -10,6 +10,12 @@
 constexpr uint16_t NUM_LEDS              = 10;
 constexpr unsigned long PATTERN_DURATION_MICROS = 5000000;
 constexpr unsigned long BRIGHTNESS_DECAY_MICROS = 1000000;
+
+// Pattern + LED update cadence. 100 Hz is above flicker fusion (~60–90 Hz) and
+// matches the UART arrival rate from the Raspi, so we don't render the same
+// audio features twice. UART reads still happen every main-loop tick (~1 kHz)
+// so beats arriving between pattern updates are captured, not missed.
+constexpr uint32_t PATTERN_INTERVAL_MS = 10;
 // az-delivery-devkit-v4
 // constexpr uint8_t LED_PIN = 13;
 // constexpr uint8_t ESP_UART_TX_PIN = 17;
@@ -65,26 +71,36 @@ bool uart_read_latest(jellED::UartFeatures& out) {
 static jellED::AudioFeatures persistentFeatures{};
 
 void loop() {
+  // Drain UART every loop tick (~1 kHz) so no packet sits in the buffer
+  // longer than ~1 ms. Beat flags are OR-accumulated into persistentFeatures
+  // across the whole PATTERN_INTERVAL_MS window — cleared only when a pattern
+  // frame actually renders them. This guarantees a beat arriving between
+  // pattern updates still shows up in the next frame.
   jellED::UartFeatures received{};
   if (uart_read_latest(received)) {
-    // Full packet received: update all fields including beat flags.
     persistentFeatures.volumeLow    = received.volumeLow;
     persistentFeatures.volumeMid    = received.volumeMid;
     persistentFeatures.volumeHigh   = received.volumeHigh;
-    persistentFeatures.beatFlags    = received.beatFlags;
     persistentFeatures.spectralTilt = received.spectralTilt;
-  } else {
-    // No new packet this frame: keep volume data but clear beat flags.
-    // Beat is a momentary event — it should only fire for the one frame
-    // in which the packet arrived.
+    persistentFeatures.beatFlags   |= received.beatFlags;
+  }
+
+  // Throttle pattern generation + LED output to PATTERN_INTERVAL_MS.
+  static uint32_t last_pattern_ms = 0;
+  const uint32_t now = millis();
+  if (now - last_pattern_ms >= PATTERN_INTERVAL_MS) {
+    last_pattern_ms = now;
+
+    const jellED::Pattern& pattern = patternEngine.generate_pattern(persistentFeatures);
+    for (int i = 0; i < pattern.get_length(); ++i) {
+      const jellED::pattern_color& color = pattern.get_color(i);
+      strip.setColorChannelsRGBAFor(i, color.red, color.green, color.blue, color.brightness);
+    }
+    strip.show();
+
+    // Beat flags are momentary — consumed by this frame, so clear them.
     persistentFeatures.beatFlags = 0;
   }
 
-  const jellED::Pattern& pattern = patternEngine.generate_pattern(persistentFeatures);
-  for (int i = 0; i < pattern.get_length(); ++i) {
-    const jellED::pattern_color& color = pattern.get_color(i);
-    strip.setColorChannelsRGBAFor(i, color.red, color.green, color.blue, color.brightness);
-  }
-  strip.show();
   delay(1);
 }
