@@ -23,6 +23,8 @@ namespace jellED {
             float peak_attack_coeff;
             float peak_release_coeff;
             float section_alpha;
+            float section_gain_drop_coeff;
+            float section_gain_rise_coeff;
             float local_alpha;
 
         public:
