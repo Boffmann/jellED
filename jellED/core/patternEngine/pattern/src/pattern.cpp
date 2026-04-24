@@ -32,6 +32,10 @@ pattern_color* Pattern::data() {
     return colors_;
 }
 
+const pattern_color* Pattern::data() const {
+    return colors_;
+}
+
 int Pattern::get_length() const {
     return length_;
 }

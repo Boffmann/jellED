@@ -11,6 +11,17 @@
 #include "include/tempoTracker.h"
 #include "include/sampleRecorder.h"
 
+#include "audioFeatures.h"
+#include "pattern.h"
+#include "quantize.h"
+
+// Pattern render cadence. 100 Hz matches the ESP (jellED/esp/src/jellED.cpp) so
+// the GUI sees identical temporal behaviour to the hardware. Beat flags are
+// OR-accumulated across the window and cleared at render time.
+static constexpr unsigned long PATTERN_INTERVAL_MICROS = 10'000UL;
+static constexpr unsigned long PATTERN_DURATION_MICROS = 5'000'000UL;
+static constexpr unsigned long BRIGHTNESS_DECAY_MICROS = 1'000'000UL;
+
 // --- Beat Timing Debug (for cross-platform comparison) ---
 // Enable this to output beat detection timestamps in a format that can be compared with Raspberry Pi
 static constexpr bool ENABLE_BEAT_TIMING_DEBUG = true;
@@ -136,6 +147,7 @@ BeatDetectionProcessor::BeatDetectionProcessor(
     jellED::SoundInput* soundInput,
     const jellED::BeatDetectionConfig& config,
     int signalDownsampleRatio,
+    int numLeds,
     QObject* parent)
             : QThread(parent)
             , display_(display)
@@ -146,6 +158,12 @@ BeatDetectionProcessor::BeatDetectionProcessor(
             , downsampler_(soundInput->getSampleRate(), signalDownsampleRatio, config.downsampleCutoffFrequency)
             , noiseGate_(soundInput->getSampleRate() / signalDownsampleRatio, config.noiseGateThreshold)
             , automaticGainControl_(soundInput->getSampleRate() / signalDownsampleRatio, config.automaticGainControlTargetLevel)
+            , platformUtils_()
+            , patternEngine_(std::make_unique<jellED::PatternEngine>(
+                  platformUtils_, numLeds, PATTERN_DURATION_MICROS, BRIGHTNESS_DECAY_MICROS))
+            , numLeds_(numLeds)
+            , selectedPatternType_(jellED::PatternType::RAINBOW)
+            , reactToBeat_(false)
         {}
 
 void BeatDetectionProcessor::run() {
@@ -169,7 +187,17 @@ void BeatDetectionProcessor::run() {
     }
 
     // jellED::SampleRecorder recorder(12000 * 5, "output.wav", 12000);
-    
+
+    // Pattern-engine driving state. The engine runs on the same thread as
+    // beat detection; we OR-accumulate per-band peak flags between render
+    // ticks (matching the ESP's UART drain loop) so a beat never gets lost
+    // just because it lands between two frames.
+    unsigned long lastPatternTickMicros = platformUtils_.crono().currentTimeMicros();
+    uint8_t pendingBeatFlags = 0;
+    jellED::PatternType lastAppliedPatternType = patternEngine_->currentPattern();
+    bool lastAppliedReact = false;
+    patternEngine_->turnOffReactToBeat();
+
     while (!shouldStop_) {
         if (soundInput_->read(&buffer)) {
             // Collect raw audio level stats
@@ -249,6 +277,49 @@ void BeatDetectionProcessor::run() {
                     tempoTracker.addBeat(this->beatDetector_->getCurrentTime());
                     display_->addCombinedPeak();
                     display_->addCurrentDetectedBpm(tempoTracker.currentBpm());
+
+                    // Mirror the raspi UART packet: build per-band beat flags
+                    // from the band peak state at the moment the fused beat fires.
+                    if (beatDetector_->isPeakLow())  pendingBeatFlags |= jellED::AudioFeatures::BEAT_LOW;
+                    if (beatDetector_->isPeakMid())  pendingBeatFlags |= jellED::AudioFeatures::BEAT_MID;
+                    if (beatDetector_->isPeakHigh()) pendingBeatFlags |= jellED::AudioFeatures::BEAT_HIGH;
+                    pendingBeatFlags |= jellED::AudioFeatures::BEAT_FUSED;
+                }
+
+                const unsigned long nowMicros = platformUtils_.crono().currentTimeMicros();
+                if (nowMicros - lastPatternTickMicros >= PATTERN_INTERVAL_MICROS) {
+                    lastPatternTickMicros = nowMicros;
+
+                    const jellED::PatternType requestedType = selectedPatternType_.load();
+                    bool patternSwitched = false;
+                    if (requestedType != lastAppliedPatternType) {
+                        patternEngine_->selectPattern(requestedType);
+                        lastAppliedPatternType = requestedType;
+                        patternSwitched = true;
+                    }
+                    // Each PatternBlueprint owns its own should_react_to_beat flag.
+                    // On a pattern switch, the newly selected blueprint's flag is
+                    // whatever its constructor set or whatever was last written to
+                    // it — not necessarily what the checkbox currently says. Force
+                    // a re-apply so the UI toggle and the active blueprint stay
+                    // in sync.
+                    const bool requestedReact = reactToBeat_.load();
+                    if (patternSwitched || requestedReact != lastAppliedReact) {
+                        if (requestedReact) patternEngine_->turnOnReactToBeat();
+                        else                patternEngine_->turnOffReactToBeat();
+                        lastAppliedReact = requestedReact;
+                    }
+
+                    jellED::AudioFeatures features;
+                    features.volumeLow    = jellED::quantizeVolume(beatDetector_->getVolumeLow());
+                    features.volumeMid    = jellED::quantizeVolume(beatDetector_->getVolumeMid());
+                    features.volumeHigh   = jellED::quantizeVolume(beatDetector_->getVolumeHigh());
+                    features.spectralTilt = jellED::quantizeTilt(beatDetector_->getSpectralTilt());
+                    features.beatFlags    = pendingBeatFlags;
+                    pendingBeatFlags = 0;
+
+                    const jellED::Pattern& pattern = patternEngine_->generate_pattern(features);
+                    display_->setLedStripColors(pattern.data(), pattern.get_length());
                 }
             }
         }

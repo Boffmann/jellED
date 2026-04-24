@@ -1,5 +1,7 @@
 #include "AudioDisplay.h"
 
+#include <QCheckBox>
+#include <QComboBox>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -15,7 +17,13 @@
 #include "sound/raspi/waveStreamer.h"
 #include "sound/raspi/wavePlayer.h"
 
+#include "patternType.h"
+
 static constexpr int SIGNAL_DOWNSAMPLE_RATIO = 4;
+// Match the ESP hardware (jellED/esp/src/jellED.cpp): 10 WS2812 LEDs driven by
+// the pattern engine. Kept in sync so the visualizer renders exactly the same
+// number of LEDs the lightbulb displays.
+static constexpr int NUM_LEDS = 10;
 static const std::string DEFAULT_WAV_FILE = "/Users/tjabben/Documents/techno-drums-loop-120-bpm-1-44100.wav";
 
 static const QString lableStyleSheet = "background-color: darkgray; border: 1px solid black; color: white;";
@@ -194,11 +202,28 @@ void AudioDisplay::setupUi() {
     metersRow->addWidget(volumeHighWidget_);
     metersRow->addWidget(volumeOverallWidget_);
 
+    ledStripWidget_ = new LedStripWidget(NUM_LEDS, this);
+
+    patternSelector_ = new QComboBox(this);
+    patternSelector_->addItem("Rainbow",        static_cast<int>(jellED::PatternType::RAINBOW));
+    patternSelector_->addItem("Breathing Glow", static_cast<int>(jellED::PatternType::BREATHING_GLOW));
+    patternSelector_->addItem("Pulse Flash",    static_cast<int>(jellED::PatternType::PULSE_FLASH));
+    patternSelector_->addItem("Sparkle",        static_cast<int>(jellED::PatternType::SPARKLE));
+    connect(patternSelector_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &AudioDisplay::onPatternSelectionChanged);
+
+    reactToBeatCheckbox_ = new QCheckBox("React to beat", this);
+    connect(reactToBeatCheckbox_, &QCheckBox::toggled,
+            this, &AudioDisplay::onReactToBeatToggled);
+
     QVBoxLayout* sidePanel = new QVBoxLayout();
     sidePanel->addWidget(beatIndicatorWidget_, 0, Qt::AlignHCenter);
     sidePanel->addLayout(metersRow);
     sidePanel->addWidget(volumeTrendWidget_);
     sidePanel->addWidget(spectralTiltWidget_);
+    sidePanel->addWidget(ledStripWidget_);
+    sidePanel->addWidget(patternSelector_);
+    sidePanel->addWidget(reactToBeatCheckbox_);
     sidePanel->addStretch();
     waveformsAndIndicatorLayout->addLayout(sidePanel);
 
@@ -365,7 +390,10 @@ void AudioDisplay::setupStatusBar() {
 
 void AudioDisplay::startBeatDetectionProcessor() {
     const jellED::BeatDetectionConfig config = configuratorWindow_->currentConfig();
-    this->beatDetectionProcessor_ = new BeatDetectionProcessor(this, soundInput_, config, SIGNAL_DOWNSAMPLE_RATIO, this);
+    this->beatDetectionProcessor_ = new BeatDetectionProcessor(this, soundInput_, config, SIGNAL_DOWNSAMPLE_RATIO, NUM_LEDS, this);
+    this->beatDetectionProcessor_->selectPattern(
+        static_cast<jellED::PatternType>(patternSelector_->currentData().toInt()));
+    this->beatDetectionProcessor_->setReactToBeat(reactToBeatCheckbox_->isChecked());
     this->beatDetectionProcessor_->start();
 }
 
@@ -595,8 +623,26 @@ void AudioDisplay::onApplyConfig(const jellED::BeatDetectionConfig& config) {
 
     onClearClicked();
 
-    this->beatDetectionProcessor_ = new BeatDetectionProcessor(this, soundInput_, config, SIGNAL_DOWNSAMPLE_RATIO, this);
+    this->beatDetectionProcessor_ = new BeatDetectionProcessor(this, soundInput_, config, SIGNAL_DOWNSAMPLE_RATIO, NUM_LEDS, this);
+    this->beatDetectionProcessor_->selectPattern(
+        static_cast<jellED::PatternType>(patternSelector_->currentData().toInt()));
+    this->beatDetectionProcessor_->setReactToBeat(reactToBeatCheckbox_->isChecked());
     this->beatDetectionProcessor_->start();
-    
+
     updateStatusBar();
+}
+
+void AudioDisplay::setLedStripColors(const jellED::pattern_color* colors, int count) {
+    ledStripWidget_->setColors(colors, count);
+}
+
+void AudioDisplay::onPatternSelectionChanged(int index) {
+    if (!beatDetectionProcessor_ || index < 0) return;
+    const auto type = static_cast<jellED::PatternType>(patternSelector_->itemData(index).toInt());
+    beatDetectionProcessor_->selectPattern(type);
+}
+
+void AudioDisplay::onReactToBeatToggled(bool checked) {
+    if (!beatDetectionProcessor_) return;
+    beatDetectionProcessor_->setReactToBeat(checked);
 }
