@@ -10,8 +10,12 @@
 #include "ConfiguratorWindow.h"
 #include "VolumeDisplayWidget.h"
 #include "BipolarLedWidget.h"
+#include "LedStripWidget.h"
+#include "pattern_colors.h"
 
 class QPushButton;
+class QComboBox;
+class QCheckBox;
 class BeatIndicatorWidget;
 
 class WaveformProcessor : public QThread {
@@ -78,6 +82,9 @@ private:
     VolumeDisplayWidget* volumeOverallWidget_;
     BipolarLedWidget*    volumeTrendWidget_;
     BipolarLedWidget*    spectralTiltWidget_;
+    LedStripWidget*      ledStripWidget_;
+    QComboBox*           patternSelector_;
+    QCheckBox*           reactToBeatCheckbox_;
     ConfiguratorWindow* configuratorWindow_;
 
     std::atomic<double> currentVolumeLow_;
@@ -139,6 +146,13 @@ public:
     void setOverallVolume(double volume);
     void setVolumeTrend(double trend);
     void setSpectralTilt(double tilt);
+
+    // Thread-safe — forwards to LedStripWidget::setColors.
+    void setLedStripColors(const jellED::pattern_color* colors, int count);
+
+private slots:
+    void onPatternSelectionChanged(int index);
+    void onReactToBeatToggled(bool checked);
 };
 
 #endif

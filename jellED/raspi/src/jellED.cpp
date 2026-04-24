@@ -9,6 +9,7 @@
 #include "include/sampleRecorder.h"
 #include "beatdetection.h"
 #include "uartProtocol.h"
+#include "quantize.h"
 
 #include <chrono>
 #include <algorithm>
@@ -29,10 +30,6 @@ static constexpr int SIGNAL_DOWNSAMPLE_RATIO = 4;
 constexpr uint32_t ESP_UART_BAUD_RATE = 115200;
 constexpr bool MODE_SEND = true;
 constexpr uint8_t PUSH_BUTTON_PIN = 4;
-
-// Volume quantization scale: maps envelope amplitude [0, 0.5] → [0, 255].
-// Tune if LEDs are too dim (lower) or always saturate (raise).
-static constexpr float VOLUME_SCALE = 512.0f;
 
 // Send a volume packet every N downsampled samples (12 kHz / 100 Hz = 120).
 // Rate justification: envelope release time ~50 ms gives ~20 Hz signal
@@ -64,16 +61,6 @@ void uart_send_features(const UartFeatures& features) {
     } else {
         packets_sent++;
     }
-}
-
-// Quantise float volume [0, ∞) to [0, 255] using VOLUME_SCALE.
-static inline uint8_t quantizeVolume(float v) {
-    return static_cast<uint8_t>(std::min(255.0f, std::max(0.0f, v * VOLUME_SCALE)));
-}
-
-// Quantise spectral tilt [-1, 1] to [0, 255]:  0=treble-heavy, 255=bass-heavy.
-static inline uint8_t quantizeTilt(float tilt) {
-    return static_cast<uint8_t>(std::min(255.0f, std::max(0.0f, (tilt + 1.0f) * 127.5f)));
 }
 
 UartFeatures buildUartFeatures(BeatDetector& detector, bool isBeat) {

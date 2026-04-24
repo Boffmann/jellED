@@ -20,6 +20,7 @@ public:
     void set_color(const pattern_color& color, int index);
     const pattern_color& get_color(int index) const;
     pattern_color* data();
+    const pattern_color* data() const;
     int get_length() const;
 };
 

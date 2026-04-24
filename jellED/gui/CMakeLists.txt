@@ -29,7 +29,11 @@ add_subdirectory($ENV{MC_LIB_PATH}/sound/raspi ${CMAKE_BINARY_DIR}/sound/raspi)
 
 set(include_path
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../core"
     "${CMAKE_CURRENT_SOURCE_DIR}/../core/beatDetection"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../core/dsp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../core/patternEngine"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../core/patternEngine/pattern"
     "$ENV{MC_LIB_PATH}"
     "/usr/local/include"
     "/opt/homebrew/include"
@@ -45,6 +49,8 @@ set(SOURCES
     src/EnvelopePeakWidget.cpp
     src/VolumeDisplayWidget.cpp
     src/BipolarLedWidget.cpp
+    src/LedStripWidget.cpp
+    src/GuiPlatformUtils.cpp
     ../core/beatDetection/src/bandpassFilter.cpp
     ../core/beatDetection/src/automaticGainControl.cpp
     ../core/beatDetection/src/downsampler.cpp
@@ -56,6 +62,13 @@ set(SOURCES
     ../core/beatDetection/src/tempoTracker.cpp
     ../core/beatDetection/src/sampleRecorder.cpp
     ../core/beatDetection/src/noiseGate.cpp
+    ../core/patternEngine/src/patternEngine.cpp
+    ../core/patternEngine/pattern/src/pattern.cpp
+    ../core/patternEngine/pattern/src/patternBlueprint.cpp
+    ../core/patternEngine/pattern/src/rainbowPattern.cpp
+    ../core/patternEngine/pattern/src/breathingGlowPattern.cpp
+    ../core/patternEngine/pattern/src/pulseFlashPattern.cpp
+    ../core/patternEngine/pattern/src/sparklePattern.cpp
 )
 
 # Header files
@@ -67,6 +80,8 @@ set(HEADERS
     include/BeatDetectionProcessor.h
     include/VolumeDisplayWidget.h
     include/BipolarLedWidget.h
+    include/LedStripWidget.h
+    include/GuiPlatformUtils.h
 )
 
 # Create executable
