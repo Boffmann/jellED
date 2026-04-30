@@ -8,7 +8,6 @@
 #include <set>
 #include <thread>
 #include "AudioDisplay.h"
-#include "include/tempoTracker.h"
 #include "include/sampleRecorder.h"
 
 #include "audioFeatures.h"
@@ -169,8 +168,6 @@ BeatDetectionProcessor::BeatDetectionProcessor(
 void BeatDetectionProcessor::run() {
     jellED::AudioBuffer buffer;
 
-    jellED::TempoTracker tempoTracker;
-
     std::cout << "BeatDetectionProcessor running" << std::endl;
     
     // Start audio level reporting thread (only once)
@@ -274,9 +271,8 @@ void BeatDetectionProcessor::run() {
                     if constexpr (ENABLE_BEAT_TIMING_DEBUG) {
                         logBeatTiming(this->beatDetector_->getCurrentTime());
                     }
-                    tempoTracker.addBeat(this->beatDetector_->getCurrentTime());
                     display_->addCombinedPeak();
-                    display_->addCurrentDetectedBpm(tempoTracker.currentBpm());
+                    display_->addCurrentDetectedBpm(this->beatDetector_->getCurrentBpm());
 
                     // Mirror the raspi UART packet: build per-band beat flags
                     // from the band peak state at the moment the fused beat fires.

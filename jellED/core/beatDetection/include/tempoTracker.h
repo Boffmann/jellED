@@ -27,12 +27,21 @@ public:
     double currentBpm() const;
 
     bool isTempoConsistent(double candidateTime) const;
-    
+
     bool hasEstablishedTempo() const { return beatTimes_->size() >= 2; }
-    
+
     size_t beatCount() const { return beatTimes_->size(); }
-    
+
     double tempoVariance() const;
+
+    void setMinBpm(double minBpm) { minBpm_ = minBpm; }
+    void setMaxBpm(double maxBpm) { maxBpm_ = maxBpm; }
+    void setTolerance(double tolerance) { tolerance_ = tolerance; }
+
+    // Drop all recorded beats so the tracker cold-starts on the next addBeat.
+    // Used for staleness reset after long silences and for resetting state
+    // between tests.
+    void reset() { beatTimes_->clear(); }
 
 private:
     Ringbuffer* beatTimes_;

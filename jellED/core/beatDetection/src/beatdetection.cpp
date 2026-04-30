@@ -58,6 +58,9 @@ BeatDetector::BeatDetector(int sampleRate, const BeatDetectionConfig& config)
     , bandStateMid_(bandConfigMid_, sampleRate_, config.envelopeDownsampleRatio, config.peakDetectionMaxBpm)
     , bandStateHigh_(bandConfigHigh_, sampleRate_, config.envelopeDownsampleRatio, config.peakDetectionMaxBpm)
     , multibandFusion_(config.coincidenceWindow, config.peakDetectionMaxBpm)
+    , tempoTracker_(12, config.tempoLockMinBpm, config.tempoLockMaxBpm, config.tempoLockTolerance)
+    , lastAcceptedBeatTime_(-1.0f)
+    , lastPeakRejectedByTempo_(false)
     , shortTermEnergy_(0.0f)
     , longTermEnergy_(0.0f)
     , shortTermCoeff_(1.0f - std::exp(-1.0f / (sampleRate * 0.05f)))
@@ -124,6 +127,10 @@ bool BeatDetector::applyConfig(const BeatDetectionConfig& newConfig) {
     multibandFusion_.setCoincidenceWindow(newConfig.coincidenceWindow);
     multibandFusion_.setMaxBpm(newConfig.peakDetectionMaxBpm);
 
+    tempoTracker_.setMinBpm(newConfig.tempoLockMinBpm);
+    tempoTracker_.setMaxBpm(newConfig.tempoLockMaxBpm);
+    tempoTracker_.setTolerance(newConfig.tempoLockTolerance);
+
     config_ = newConfig;
     return true;
 }
@@ -173,14 +180,38 @@ bool BeatDetector::is_beat(const float sample) {
         }
     }
 
+    // Tempo-locked acceptance. The TempoTracker is always fed by detected
+    // peaks so getCurrentBpm() works regardless of useTempoLock; the flag
+    // only controls whether the tracker also gates the return value.
+    if (lastAcceptedBeatTime_ >= 0.0f
+        && (currentTime_ - lastAcceptedBeatTime_) > config_.tempoLockStaleResetTime) {
+        tempoTracker_.reset();
+        lastAcceptedBeatTime_ = -1.0f;
+    }
+
+    bool gatedBeat = anyPeakDetected;
+    if (anyPeakDetected) {
+        const double t = static_cast<double>(currentTime_);
+        const bool consistent = !tempoTracker_.hasEstablishedTempo()
+                              || tempoTracker_.isTempoConsistent(t);
+        if (config_.useTempoLock && !consistent) {
+            gatedBeat = false;
+            lastPeakRejectedByTempo_ = true;
+        } else {
+            lastPeakRejectedByTempo_ = false;
+            tempoTracker_.addBeat(t);
+            lastAcceptedBeatTime_ = currentTime_;
+        }
+    }
+
     if constexpr (DEBUG_BEAT_DETECTION) {
-        if (anyPeakDetected) {
-            std::cout << "[BeatDetector] is_beat=TRUE at t=" << std::fixed << std::setprecision(4) 
+        if (gatedBeat) {
+            std::cout << "[BeatDetector] is_beat=TRUE at t=" << std::fixed << std::setprecision(4)
                       << currentTime_ << "s, sample#=" << totalSamplesReceived_ << std::endl;
         }
     }
-    
-    return anyPeakDetected;
+
+    return gatedBeat;
 }
 
 float BeatDetector::getFilteredSampleLow() {
@@ -262,6 +293,18 @@ float BeatDetector::getSpectralTilt() const {
     const float sum  = low + high;
     if (sum < 1e-6f) return 0.0f;
     return (low - high) / sum;
+}
+
+double BeatDetector::getCurrentBpm() const {
+    return tempoTracker_.currentBpm();
+}
+
+bool BeatDetector::hasEstablishedTempo() const {
+    return tempoTracker_.hasEstablishedTempo();
+}
+
+bool BeatDetector::wasLastPeakRejectedByTempo() const {
+    return lastPeakRejectedByTempo_;
 }
 
 } // end namespace jellED

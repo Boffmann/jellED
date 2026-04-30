@@ -6,6 +6,7 @@
 #include <QSlider>
 #include <QLineEdit>
 #include <QComboBox>
+#include <QCheckBox>
 #include <QRadioButton>
 #include <QStackedWidget>
 #include <QScrollArea>
@@ -71,6 +72,12 @@ private:
 
     QLineEdit* coincidenceWindowTextField_;
 
+    QCheckBox* useTempoLockCheckBox_;
+    QLineEdit* tempoLockMinBpmTextField_;
+    QLineEdit* tempoLockMaxBpmTextField_;
+    QLineEdit* tempoLockToleranceTextField_;
+    QLineEdit* tempoLockStaleResetTimeTextField_;
+
     // Peak detector per-band timing
     QLineEdit* baselineAttackTimeLowTextField_;
     QLineEdit* baselineAttackTimeMidTextField_;
@@ -103,6 +110,7 @@ private:
     QWidget* setupBandWeightControls();
     QWidget* setupEnvelopeTimingControls();
     QWidget* setupFusionControls();
+    QWidget* setupTempoLockControls();
     QWidget* setupPerBandRow(const QString& title,
         double defaultLow, double defaultMid, double defaultHigh,
         QLineEdit*& lowField, QLineEdit*& midField, QLineEdit*& highField);

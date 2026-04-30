@@ -84,6 +84,30 @@ struct BeatDetectionConfig {
     // noise immunity, narrower = more responsive.
     float risingThresholdScale  = 1.10;
     float fallingThresholdScale = 0.85;
+
+    // --- Tempo-locked acceptance ---
+    // When enabled, accepted peaks are gated against the tempo grid maintained
+    // by TempoTracker: candidate peaks whose interval-since-last-accepted-beat
+    // doesn't fit the established tempo are rejected. Off-grid noise peaks
+    // (crowd cheers, rumble, etc.) are filtered out without adding latency to
+    // accepted beats. Disabled by default so existing behavior is preserved
+    // until enabled via the configurator.
+    bool useTempoLock = false;
+
+    // Absolute BPM bounds the tempo tracker accepts. Anything outside is
+    // rejected even before tempo establishment. Tightened from the
+    // TempoTracker default (70-200) to match the festival/techno context.
+    float tempoLockMinBpm = 90.0;
+    float tempoLockMaxBpm = 180.0;
+
+    // Fractional tolerance around the established IBI median. Smaller =
+    // tighter grid lock = more rejection. Larger = easier re-acquisition
+    // after tempo changes.
+    float tempoLockTolerance = 0.20;
+
+    // After this many seconds with no accepted beats, the tempo history is
+    // cleared so the gate cold-starts cleanly on the next track.
+    float tempoLockStaleResetTime = 4.0;
 };
 
 } // namespace jellED

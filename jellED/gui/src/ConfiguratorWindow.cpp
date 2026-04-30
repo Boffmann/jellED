@@ -75,6 +75,11 @@ static QJsonObject configToJson(const jellED::BeatDetectionConfig& c) {
     obj["minRelativeThresholdFactor"] = c.minRelativeThresholdFactor;
     obj["risingThresholdScale"] = c.risingThresholdScale;
     obj["fallingThresholdScale"] = c.fallingThresholdScale;
+    obj["useTempoLock"] = c.useTempoLock;
+    obj["tempoLockMinBpm"] = c.tempoLockMinBpm;
+    obj["tempoLockMaxBpm"] = c.tempoLockMaxBpm;
+    obj["tempoLockTolerance"] = c.tempoLockTolerance;
+    obj["tempoLockStaleResetTime"] = c.tempoLockStaleResetTime;
     return obj;
 }
 
@@ -130,6 +135,19 @@ static bool jsonToConfig(const QJsonObject& obj, jellED::BeatDetectionConfig& c)
     c.minRelativeThresholdFactor = getDouble("minRelativeThresholdFactor", DEFAULTS.minRelativeThresholdFactor);
     c.risingThresholdScale = getDouble("risingThresholdScale", DEFAULTS.risingThresholdScale);
     c.fallingThresholdScale = getDouble("fallingThresholdScale", DEFAULTS.fallingThresholdScale);
+    auto getBool = [&obj](const char* key, bool defaultVal) -> bool {
+        if (!obj.contains(key)) return defaultVal;
+        QJsonValue v = obj[key];
+        if (v.isBool()) return v.toBool();
+        if (v.isDouble()) return v.toDouble() != 0.0;
+        if (v.isString()) return v.toString().compare("true", Qt::CaseInsensitive) == 0;
+        return defaultVal;
+    };
+    c.useTempoLock = getBool("useTempoLock", DEFAULTS.useTempoLock);
+    c.tempoLockMinBpm = getDouble("tempoLockMinBpm", DEFAULTS.tempoLockMinBpm);
+    c.tempoLockMaxBpm = getDouble("tempoLockMaxBpm", DEFAULTS.tempoLockMaxBpm);
+    c.tempoLockTolerance = getDouble("tempoLockTolerance", DEFAULTS.tempoLockTolerance);
+    c.tempoLockStaleResetTime = getDouble("tempoLockStaleResetTime", DEFAULTS.tempoLockStaleResetTime);
     return true;
 }
 
@@ -182,6 +200,12 @@ jellED::BeatDetectionConfig ConfiguratorWindow::currentConfig() const {
     config.risingThresholdScale = risingThresholdScaleTextField_->text().toDouble();
     config.fallingThresholdScale = fallingThresholdScaleTextField_->text().toDouble();
 
+    config.useTempoLock = useTempoLockCheckBox_->isChecked();
+    config.tempoLockMinBpm = tempoLockMinBpmTextField_->text().toDouble();
+    config.tempoLockMaxBpm = tempoLockMaxBpmTextField_->text().toDouble();
+    config.tempoLockTolerance = tempoLockToleranceTextField_->text().toDouble();
+    config.tempoLockStaleResetTime = tempoLockStaleResetTimeTextField_->text().toDouble();
+
     return config;
 }
 
@@ -230,6 +254,12 @@ void ConfiguratorWindow::applyConfigToUi(const jellED::BeatDetectionConfig& conf
     minRelativeThresholdFactorTextField_->setText(QString::number(config.minRelativeThresholdFactor));
     risingThresholdScaleTextField_->setText(QString::number(config.risingThresholdScale));
     fallingThresholdScaleTextField_->setText(QString::number(config.fallingThresholdScale));
+
+    useTempoLockCheckBox_->setChecked(config.useTempoLock);
+    tempoLockMinBpmTextField_->setText(QString::number(config.tempoLockMinBpm));
+    tempoLockMaxBpmTextField_->setText(QString::number(config.tempoLockMaxBpm));
+    tempoLockToleranceTextField_->setText(QString::number(config.tempoLockTolerance));
+    tempoLockStaleResetTimeTextField_->setText(QString::number(config.tempoLockStaleResetTime));
 }
 
 void ConfiguratorWindow::setupUi() {
@@ -266,6 +296,9 @@ void ConfiguratorWindow::setupUi() {
 
     // Band weights alongside global scalars
     mainLayout->addWidget(setupBandWeightControls());
+
+    // Tempo lock controls (full width, sits next to band weights)
+    mainLayout->addWidget(setupTempoLockControls());
 
     // Per-band sections (full width)
     mainLayout->addWidget(setupEnvelopeTimingControls());
@@ -661,6 +694,35 @@ QWidget* ConfiguratorWindow::setupFusionControls() {
     coincidenceWindowTextField_ = new QLineEdit(QString::number(DEFAULTS.coincidenceWindow), this);
     subLayout->addWidget(coincidenceWindowTextField_);
     layout->addWidget(subGroup);
+
+    return group;
+}
+
+QWidget* ConfiguratorWindow::setupTempoLockControls() {
+    QGroupBox* group = new QGroupBox("Tempo Lock", this);
+    group->setStyleSheet(STYLE_PEAK);
+    QHBoxLayout* layout = new QHBoxLayout(group);
+    layout->setSpacing(10);
+    layout->setContentsMargins(5, 5, 5, 5);
+
+    useTempoLockCheckBox_ = new QCheckBox("Enabled", this);
+    useTempoLockCheckBox_->setChecked(DEFAULTS.useTempoLock);
+    layout->addWidget(useTempoLockCheckBox_);
+
+    auto addField = [this, layout](const QString& title, double defaultVal,
+                                   QLineEdit*& outField) {
+        QVBoxLayout* col = new QVBoxLayout();
+        col->addWidget(new QLabel(title, this));
+        outField = new QLineEdit(QString::number(defaultVal), this);
+        col->addWidget(outField);
+        layout->addLayout(col);
+    };
+
+    addField("Min BPM", DEFAULTS.tempoLockMinBpm, tempoLockMinBpmTextField_);
+    addField("Max BPM", DEFAULTS.tempoLockMaxBpm, tempoLockMaxBpmTextField_);
+    addField("Tolerance", DEFAULTS.tempoLockTolerance, tempoLockToleranceTextField_);
+    addField("Stale Reset (s)", DEFAULTS.tempoLockStaleResetTime,
+             tempoLockStaleResetTimeTextField_);
 
     return group;
 }

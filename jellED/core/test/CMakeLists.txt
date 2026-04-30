@@ -29,6 +29,14 @@ add_executable(dsp_test
     dsp/expFilter_test.cpp
 )
 
+# TempoTracker Tests Executable (kept separate from beatDetection_test so the
+# tempo-lock work can be verified independently of the legacy tests, which
+# currently fail to build against the post-refactor BeatDetector / PeakDetector
+# / BandpassFilter constructors).
+add_executable(tempoTracker_test
+    beatDetection/tempoTracker_test.cpp
+)
+
 target_link_libraries(pattern_test
     GTest::gtest_main
     PatternEngine
@@ -46,6 +54,12 @@ target_link_libraries(dsp_test
     JellEDDsp
 )
 
+target_link_libraries(tempoTracker_test
+    GTest::gtest_main
+    BeatDetection
+)
+
 gtest_discover_tests(pattern_test)
 gtest_discover_tests(beatDetection_test)
 gtest_discover_tests(dsp_test)
+gtest_discover_tests(tempoTracker_test)

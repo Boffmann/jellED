@@ -9,6 +9,7 @@
 #include "include/envelopeDetector.h"
 #include "include/peakdetection.h"
 #include "include/multibandFusion.h"
+#include "include/tempoTracker.h"
 #include "pUtils/IPlatformUtils.h"
 
 namespace jellED {
@@ -151,6 +152,15 @@ public:
     float getVolumeTrend() const;
     float getSpectralTilt() const;
 
+    // Tempo-lock observability for the GUI / logs.
+    // currentBpm() returns NaN until at least 2 beats have been accepted.
+    // wasLastPeakRejectedByTempo() reports whether the *most recent* low-band
+    // peak was suppressed by the tempo gate (true) or passed through / not a
+    // peak at all (false). Useful for live A/B in the configurator.
+    double getCurrentBpm() const;
+    bool hasEstablishedTempo() const;
+    bool wasLastPeakRejectedByTempo() const;
+
 private:
     int sampleRate_;
     BeatDetectionConfig config_;
@@ -176,6 +186,10 @@ private:
     BandState bandStateHigh_;
 
     MultiBandFusion multibandFusion_;
+
+    TempoTracker tempoTracker_;
+    float lastAcceptedBeatTime_;
+    bool lastPeakRejectedByTempo_;
 
     float shortTermEnergy_;
     float longTermEnergy_;
