@@ -108,6 +108,53 @@ struct BeatDetectionConfig {
     // After this many seconds with no accepted beats, the tempo history is
     // cleared so the gate cold-starts cleanly on the next track.
     float tempoLockStaleResetTime = 4.0;
+
+    // --- OSF (Onset Strength Function) fusion ---
+    // When true, is_beat() returns peaks from a single peak detector run on the
+    // weighted sum of per-band normalized novelties (Bello et al. 2005). When
+    // false, falls back to legacy low-band-only behavior. Default-off so the
+    // production path is unchanged until A/B tested on festival audio.
+    bool useOsfFusion = false;
+
+    // Per-band novelty baseline. Slow on purpose: tracks the recent *floor*
+    // rather than the recent envelope, so it does not climb into onsets and
+    // cancel them. A faster attack noticeably eats sustained snare rolls.
+    float osfBaselineAttackTime  = 0.18;
+    float osfBaselineReleaseTime = 0.8;
+
+    // Adaptive whitening (Stowell & Plumbley 2007). A slow per-band EMA of the
+    // envelope acts as the divisor for novelty normalization; survives sub-bass
+    // nulls (mic in standing-wave shadow) that median normalization cannot.
+    bool  osfUseAdaptiveWhitening = true;
+    float osfWhiteningTime        = 1.5;
+    float osfWhiteningFloor       = 1e-3;
+
+    // OSF post-sum smoothing (one-pole LPF on the summed signal). Runs at the
+    // envelope rate, not the input rate.
+    float osfSmoothingTime = 0.005;
+
+    // OSF peak detector (separate parameter set from per-band detectors). The
+    // OSF is dimensionless after whitening so absolute thresholds are unitless
+    // multipliers, not signal-level floors.
+    float osfAbsoluteMinThreshold     = 0.5;
+    float osfThresholdRel             = 1.5;
+    float osfOnsetRatio               = 1.5;
+    float osfBaselineAttackTimeFinal  = 0.03;
+    float osfBaselineReleaseTimeFinal = 0.3;
+    float osfThresholdRelaxTime       = 0.15;
+
+    // Spectral-tilt-aware band weighting. Uses the existing getSpectralTilt()
+    // signal to bias weights toward low when bass-heavy and high when
+    // treble-heavy — addresses build-up/drop adaptation when the kick drops
+    // out for 8-32 bars. Off by default so the algorithm change can be
+    // evaluated independently of the tilt biasing.
+    bool  osfSpectralTiltWeighting = false;
+    float osfTiltGain              = 0.3;
+
+    // Suppress OSF beats when the short-term energy is below this floor.
+    // Rejects between-track silence and crowd-only periods without needing a
+    // separate state machine.
+    float osfOverallLevelGate = 0.01;
 };
 
 } // namespace jellED

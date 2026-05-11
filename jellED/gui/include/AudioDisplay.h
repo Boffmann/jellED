@@ -70,6 +70,13 @@ private:
     WaveformWidget* lowpassFilteredWaveformWidgetHigh_;
     EnvelopePeakWidget* envelopePeakWaveformWidgetHigh_;
 
+    // OSF column — mirrors the per-band layout. Row 1 echoes the raw audio
+    // (same data as the per-band columns); row 2 shows the pre-smoother
+    // weighted-novelty sum; row 3 shows the smoothed OSF + threshold + beats.
+    WaveformWidget* originalSamplesWaveformWidgetOsf_;
+    WaveformWidget* osfInstantaneousWaveformWidget_;
+    EnvelopePeakWidget* osfEnvelopePeakWaveformWidget_;
+
     WaveformProcessor* processorThread_;
     BeatDetectionProcessor* beatDetectionProcessor_;
     QLabel* infoLabel_;
@@ -138,6 +145,12 @@ public:
     void setThresholdMid(double threshold);
     void setThresholdHigh(double threshold);
     void addCombinedPeak();
+
+    // OSF column data feeds (called per envelope frame from BeatDetectionProcessor).
+    void addOsfInstantaneousSample(double sample);
+    void addOsfSmoothedSample(double sample);
+    void setOsfThreshold(double threshold);
+    void addOsfPeak();
     void addCurrentDetectedBpm(const double bpm);
 
     void setVolumeLow(double volume);

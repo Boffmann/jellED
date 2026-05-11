@@ -97,6 +97,24 @@ private:
     QLineEdit* risingThresholdScaleTextField_;
     QLineEdit* fallingThresholdScaleTextField_;
 
+    // OSF (Onset Strength Function) fusion
+    QCheckBox* useOsfFusionCheckBox_;
+    QCheckBox* osfUseAdaptiveWhiteningCheckBox_;
+    QCheckBox* osfSpectralTiltWeightingCheckBox_;
+    QLineEdit* osfBaselineAttackTimeTextField_;
+    QLineEdit* osfBaselineReleaseTimeTextField_;
+    QLineEdit* osfWhiteningTimeTextField_;
+    QLineEdit* osfWhiteningFloorTextField_;
+    QLineEdit* osfSmoothingTimeTextField_;
+    QLineEdit* osfAbsoluteMinThresholdTextField_;
+    QLineEdit* osfThresholdRelTextField_;
+    QLineEdit* osfOnsetRatioTextField_;
+    QLineEdit* osfBaselineAttackTimeFinalTextField_;
+    QLineEdit* osfBaselineReleaseTimeFinalTextField_;
+    QLineEdit* osfThresholdRelaxTimeTextField_;
+    QLineEdit* osfTiltGainTextField_;
+    QLineEdit* osfOverallLevelGateTextField_;
+
     void setupUi();
     QWidget* setupAudioInputControls();
     QWidget* setupAudioOutputControls();
@@ -111,6 +129,7 @@ private:
     QWidget* setupEnvelopeTimingControls();
     QWidget* setupFusionControls();
     QWidget* setupTempoLockControls();
+    QWidget* setupOsfControls();
     QWidget* setupPerBandRow(const QString& title,
         double defaultLow, double defaultMid, double defaultHigh,
         QLineEdit*& lowField, QLineEdit*& midField, QLineEdit*& highField);

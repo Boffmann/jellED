@@ -267,6 +267,18 @@ void BeatDetectionProcessor::run() {
                 display_->setVolumeTrend(this->beatDetector_->getVolumeTrend());
                 display_->setSpectralTilt(this->beatDetector_->getSpectralTilt());
 
+                // OSF column — runs unconditionally so the GUI shows the
+                // candidate fused detection even when useOsfFusion=false.
+                // Row 2: weighted sum of bandpass-filtered samples (source
+                // signal feeding the OSF). Row 3: smoothed OSF + threshold
+                // + peak markers.
+                display_->addOsfInstantaneousSample(this->beatDetector_->getCombinedBandpass());
+                display_->setOsfThreshold(this->beatDetector_->getOsfThreshold());
+                display_->addOsfSmoothedSample(this->beatDetector_->getOsfValue());
+                if (this->beatDetector_->isPeakOsf()) {
+                    display_->addOsfPeak();
+                }
+
                 if (anyBeatDetected) {
                     if constexpr (ENABLE_BEAT_TIMING_DEBUG) {
                         logBeatTiming(this->beatDetector_->getCurrentTime());

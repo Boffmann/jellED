@@ -37,6 +37,12 @@ add_executable(tempoTracker_test
     beatDetection/tempoTracker_test.cpp
 )
 
+# OSF Tests Executable (kept separate for the same reason as tempoTracker_test).
+add_executable(osf_test
+    beatDetection/onsetStrengthFunction_test.cpp
+    beatDetection/osfBandNovelty_test.cpp
+)
+
 target_link_libraries(pattern_test
     GTest::gtest_main
     PatternEngine
@@ -59,7 +65,13 @@ target_link_libraries(tempoTracker_test
     BeatDetection
 )
 
+target_link_libraries(osf_test
+    GTest::gtest_main
+    BeatDetection
+)
+
 gtest_discover_tests(pattern_test)
 gtest_discover_tests(beatDetection_test)
 gtest_discover_tests(dsp_test)
 gtest_discover_tests(tempoTracker_test)
+gtest_discover_tests(osf_test)

@@ -80,6 +80,22 @@ static QJsonObject configToJson(const jellED::BeatDetectionConfig& c) {
     obj["tempoLockMaxBpm"] = c.tempoLockMaxBpm;
     obj["tempoLockTolerance"] = c.tempoLockTolerance;
     obj["tempoLockStaleResetTime"] = c.tempoLockStaleResetTime;
+    obj["useOsfFusion"] = c.useOsfFusion;
+    obj["osfBaselineAttackTime"] = c.osfBaselineAttackTime;
+    obj["osfBaselineReleaseTime"] = c.osfBaselineReleaseTime;
+    obj["osfUseAdaptiveWhitening"] = c.osfUseAdaptiveWhitening;
+    obj["osfWhiteningTime"] = c.osfWhiteningTime;
+    obj["osfWhiteningFloor"] = c.osfWhiteningFloor;
+    obj["osfSmoothingTime"] = c.osfSmoothingTime;
+    obj["osfAbsoluteMinThreshold"] = c.osfAbsoluteMinThreshold;
+    obj["osfThresholdRel"] = c.osfThresholdRel;
+    obj["osfOnsetRatio"] = c.osfOnsetRatio;
+    obj["osfBaselineAttackTimeFinal"] = c.osfBaselineAttackTimeFinal;
+    obj["osfBaselineReleaseTimeFinal"] = c.osfBaselineReleaseTimeFinal;
+    obj["osfThresholdRelaxTime"] = c.osfThresholdRelaxTime;
+    obj["osfSpectralTiltWeighting"] = c.osfSpectralTiltWeighting;
+    obj["osfTiltGain"] = c.osfTiltGain;
+    obj["osfOverallLevelGate"] = c.osfOverallLevelGate;
     return obj;
 }
 
@@ -148,6 +164,23 @@ static bool jsonToConfig(const QJsonObject& obj, jellED::BeatDetectionConfig& c)
     c.tempoLockMaxBpm = getDouble("tempoLockMaxBpm", DEFAULTS.tempoLockMaxBpm);
     c.tempoLockTolerance = getDouble("tempoLockTolerance", DEFAULTS.tempoLockTolerance);
     c.tempoLockStaleResetTime = getDouble("tempoLockStaleResetTime", DEFAULTS.tempoLockStaleResetTime);
+
+    c.useOsfFusion = getBool("useOsfFusion", DEFAULTS.useOsfFusion);
+    c.osfBaselineAttackTime = getDouble("osfBaselineAttackTime", DEFAULTS.osfBaselineAttackTime);
+    c.osfBaselineReleaseTime = getDouble("osfBaselineReleaseTime", DEFAULTS.osfBaselineReleaseTime);
+    c.osfUseAdaptiveWhitening = getBool("osfUseAdaptiveWhitening", DEFAULTS.osfUseAdaptiveWhitening);
+    c.osfWhiteningTime = getDouble("osfWhiteningTime", DEFAULTS.osfWhiteningTime);
+    c.osfWhiteningFloor = getDouble("osfWhiteningFloor", DEFAULTS.osfWhiteningFloor);
+    c.osfSmoothingTime = getDouble("osfSmoothingTime", DEFAULTS.osfSmoothingTime);
+    c.osfAbsoluteMinThreshold = getDouble("osfAbsoluteMinThreshold", DEFAULTS.osfAbsoluteMinThreshold);
+    c.osfThresholdRel = getDouble("osfThresholdRel", DEFAULTS.osfThresholdRel);
+    c.osfOnsetRatio = getDouble("osfOnsetRatio", DEFAULTS.osfOnsetRatio);
+    c.osfBaselineAttackTimeFinal = getDouble("osfBaselineAttackTimeFinal", DEFAULTS.osfBaselineAttackTimeFinal);
+    c.osfBaselineReleaseTimeFinal = getDouble("osfBaselineReleaseTimeFinal", DEFAULTS.osfBaselineReleaseTimeFinal);
+    c.osfThresholdRelaxTime = getDouble("osfThresholdRelaxTime", DEFAULTS.osfThresholdRelaxTime);
+    c.osfSpectralTiltWeighting = getBool("osfSpectralTiltWeighting", DEFAULTS.osfSpectralTiltWeighting);
+    c.osfTiltGain = getDouble("osfTiltGain", DEFAULTS.osfTiltGain);
+    c.osfOverallLevelGate = getDouble("osfOverallLevelGate", DEFAULTS.osfOverallLevelGate);
     return true;
 }
 
@@ -206,6 +239,23 @@ jellED::BeatDetectionConfig ConfiguratorWindow::currentConfig() const {
     config.tempoLockTolerance = tempoLockToleranceTextField_->text().toDouble();
     config.tempoLockStaleResetTime = tempoLockStaleResetTimeTextField_->text().toDouble();
 
+    config.useOsfFusion = useOsfFusionCheckBox_->isChecked();
+    config.osfUseAdaptiveWhitening = osfUseAdaptiveWhiteningCheckBox_->isChecked();
+    config.osfSpectralTiltWeighting = osfSpectralTiltWeightingCheckBox_->isChecked();
+    config.osfBaselineAttackTime = osfBaselineAttackTimeTextField_->text().toDouble();
+    config.osfBaselineReleaseTime = osfBaselineReleaseTimeTextField_->text().toDouble();
+    config.osfWhiteningTime = osfWhiteningTimeTextField_->text().toDouble();
+    config.osfWhiteningFloor = osfWhiteningFloorTextField_->text().toDouble();
+    config.osfSmoothingTime = osfSmoothingTimeTextField_->text().toDouble();
+    config.osfAbsoluteMinThreshold = osfAbsoluteMinThresholdTextField_->text().toDouble();
+    config.osfThresholdRel = osfThresholdRelTextField_->text().toDouble();
+    config.osfOnsetRatio = osfOnsetRatioTextField_->text().toDouble();
+    config.osfBaselineAttackTimeFinal = osfBaselineAttackTimeFinalTextField_->text().toDouble();
+    config.osfBaselineReleaseTimeFinal = osfBaselineReleaseTimeFinalTextField_->text().toDouble();
+    config.osfThresholdRelaxTime = osfThresholdRelaxTimeTextField_->text().toDouble();
+    config.osfTiltGain = osfTiltGainTextField_->text().toDouble();
+    config.osfOverallLevelGate = osfOverallLevelGateTextField_->text().toDouble();
+
     return config;
 }
 
@@ -260,6 +310,23 @@ void ConfiguratorWindow::applyConfigToUi(const jellED::BeatDetectionConfig& conf
     tempoLockMaxBpmTextField_->setText(QString::number(config.tempoLockMaxBpm));
     tempoLockToleranceTextField_->setText(QString::number(config.tempoLockTolerance));
     tempoLockStaleResetTimeTextField_->setText(QString::number(config.tempoLockStaleResetTime));
+
+    useOsfFusionCheckBox_->setChecked(config.useOsfFusion);
+    osfUseAdaptiveWhiteningCheckBox_->setChecked(config.osfUseAdaptiveWhitening);
+    osfSpectralTiltWeightingCheckBox_->setChecked(config.osfSpectralTiltWeighting);
+    osfBaselineAttackTimeTextField_->setText(QString::number(config.osfBaselineAttackTime));
+    osfBaselineReleaseTimeTextField_->setText(QString::number(config.osfBaselineReleaseTime));
+    osfWhiteningTimeTextField_->setText(QString::number(config.osfWhiteningTime));
+    osfWhiteningFloorTextField_->setText(QString::number(config.osfWhiteningFloor));
+    osfSmoothingTimeTextField_->setText(QString::number(config.osfSmoothingTime));
+    osfAbsoluteMinThresholdTextField_->setText(QString::number(config.osfAbsoluteMinThreshold));
+    osfThresholdRelTextField_->setText(QString::number(config.osfThresholdRel));
+    osfOnsetRatioTextField_->setText(QString::number(config.osfOnsetRatio));
+    osfBaselineAttackTimeFinalTextField_->setText(QString::number(config.osfBaselineAttackTimeFinal));
+    osfBaselineReleaseTimeFinalTextField_->setText(QString::number(config.osfBaselineReleaseTimeFinal));
+    osfThresholdRelaxTimeTextField_->setText(QString::number(config.osfThresholdRelaxTime));
+    osfTiltGainTextField_->setText(QString::number(config.osfTiltGain));
+    osfOverallLevelGateTextField_->setText(QString::number(config.osfOverallLevelGate));
 }
 
 void ConfiguratorWindow::setupUi() {
@@ -299,6 +366,9 @@ void ConfiguratorWindow::setupUi() {
 
     // Tempo lock controls (full width, sits next to band weights)
     mainLayout->addWidget(setupTempoLockControls());
+
+    // OSF (Onset Strength Function) controls (full width)
+    mainLayout->addWidget(setupOsfControls());
 
     // Per-band sections (full width)
     mainLayout->addWidget(setupEnvelopeTimingControls());
@@ -694,6 +764,70 @@ QWidget* ConfiguratorWindow::setupFusionControls() {
     coincidenceWindowTextField_ = new QLineEdit(QString::number(DEFAULTS.coincidenceWindow), this);
     subLayout->addWidget(coincidenceWindowTextField_);
     layout->addWidget(subGroup);
+
+    return group;
+}
+
+QWidget* ConfiguratorWindow::setupOsfControls() {
+    QGroupBox* group = new QGroupBox("Onset Strength Function (OSF)", this);
+    group->setStyleSheet(STYLE_PEAK);
+    QVBoxLayout* layout = new QVBoxLayout(group);
+    layout->setSpacing(8);
+    layout->setContentsMargins(5, 5, 5, 5);
+
+    // Top row: master toggles (checkboxes)
+    QHBoxLayout* togglesRow = new QHBoxLayout();
+    useOsfFusionCheckBox_ = new QCheckBox("Use OSF Fusion", this);
+    useOsfFusionCheckBox_->setChecked(DEFAULTS.useOsfFusion);
+    togglesRow->addWidget(useOsfFusionCheckBox_);
+
+    osfUseAdaptiveWhiteningCheckBox_ = new QCheckBox("Adaptive Whitening", this);
+    osfUseAdaptiveWhiteningCheckBox_->setChecked(DEFAULTS.osfUseAdaptiveWhitening);
+    togglesRow->addWidget(osfUseAdaptiveWhiteningCheckBox_);
+
+    osfSpectralTiltWeightingCheckBox_ = new QCheckBox("Spectral-Tilt Weighting", this);
+    osfSpectralTiltWeightingCheckBox_->setChecked(DEFAULTS.osfSpectralTiltWeighting);
+    togglesRow->addWidget(osfSpectralTiltWeightingCheckBox_);
+    togglesRow->addStretch();
+    layout->addLayout(togglesRow);
+
+    auto addField = [this](QHBoxLayout* row, const QString& title, double defaultVal,
+                           QLineEdit*& outField) {
+        QVBoxLayout* col = new QVBoxLayout();
+        col->addWidget(new QLabel(title, this));
+        outField = new QLineEdit(QString::number(defaultVal), this);
+        col->addWidget(outField);
+        row->addLayout(col);
+    };
+
+    // Novelty row
+    QHBoxLayout* noveltyRow = new QHBoxLayout();
+    noveltyRow->addWidget(new QLabel("Novelty:", this));
+    addField(noveltyRow, "Baseline Attack (s)",  DEFAULTS.osfBaselineAttackTime,  osfBaselineAttackTimeTextField_);
+    addField(noveltyRow, "Baseline Release (s)", DEFAULTS.osfBaselineReleaseTime, osfBaselineReleaseTimeTextField_);
+    addField(noveltyRow, "Whitening Time (s)",   DEFAULTS.osfWhiteningTime,       osfWhiteningTimeTextField_);
+    addField(noveltyRow, "Whitening Floor",      DEFAULTS.osfWhiteningFloor,      osfWhiteningFloorTextField_);
+    addField(noveltyRow, "Smoothing Time (s)",   DEFAULTS.osfSmoothingTime,       osfSmoothingTimeTextField_);
+    layout->addLayout(noveltyRow);
+
+    // Peak detector row
+    QHBoxLayout* peakRow = new QHBoxLayout();
+    peakRow->addWidget(new QLabel("Peak:", this));
+    addField(peakRow, "Abs Min",            DEFAULTS.osfAbsoluteMinThreshold,    osfAbsoluteMinThresholdTextField_);
+    addField(peakRow, "Threshold Rel",      DEFAULTS.osfThresholdRel,            osfThresholdRelTextField_);
+    addField(peakRow, "Onset Ratio",        DEFAULTS.osfOnsetRatio,              osfOnsetRatioTextField_);
+    addField(peakRow, "Baseline Attack (s)",  DEFAULTS.osfBaselineAttackTimeFinal,  osfBaselineAttackTimeFinalTextField_);
+    addField(peakRow, "Baseline Release (s)", DEFAULTS.osfBaselineReleaseTimeFinal, osfBaselineReleaseTimeFinalTextField_);
+    addField(peakRow, "Threshold Relax (s)",  DEFAULTS.osfThresholdRelaxTime,       osfThresholdRelaxTimeTextField_);
+    layout->addLayout(peakRow);
+
+    // Misc row
+    QHBoxLayout* miscRow = new QHBoxLayout();
+    miscRow->addWidget(new QLabel("Misc:", this));
+    addField(miscRow, "Tilt Gain",       DEFAULTS.osfTiltGain,         osfTiltGainTextField_);
+    addField(miscRow, "Level Gate",      DEFAULTS.osfOverallLevelGate, osfOverallLevelGateTextField_);
+    miscRow->addStretch();
+    layout->addLayout(miscRow);
 
     return group;
 }

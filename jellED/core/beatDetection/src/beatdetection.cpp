@@ -26,6 +26,7 @@ BeatDetector::BeatDetector(int sampleRate, const BeatDetectionConfig& config)
     , peakDetectedLow_(false)
     , peakDetectedMid_(false)
     , peakDetectedHigh_(false)
+    , peakDetectedOsf_(false)
     , currentTime_(0.0f)
     , bandConfigLow_{BANDPASS_FILTER_COEFFICIENTS_LOW, 1.0f,
                      config.absoluteMinThresholdLow,
@@ -58,6 +59,7 @@ BeatDetector::BeatDetector(int sampleRate, const BeatDetectionConfig& config)
     , bandStateMid_(bandConfigMid_, sampleRate_, config.envelopeDownsampleRatio, config.peakDetectionMaxBpm)
     , bandStateHigh_(bandConfigHigh_, sampleRate_, config.envelopeDownsampleRatio, config.peakDetectionMaxBpm)
     , multibandFusion_(config.coincidenceWindow, config.peakDetectionMaxBpm)
+    , osf_(static_cast<uint32_t>(sampleRate_) / config.envelopeDownsampleRatio, config)
     , tempoTracker_(12, config.tempoLockMinBpm, config.tempoLockMaxBpm, config.tempoLockTolerance)
     , lastAcceptedBeatTime_(-1.0f)
     , lastPeakRejectedByTempo_(false)
@@ -127,6 +129,13 @@ bool BeatDetector::applyConfig(const BeatDetectionConfig& newConfig) {
     multibandFusion_.setCoincidenceWindow(newConfig.coincidenceWindow);
     multibandFusion_.setMaxBpm(newConfig.peakDetectionMaxBpm);
 
+    // OSF hot updates. Coefficients depend on the envelope rate, not the
+    // input rate (the OSF only updates when the envelope downsampler emits
+    // a new sample).
+    const uint32_t envelopeRate =
+        static_cast<uint32_t>(sampleRate_) / config_.envelopeDownsampleRatio;
+    osf_.applyConfig(newConfig, envelopeRate);
+
     tempoTracker_.setMinBpm(newConfig.tempoLockMinBpm);
     tempoTracker_.setMaxBpm(newConfig.tempoLockMaxBpm);
     tempoTracker_.setTolerance(newConfig.tempoLockTolerance);
@@ -155,12 +164,13 @@ bool BeatDetector::is_beat(const float sample) {
     this->peakDetectedLow_ = false;
     this->peakDetectedMid_ = false;
     this->peakDetectedHigh_ = false;
+    this->peakDetectedOsf_ = false;
 
     if (this->envelopeSampleLow_ != -1.0f) {
         float strength = bandStateLow_.applyPeakDetector(this->envelopeSampleLow_, this->currentTime_);
         if (strength > 0.0f) {
             this->peakDetectedLow_ = true;
-            anyPeakDetected = true;
+            if (!config_.useOsfFusion) anyPeakDetected = true;
         }
     }
 
@@ -168,7 +178,6 @@ bool BeatDetector::is_beat(const float sample) {
         float strength = bandStateMid_.applyPeakDetector(this->envelopeSampleMid_, this->currentTime_);
         if (strength > 0.0f) {
             this->peakDetectedMid_ = true;
-            // anyPeakDetected = true;
         }
     }
 
@@ -176,7 +185,35 @@ bool BeatDetector::is_beat(const float sample) {
         float strength = bandStateHigh_.applyPeakDetector(this->envelopeSampleHigh_, this->currentTime_);
         if (strength > 0.0f) {
             this->peakDetectedHigh_ = true;
-            // anyPeakDetected = true;
+        }
+    }
+
+    // Run the OSF unconditionally on every envelope frame so the GUI can
+    // visualize OSF behavior even when useOsfFusion is false. Only the
+    // *beat decision* is gated on useOsfFusion: when true, the OSF peak
+    // replaces the low-band peak as the fused beat trigger.
+    if (envelopeSampleLow_  != -1.0f
+        && envelopeSampleMid_  != -1.0f
+        && envelopeSampleHigh_ != -1.0f) {
+
+        float wL = config_.bandWeightLow;
+        float wM = config_.bandWeightMid;
+        float wH = config_.bandWeightHigh;
+        if (config_.osfSpectralTiltWeighting) {
+            const float tilt = getSpectralTilt();   // [-1, 1]: +1 bass, -1 treble
+            wL *= (1.0f + config_.osfTiltGain * std::max(0.0f,  tilt));
+            wH *= (1.0f + config_.osfTiltGain * std::max(0.0f, -tilt));
+        }
+
+        const bool gateOpen = shortTermEnergy_ >= config_.osfOverallLevelGate;
+        peakDetectedOsf_ = osf_.process(
+            {envelopeSampleLow_,  bandStateLow_.statsReady,  bandStateLow_.rollingMedian,  wL},
+            {envelopeSampleMid_,  bandStateMid_.statsReady,  bandStateMid_.rollingMedian,  wM},
+            {envelopeSampleHigh_, bandStateHigh_.statsReady, bandStateHigh_.rollingMedian, wH},
+            currentTime_,
+            gateOpen);
+        if (config_.useOsfFusion && peakDetectedOsf_) {
+            anyPeakDetected = true;
         }
     }
 

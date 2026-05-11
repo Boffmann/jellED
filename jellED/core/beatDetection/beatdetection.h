@@ -2,6 +2,8 @@
 #define _BEAT_DETECTOR_JELLED_H_
 
 #include <stdint.h>
+#include <algorithm>
+#include <cmath>
 #include "include/beatDetectionConfig.h"
 #include "include/ringbuffer.h"
 #include "include/automaticGainControl.h"
@@ -9,6 +11,7 @@
 #include "include/envelopeDetector.h"
 #include "include/peakdetection.h"
 #include "include/multibandFusion.h"
+#include "include/onsetStrengthFunction.h"
 #include "include/tempoTracker.h"
 #include "pUtils/IPlatformUtils.h"
 
@@ -140,6 +143,10 @@ public:
     bool isPeakLow();
     bool isPeakMid();
     bool isPeakHigh();
+    // Whether the OSF peak detector fired on the most recent envelope frame.
+    // Always reflects OSF behavior, even when config.useOsfFusion is false
+    // (so the GUI can A/B the fused vs. bass-only detection visually).
+    bool isPeakOsf() const { return peakDetectedOsf_; }
     float getThresholdLow();
     float getThresholdMid();
     float getThresholdHigh();
@@ -161,6 +168,22 @@ public:
     bool hasEstablishedTempo() const;
     bool wasLastPeakRejectedByTempo() const;
 
+    // OSF observability — the OSF runs unconditionally on every envelope
+    // frame so the GUI can compare bass-only vs. fused detection live; only
+    // the fused beat *decision* is gated on config.useOsfFusion.
+    float getOsfValue() const         { return osf_.getCurrentOsf(); }
+    float getOsfInstantaneous() const { return osf_.getCurrentInstantaneous(); }
+    float getOsfThreshold() const     { return osf_.getThreshold(); }
+
+    // Static-weighted sum of the per-band bandpass-filtered samples — the
+    // "source signal" feeding the OSF, useful as a visualization analogue to
+    // each per-band column's bandpass row.
+    float getCombinedBandpass() const {
+        return config_.bandWeightLow  * filteredSampleLow_
+             + config_.bandWeightMid  * filteredSampleMid_
+             + config_.bandWeightHigh * filteredSampleHigh_;
+    }
+
 private:
     int sampleRate_;
     BeatDetectionConfig config_;
@@ -175,6 +198,7 @@ private:
     bool peakDetectedLow_;
     bool peakDetectedMid_;
     bool peakDetectedHigh_;
+    bool peakDetectedOsf_;
     float currentTime_;
 
     BandConfig bandConfigLow_;
@@ -186,6 +210,8 @@ private:
     BandState bandStateHigh_;
 
     MultiBandFusion multibandFusion_;
+
+    OnsetStrengthFunction osf_;
 
     TempoTracker tempoTracker_;
     float lastAcceptedBeatTime_;

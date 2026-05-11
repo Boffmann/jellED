@@ -373,9 +373,43 @@ QWidget* AudioDisplay::setupWaveformDisplays() {
     waveformLayoutHigh->addLayout(secondWaveformLayoutHigh);
     waveformLayoutHigh->addLayout(thirdWaveformLayoutHigh);
 
+    // OSF (Onset Strength Function) column — mirrors the per-band layout.
+    QLabel* osfLabel = new QLabel("Onset Strength Function");
+    osfLabel->setAlignment(Qt::AlignCenter);
+    osfLabel->setFixedHeight(30);
+    osfLabel->setStyleSheet(lableStyleSheet);
+
+    QVBoxLayout* waveformLayoutOsf = new QVBoxLayout();
+    QHBoxLayout* firstWaveformLayoutOsf = new QHBoxLayout();
+    VerticalLabel* originalSamplesLabelOsf = new VerticalLabel("Original Samples");
+    originalSamplesLabelOsf->setFixedWidth(30);
+    originalSamplesWaveformWidgetOsf_ = new WaveformWidget(sampleRate_, displaySeconds_, this);
+    firstWaveformLayoutOsf->addWidget(originalSamplesLabelOsf);
+    firstWaveformLayoutOsf->addWidget(originalSamplesWaveformWidgetOsf_, 1);
+
+    QHBoxLayout* secondWaveformLayoutOsf = new QHBoxLayout();
+    VerticalLabel* osfInstantaneousLabel = new VerticalLabel("Combined Bandpass");
+    osfInstantaneousLabel->setFixedWidth(30);
+    osfInstantaneousWaveformWidget_ = new WaveformWidget(sampleRate_, displaySeconds_, this);
+    secondWaveformLayoutOsf->addWidget(osfInstantaneousLabel);
+    secondWaveformLayoutOsf->addWidget(osfInstantaneousWaveformWidget_, 1);
+
+    QHBoxLayout* thirdWaveformLayoutOsf = new QHBoxLayout();
+    VerticalLabel* osfEnvelopeLabel = new VerticalLabel("OSF + Threshold + Beats");
+    osfEnvelopeLabel->setFixedWidth(30);
+    osfEnvelopePeakWaveformWidget_ = new EnvelopePeakWidget(sampleRate_, displaySeconds_, this);
+    thirdWaveformLayoutOsf->addWidget(osfEnvelopeLabel);
+    thirdWaveformLayoutOsf->addWidget(osfEnvelopePeakWaveformWidget_, 1);
+
+    waveformLayoutOsf->addWidget(osfLabel);
+    waveformLayoutOsf->addLayout(firstWaveformLayoutOsf);
+    waveformLayoutOsf->addLayout(secondWaveformLayoutOsf);
+    waveformLayoutOsf->addLayout(thirdWaveformLayoutOsf);
+
     waveformLayoutsLayout->addLayout(waveformLayoutLow);
     waveformLayoutsLayout->addLayout(waveformLayoutMid);
     waveformLayoutsLayout->addLayout(waveformLayoutHigh);
+    waveformLayoutsLayout->addLayout(waveformLayoutOsf);
 
     return waveboxesWidget;
 }
@@ -401,6 +435,7 @@ void AudioDisplay::addOriginalSample(const double sample) {
     originalSamplesWaveformWidgetLow_->addSample(sample);
     originalSamplesWaveformWidgetMid_->addSample(sample);
     originalSamplesWaveformWidgetHigh_->addSample(sample);
+    originalSamplesWaveformWidgetOsf_->addSample(sample);
     totalSamplesReceived_++;
     currentSamplesReceived_++;
     beatIndicatorWidget_->setBeat(false);
@@ -440,6 +475,22 @@ void AudioDisplay::addPeakMid() {
 
 void AudioDisplay::addPeakHigh() {
     envelopePeakWaveformWidgetHigh_->addPeak();
+}
+
+void AudioDisplay::addOsfInstantaneousSample(double sample) {
+    osfInstantaneousWaveformWidget_->addSample(sample);
+}
+
+void AudioDisplay::addOsfSmoothedSample(double sample) {
+    osfEnvelopePeakWaveformWidget_->addSample(sample);
+}
+
+void AudioDisplay::setOsfThreshold(double threshold) {
+    osfEnvelopePeakWaveformWidget_->setCurrentThreshold(threshold);
+}
+
+void AudioDisplay::addOsfPeak() {
+    osfEnvelopePeakWaveformWidget_->addPeak();
 }
 
 void AudioDisplay::setThresholdLow(double threshold) {
@@ -488,9 +539,14 @@ void AudioDisplay::updateDisplay() {
             lowpassFilteredWaveformWidgetHigh_->updateWidget();
             envelopePeakWaveformWidgetHigh_->updateWidget();
             break;
+        case 3:
+            originalSamplesWaveformWidgetOsf_->updateWidget();
+            osfInstantaneousWaveformWidget_->updateWidget();
+            osfEnvelopePeakWaveformWidget_->updateWidget();
+            break;
     }
-    
-    updateRotation_ = (updateRotation_ + 1) % 3;
+
+    updateRotation_ = (updateRotation_ + 1) % 4;
 }
 
 void AudioDisplay::updateStatusBar() {
@@ -520,6 +576,9 @@ void AudioDisplay::onClearClicked() {
     originalSamplesWaveformWidgetHigh_->clearSamples();
     lowpassFilteredWaveformWidgetHigh_->clearSamples();
     envelopePeakWaveformWidgetHigh_->clearSamples();
+    originalSamplesWaveformWidgetOsf_->clearSamples();
+    osfInstantaneousWaveformWidget_->clearSamples();
+    osfEnvelopePeakWaveformWidget_->clearSamples();
     currentSamplesReceived_ = 0;
     updateStatusBar();
 }
