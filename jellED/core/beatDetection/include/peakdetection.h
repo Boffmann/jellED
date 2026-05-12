@@ -2,6 +2,7 @@
 #define __PEAKDETECTION_JELLED_H__
 
 #include "include/ringbuffer.h"
+#include "beatDetectionConfig.h"
 #include <cstdint>
 #include <vector>
 #include <memory>
@@ -23,6 +24,11 @@ struct PeakDetectorConfig {
     float minRelativeThresholdFactor;
     float risingThresholdScale;
     float fallingThresholdScale;
+
+    // Moving-mean threshold (Böck 2012) — default Envelope preserves old behavior
+    ThresholdMode thresholdMode  = ThresholdMode::Envelope;
+    float         thresholdWindowMs = 200.0;
+    float         thresholdDelta    = 0.05;
 };
 
 class PeakDetector {
@@ -37,13 +43,19 @@ private:
     float falling_threshold_scale;
     float threshold_baseline;
 
-    // Envelope follower state
+    // Envelope follower state (used in Envelope mode)
     float envelope;
     float baseline_attack_coeff;
     float baseline_release_coeff;
     float dynamic_threshold_rel;
     float min_dynamic_threshold_rel;
     float threshold_relax_coeff;
+
+    // Moving-mean threshold state (used in MovingMean mode)
+    ThresholdMode mode_;
+    Ringbuffer*   threshold_window_;
+    float         running_sum_;
+    float         threshold_delta_;
 
     // Peak detection state
     float prev_env;
@@ -60,9 +72,11 @@ private:
     uint32_t sample_rate_;
 
     float update_envelope(float sample);
+    float update_threshold_mean(float sample);
 
 public:
     PeakDetector(const PeakDetectorConfig& config, uint32_t sample_rate);
+    ~PeakDetector();
 
     bool is_peak(float sample, float current_time);
 
@@ -76,6 +90,7 @@ public:
                          float thresholdRelaxTime);
     void setHysteresisScales(float risingScale, float fallingScale);
     void setMinRelativeThresholdFactor(float factor);
+    void setThresholdMode(ThresholdMode mode, float windowMs, float delta);
 };
 
 } // end namespace jellED

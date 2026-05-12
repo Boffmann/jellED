@@ -96,6 +96,13 @@ static QJsonObject configToJson(const jellED::BeatDetectionConfig& c) {
     obj["osfSpectralTiltWeighting"] = c.osfSpectralTiltWeighting;
     obj["osfTiltGain"] = c.osfTiltGain;
     obj["osfOverallLevelGate"] = c.osfOverallLevelGate;
+    obj["thresholdMode"] = static_cast<int>(c.thresholdMode);
+    obj["thresholdWindowMsLow"] = c.thresholdWindowMsLow;
+    obj["thresholdWindowMsMid"] = c.thresholdWindowMsMid;
+    obj["thresholdWindowMsHigh"] = c.thresholdWindowMsHigh;
+    obj["thresholdDelta"] = c.thresholdDelta;
+    obj["osfThresholdWindowMs"] = c.osfThresholdWindowMs;
+    obj["osfThresholdDelta"] = c.osfThresholdDelta;
     return obj;
 }
 
@@ -181,6 +188,14 @@ static bool jsonToConfig(const QJsonObject& obj, jellED::BeatDetectionConfig& c)
     c.osfSpectralTiltWeighting = getBool("osfSpectralTiltWeighting", DEFAULTS.osfSpectralTiltWeighting);
     c.osfTiltGain = getDouble("osfTiltGain", DEFAULTS.osfTiltGain);
     c.osfOverallLevelGate = getDouble("osfOverallLevelGate", DEFAULTS.osfOverallLevelGate);
+    c.thresholdMode = static_cast<jellED::ThresholdMode>(
+        getInt("thresholdMode", static_cast<int>(DEFAULTS.thresholdMode)));
+    c.thresholdWindowMsLow  = getDouble("thresholdWindowMsLow",  DEFAULTS.thresholdWindowMsLow);
+    c.thresholdWindowMsMid  = getDouble("thresholdWindowMsMid",  DEFAULTS.thresholdWindowMsMid);
+    c.thresholdWindowMsHigh = getDouble("thresholdWindowMsHigh", DEFAULTS.thresholdWindowMsHigh);
+    c.thresholdDelta        = getDouble("thresholdDelta",        DEFAULTS.thresholdDelta);
+    c.osfThresholdWindowMs  = getDouble("osfThresholdWindowMs",  DEFAULTS.osfThresholdWindowMs);
+    c.osfThresholdDelta     = getDouble("osfThresholdDelta",     DEFAULTS.osfThresholdDelta);
     return true;
 }
 
@@ -256,6 +271,14 @@ jellED::BeatDetectionConfig ConfiguratorWindow::currentConfig() const {
     config.osfTiltGain = osfTiltGainTextField_->text().toDouble();
     config.osfOverallLevelGate = osfOverallLevelGateTextField_->text().toDouble();
 
+    config.thresholdMode = static_cast<jellED::ThresholdMode>(thresholdModeComboBox_->currentIndex());
+    config.thresholdWindowMsLow  = thresholdWindowMsLowTextField_->text().toDouble();
+    config.thresholdWindowMsMid  = thresholdWindowMsMidTextField_->text().toDouble();
+    config.thresholdWindowMsHigh = thresholdWindowMsHighTextField_->text().toDouble();
+    config.thresholdDelta        = thresholdDeltaTextField_->text().toDouble();
+    config.osfThresholdWindowMs  = osfThresholdWindowMsTextField_->text().toDouble();
+    config.osfThresholdDelta     = osfThresholdDeltaTextField_->text().toDouble();
+
     return config;
 }
 
@@ -327,6 +350,14 @@ void ConfiguratorWindow::applyConfigToUi(const jellED::BeatDetectionConfig& conf
     osfThresholdRelaxTimeTextField_->setText(QString::number(config.osfThresholdRelaxTime));
     osfTiltGainTextField_->setText(QString::number(config.osfTiltGain));
     osfOverallLevelGateTextField_->setText(QString::number(config.osfOverallLevelGate));
+
+    thresholdModeComboBox_->setCurrentIndex(static_cast<int>(config.thresholdMode));
+    thresholdWindowMsLowTextField_->setText(QString::number(config.thresholdWindowMsLow));
+    thresholdWindowMsMidTextField_->setText(QString::number(config.thresholdWindowMsMid));
+    thresholdWindowMsHighTextField_->setText(QString::number(config.thresholdWindowMsHigh));
+    thresholdDeltaTextField_->setText(QString::number(config.thresholdDelta));
+    osfThresholdWindowMsTextField_->setText(QString::number(config.osfThresholdWindowMs));
+    osfThresholdDeltaTextField_->setText(QString::number(config.osfThresholdDelta));
 }
 
 void ConfiguratorWindow::setupUi() {
@@ -375,6 +406,7 @@ void ConfiguratorWindow::setupUi() {
     mainLayout->addWidget(setupPeakDetectionControls());
     mainLayout->addWidget(setupPeakDetectorTimingControls());
     mainLayout->addWidget(setupPeakDetectorTuningControls());
+    mainLayout->addWidget(setupMovingMeanControls());
 
     QHBoxLayout* buttonRow = new QHBoxLayout();
     buttonRow->addStretch();
@@ -819,6 +851,8 @@ QWidget* ConfiguratorWindow::setupOsfControls() {
     addField(peakRow, "Baseline Attack (s)",  DEFAULTS.osfBaselineAttackTimeFinal,  osfBaselineAttackTimeFinalTextField_);
     addField(peakRow, "Baseline Release (s)", DEFAULTS.osfBaselineReleaseTimeFinal, osfBaselineReleaseTimeFinalTextField_);
     addField(peakRow, "Threshold Relax (s)",  DEFAULTS.osfThresholdRelaxTime,       osfThresholdRelaxTimeTextField_);
+    addField(peakRow, "MM Window (ms)",  DEFAULTS.osfThresholdWindowMs,  osfThresholdWindowMsTextField_);
+    addField(peakRow, "MM Delta (δ)",    DEFAULTS.osfThresholdDelta,     osfThresholdDeltaTextField_);
     layout->addLayout(peakRow);
 
     // Misc row
@@ -857,6 +891,43 @@ QWidget* ConfiguratorWindow::setupTempoLockControls() {
     addField("Tolerance", DEFAULTS.tempoLockTolerance, tempoLockToleranceTextField_);
     addField("Stale Reset (s)", DEFAULTS.tempoLockStaleResetTime,
              tempoLockStaleResetTimeTextField_);
+
+    return group;
+}
+
+QWidget* ConfiguratorWindow::setupMovingMeanControls() {
+    QGroupBox* group = new QGroupBox("Moving-Mean Threshold (Böck/Schedl ISMIR 2012)", this);
+    group->setStyleSheet(STYLE_PEAK);
+    QVBoxLayout* layout = new QVBoxLayout(group);
+    layout->setSpacing(8);
+    layout->setContentsMargins(5, 5, 5, 5);
+
+    // Mode selector + global delta
+    QHBoxLayout* modeRow = new QHBoxLayout();
+    modeRow->addWidget(new QLabel("Mode:", this));
+    thresholdModeComboBox_ = new QComboBox(this);
+    thresholdModeComboBox_->addItem("Envelope (current)");
+    thresholdModeComboBox_->addItem("Moving Mean (Böck 2012)");
+    thresholdModeComboBox_->setCurrentIndex(static_cast<int>(DEFAULTS.thresholdMode));
+    thresholdModeComboBox_->setToolTip(
+        "Envelope: asymmetric IIR follower (current behavior).\n"
+        "Moving Mean: causal mean window — threshold = mean(W) + δ.\n"
+        "Eliminates post-peak masking; see plan/moving_mean_threshold.html.");
+    modeRow->addWidget(thresholdModeComboBox_);
+
+    modeRow->addSpacing(20);
+    modeRow->addWidget(new QLabel("Delta (δ):", this));
+    thresholdDeltaTextField_ = new QLineEdit(QString::number(DEFAULTS.thresholdDelta), this);
+    thresholdDeltaTextField_->setFixedWidth(70);
+    thresholdDeltaTextField_->setToolTip("Additive offset above the local mean (Böck 'delta').");
+    modeRow->addWidget(thresholdDeltaTextField_);
+    modeRow->addStretch();
+    layout->addLayout(modeRow);
+
+    // Per-band window row
+    layout->addWidget(setupPerBandRow("Window (ms)",
+        DEFAULTS.thresholdWindowMsLow, DEFAULTS.thresholdWindowMsMid, DEFAULTS.thresholdWindowMsHigh,
+        thresholdWindowMsLowTextField_, thresholdWindowMsMidTextField_, thresholdWindowMsHighTextField_));
 
     return group;
 }

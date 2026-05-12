@@ -36,7 +36,8 @@ BeatDetector::BeatDetector(int sampleRate, const BeatDetectionConfig& config)
                      config.baselineAttackTimeLow, config.baselineReleaseTimeLow,
                      config.thresholdRelaxTimeLow, config.onsetRatioLow,
                      config.minRelativeThresholdFactor,
-                     config.risingThresholdScale, config.fallingThresholdScale}
+                     config.risingThresholdScale, config.fallingThresholdScale,
+                     config.thresholdMode, config.thresholdWindowMsLow, config.thresholdDelta}
     , bandConfigMid_{BANDPASS_FILTER_COEFFICIENTS_MID, 1.0f,
                      config.absoluteMinThresholdMid,
                      config.thresholdRelMid,
@@ -45,7 +46,8 @@ BeatDetector::BeatDetector(int sampleRate, const BeatDetectionConfig& config)
                      config.baselineAttackTimeMid, config.baselineReleaseTimeMid,
                      config.thresholdRelaxTimeMid, config.onsetRatioMid,
                      config.minRelativeThresholdFactor,
-                     config.risingThresholdScale, config.fallingThresholdScale}
+                     config.risingThresholdScale, config.fallingThresholdScale,
+                     config.thresholdMode, config.thresholdWindowMsMid, config.thresholdDelta}
     , bandConfigHigh_{BANDPASS_FILTER_COEFFICIENTS_HIGH, 1.0f,
                       config.absoluteMinThresholdHigh,
                       config.thresholdRelHigh,
@@ -54,7 +56,8 @@ BeatDetector::BeatDetector(int sampleRate, const BeatDetectionConfig& config)
                       config.baselineAttackTimeHigh, config.baselineReleaseTimeHigh,
                       config.thresholdRelaxTimeHigh, config.onsetRatioHigh,
                       config.minRelativeThresholdFactor,
-                      config.risingThresholdScale, config.fallingThresholdScale}
+                      config.risingThresholdScale, config.fallingThresholdScale,
+                      config.thresholdMode, config.thresholdWindowMsHigh, config.thresholdDelta}
     , bandStateLow_(bandConfigLow_, sampleRate_, config.envelopeDownsampleRatio, config.peakDetectionMaxBpm)
     , bandStateMid_(bandConfigMid_, sampleRate_, config.envelopeDownsampleRatio, config.peakDetectionMaxBpm)
     , bandStateHigh_(bandConfigHigh_, sampleRate_, config.envelopeDownsampleRatio, config.peakDetectionMaxBpm)
@@ -121,6 +124,13 @@ bool BeatDetector::applyConfig(const BeatDetectionConfig& newConfig) {
     bandStateMid_.peakDetector.setHysteresisScales(newConfig.risingThresholdScale, newConfig.fallingThresholdScale);
     bandStateHigh_.peakDetector.setMinRelativeThresholdFactor(newConfig.minRelativeThresholdFactor);
     bandStateHigh_.peakDetector.setHysteresisScales(newConfig.risingThresholdScale, newConfig.fallingThresholdScale);
+
+    bandStateLow_.peakDetector.setThresholdMode(
+        newConfig.thresholdMode, newConfig.thresholdWindowMsLow, newConfig.thresholdDelta);
+    bandStateMid_.peakDetector.setThresholdMode(
+        newConfig.thresholdMode, newConfig.thresholdWindowMsMid, newConfig.thresholdDelta);
+    bandStateHigh_.peakDetector.setThresholdMode(
+        newConfig.thresholdMode, newConfig.thresholdWindowMsHigh, newConfig.thresholdDelta);
 
     bandStateLow_.envelope.setTimings(newConfig.envelopeAttackTimeLow, newConfig.envelopeReleaseTimeLow);
     bandStateMid_.envelope.setTimings(newConfig.envelopeAttackTimeMid, newConfig.envelopeReleaseTimeMid);

@@ -173,6 +173,9 @@ public:
         peakDetector_.setMinRelativeThresholdFactor(config.minRelativeThresholdFactor);
         peakDetector_.setHysteresisScales(config.risingThresholdScale,
                                           config.fallingThresholdScale);
+        peakDetector_.setThresholdMode(config.thresholdMode,
+                                       config.osfThresholdWindowMs,
+                                       config.osfThresholdDelta);
     }
 
     void reset() {
@@ -209,7 +212,10 @@ private:
             config.osfOnsetRatio,
             config.minRelativeThresholdFactor,
             config.risingThresholdScale,
-            config.fallingThresholdScale
+            config.fallingThresholdScale,
+            config.thresholdMode,
+            config.osfThresholdWindowMs,
+            config.osfThresholdDelta
         };
     }
 

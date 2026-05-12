@@ -97,6 +97,15 @@ private:
     QLineEdit* risingThresholdScaleTextField_;
     QLineEdit* fallingThresholdScaleTextField_;
 
+    // Moving-mean threshold (Böck 2012)
+    QComboBox* thresholdModeComboBox_;
+    QLineEdit* thresholdWindowMsLowTextField_;
+    QLineEdit* thresholdWindowMsMidTextField_;
+    QLineEdit* thresholdWindowMsHighTextField_;
+    QLineEdit* thresholdDeltaTextField_;
+    QLineEdit* osfThresholdWindowMsTextField_;
+    QLineEdit* osfThresholdDeltaTextField_;
+
     // OSF (Onset Strength Function) fusion
     QCheckBox* useOsfFusionCheckBox_;
     QCheckBox* osfUseAdaptiveWhiteningCheckBox_;
@@ -130,6 +139,7 @@ private:
     QWidget* setupFusionControls();
     QWidget* setupTempoLockControls();
     QWidget* setupOsfControls();
+    QWidget* setupMovingMeanControls();
     QWidget* setupPerBandRow(const QString& title,
         double defaultLow, double defaultMid, double defaultHigh,
         QLineEdit*& lowField, QLineEdit*& midField, QLineEdit*& highField);

@@ -39,6 +39,10 @@ PeakDetector::PeakDetector(const PeakDetectorConfig& config, uint32_t sample_rat
       dynamic_threshold_rel(config.thresholdRel),
       min_dynamic_threshold_rel(config.thresholdRel * config.minRelativeThresholdFactor),
       threshold_relax_coeff(0.0f),
+      mode_(config.thresholdMode),
+      threshold_window_(nullptr),
+      running_sum_(0.0f),
+      threshold_delta_(config.thresholdDelta),
       prev_env(0.0f),
       is_rising(false),
       last_peak_time(0.0f),
@@ -55,6 +59,19 @@ PeakDetector::PeakDetector(const PeakDetectorConfig& config, uint32_t sample_rat
 
     // Recent minimum tracker: decay using the same time constant as baseline release
     recent_min_decay_coeff = compute_decay_coeff(sr, config.baselineReleaseTime);
+
+    // Moving-mean window. Pre-fill with absoluteMinThreshold so the threshold
+    // starts at (absoluteMinThreshold + delta) rather than collapsing to delta
+    // alone during the warm-up period before real signal arrives.
+    const uint32_t window_capacity = std::max(2u,
+        static_cast<uint32_t>(config.thresholdWindowMs / 1000.0f * sr));
+    threshold_window_ = new Ringbuffer(window_capacity);
+    threshold_window_->fill(config.absoluteMinThreshold);
+    running_sum_ = config.absoluteMinThreshold * static_cast<float>(window_capacity);
+}
+
+PeakDetector::~PeakDetector() {
+    delete threshold_window_;
 }
 
 float PeakDetector::update_envelope(float sample) {
@@ -65,15 +82,29 @@ float PeakDetector::update_envelope(float sample) {
     return threshold_baseline;
 }
 
+float PeakDetector::update_threshold_mean(float sample) {
+    float clamped = std::max(0.0f, sample);
+    // O(1) running-sum update: subtract the oldest sample (index 0) before it
+    // is overwritten by the new one, then add the new sample.
+    running_sum_ += clamped - threshold_window_->get(0);
+    threshold_window_->append(clamped);
+    float local_mean = running_sum_ / static_cast<float>(threshold_window_->size());
+    threshold_baseline = local_mean;
+    return std::max(absolute_min_threshold, local_mean + threshold_delta_);
+}
+
 bool PeakDetector::is_peak(float envelope_sample, float current_time) {
-    float baseline = update_envelope(envelope_sample);
-
-    if (threshold_relax_coeff > 0.0f) {
-        dynamic_threshold_rel = min_dynamic_threshold_rel +
-            (dynamic_threshold_rel - min_dynamic_threshold_rel) * threshold_relax_coeff;
+    float threshold;
+    if (mode_ == ThresholdMode::MovingMean) {
+        threshold = update_threshold_mean(envelope_sample);
+    } else {
+        float baseline = update_envelope(envelope_sample);
+        if (threshold_relax_coeff > 0.0f) {
+            dynamic_threshold_rel = min_dynamic_threshold_rel +
+                (dynamic_threshold_rel - min_dynamic_threshold_rel) * threshold_relax_coeff;
+        }
+        threshold = std::max(absolute_min_threshold, baseline * (1.0f + dynamic_threshold_rel));
     }
-
-    float threshold = std::max(this->absolute_min_threshold, baseline * (1.0f + dynamic_threshold_rel));
     last_threshold_ = threshold;
 
     float threshold_high = threshold * rising_threshold_scale;
@@ -153,6 +184,19 @@ void PeakDetector::setMinRelativeThresholdFactor(float factor) {
     min_dynamic_threshold_rel = threshold_rel * factor;
     if (dynamic_threshold_rel < min_dynamic_threshold_rel) {
         dynamic_threshold_rel = min_dynamic_threshold_rel;
+    }
+}
+
+void PeakDetector::setThresholdMode(ThresholdMode mode, float windowMs, float delta) {
+    mode_ = mode;
+    threshold_delta_ = delta;
+    const uint32_t new_capacity = std::max(2u,
+        static_cast<uint32_t>(windowMs / 1000.0f * static_cast<float>(sample_rate_)));
+    if (new_capacity != threshold_window_->size()) {
+        delete threshold_window_;
+        threshold_window_ = new Ringbuffer(new_capacity);
+        threshold_window_->fill(absolute_min_threshold);
+        running_sum_ = absolute_min_threshold * static_cast<float>(new_capacity);
     }
 }
 

@@ -36,6 +36,11 @@ struct BandConfig {
     float minRelativeThresholdFactor;
     float risingThresholdScale;
     float fallingThresholdScale;
+
+    // Moving-mean threshold
+    ThresholdMode thresholdMode;
+    float         thresholdWindowMs;
+    float         thresholdDelta;
 };
 
 struct BandState {
@@ -59,7 +64,8 @@ struct BandState {
               cfg.baselineAttackTime, cfg.baselineReleaseTime,
               cfg.thresholdRelaxTime, cfg.onsetRatio,
               cfg.minRelativeThresholdFactor,
-              cfg.risingThresholdScale, cfg.fallingThresholdScale
+              cfg.risingThresholdScale, cfg.fallingThresholdScale,
+              cfg.thresholdMode, cfg.thresholdWindowMs, cfg.thresholdDelta
           }, sampleRate),
           weight(cfg.weight),
           rollingMedian(0.0f),

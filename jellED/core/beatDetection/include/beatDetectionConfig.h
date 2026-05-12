@@ -3,6 +3,8 @@
 
 namespace jellED {
 
+enum class ThresholdMode { Envelope, MovingMean };
+
 struct BeatDetectionConfig {
     int envelopeDownsampleRatio = 1;
     float downsampleCutoffFrequency = 0.5;
@@ -155,6 +157,31 @@ struct BeatDetectionConfig {
     // Rejects between-track silence and crowd-only periods without needing a
     // separate state machine.
     float osfOverallLevelGate = 0.01;
+
+    // --- Moving-mean threshold (Böck/Schedl ISMIR 2012) ---
+    // When thresholdMode == MovingMean, PeakDetector replaces the asymmetric
+    // envelope follower with a causal moving-mean window. Threshold becomes:
+    //   max(absoluteMinThreshold, mean(window) + thresholdDelta)
+    // The window recovers symmetrically within W frames vs. ~τ_release for the
+    // envelope follower, eliminating post-peak masking of quieter subsequent beats.
+    ThresholdMode thresholdMode = ThresholdMode::Envelope;
+
+    // Per-band window size in milliseconds. Longer windows track slower-evolving
+    // dynamics: bass has more sustained energy (300ms), highs are more transient
+    // (150ms). These are the Böck 2012 "pre_avg" parameter scaled to milliseconds.
+    float thresholdWindowMsLow  = 300.0;
+    float thresholdWindowMsMid  = 200.0;
+    float thresholdWindowMsHigh = 150.0;
+
+    // Additive offset δ above the local mean (Böck 2012 "delta" parameter).
+    // Acts as the minimum detection margin; use absolute signal-level units
+    // (same scale as the envelope values entering the peak detector).
+    float thresholdDelta = 0.05;
+
+    // OSF-domain moving mean. The OSF signal is dimensionless after whitening
+    // (typical range 0–5), so osfThresholdDelta should match osfAbsoluteMinThreshold.
+    float osfThresholdWindowMs = 200.0;
+    float osfThresholdDelta    = 0.5;
 };
 
 } // namespace jellED
