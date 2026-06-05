@@ -51,12 +51,20 @@ def read_from_serial(should_store):
 
 def generate_butterworth():
     order = 4
-    lowcut = 2000
-    highcut = 5000
-    framerate = 12000
-    name = "BANDPASS_FILTER_COEFFICIENTS_HIGH"
-    sos = signal.butter(order, [lowcut, highcut],
-                        'band', fs=framerate, output='sos')
+    lowcut_low = 50
+    highcut_low = 150
+    lowcut_mid = 150
+    highcut_mid = 500
+    lowcut_high = 2000
+    highcut_high = 5000
+    framerate = 11025
+    name = f"BANDPASS_FILTERS_{framerate}"
+    sos_low = signal.butter(order, [lowcut_low, highcut_low],
+                            'band', fs=framerate, output='sos')
+    sos_mid = signal.butter(order, [lowcut_mid, highcut_mid],
+                            'band', fs=framerate, output='sos')
+    sos_high = signal.butter(order, [lowcut_high, highcut_high],
+                             'band', fs=framerate, output='sos')
 
     def fmt_coeff(v):
         return f"{v:.8e}f" if abs(v) < 0.001 and v != 0 else f"{v}f"
@@ -64,18 +72,46 @@ def generate_butterworth():
     def fmt_row(a, b, c):
         return f"{{{fmt_coeff(a)},{fmt_coeff(b)},{fmt_coeff(c)}}}"
 
-    print(f"static const BandpassFilterCoefficients {name} = {{")
-    print(f"    // Butterworth coefficients: {lowcut} Hz - {highcut} Hz, order: {order}, framerate: {framerate}")
-    print("    .numerator = {")
+    print(f"static const BandpassFilterBank {name} = {{")
+    print(f".sampleRate = {framerate},")
+    print(f"    // Butterworth coefficients: {lowcut_low} Hz - {highcut_low} Hz, order: {order}")
+    print(".low = {")
+    print("     .numerator = {")
     for o in range(order):
         comma = "," if o < order - 1 else ""
-        print(f"        {fmt_row(sos[o][0], sos[o][1], sos[o][2])}{comma}")
+        print(f"        {fmt_row(sos_low[o][0], sos_low[o][1], sos_low[o][2])}{comma}")
     print("    },")
     print("    .denominator = {")
     for o in range(order):
         comma = "," if o < order - 1 else ""
-        print(f"        {fmt_row(sos[o][3], sos[o][4], sos[o][5])}{comma}")
+        print(f"        {fmt_row(sos_low[o][3], sos_low[o][4], sos_low[o][5])}{comma}")
     print("    }")
+    print("},")
+    print(f"    // Butterworth coefficients: {lowcut_mid} Hz - {highcut_mid} Hz, order: {order}")
+    print(".mid = {")
+    print("     .numerator = {")
+    for o in range(order):
+        comma = "," if o < order - 1 else ""
+        print(f"        {fmt_row(sos_mid[o][0], sos_mid[o][1], sos_mid[o][2])}{comma}")
+    print("    },")
+    print("    .denominator = {")
+    for o in range(order):
+        comma = "," if o < order - 1 else ""
+        print(f"        {fmt_row(sos_mid[o][3], sos_mid[o][4], sos_mid[o][5])}{comma}")
+    print("    }")
+    print("},")
+    print(f"    // Butterworth coefficients: {lowcut_high} Hz - {highcut_high} Hz, order: {order}")
+    print(".high = {")
+    print("     .numerator = {")
+    for o in range(order):
+        comma = "," if o < order - 1 else ""
+        print(f"        {fmt_row(sos_high[o][0], sos_high[o][1], sos_high[o][2])}{comma}")
+    print("    },")
+    print("    .denominator = {")
+    for o in range(order):
+        comma = "," if o < order - 1 else ""
+        print(f"        {fmt_row(sos_high[o][3], sos_high[o][4], sos_high[o][5])}{comma}")
+    print("    }}")
     print("};")
 
 
