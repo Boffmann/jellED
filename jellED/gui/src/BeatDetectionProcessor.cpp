@@ -1,14 +1,13 @@
 #include "BeatDetectionProcessor.h"
 
+#include <algorithm>
 #include <cmath>
 #include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <mutex>
-#include <set>
 #include <thread>
 #include "AudioDisplay.h"
-#include "include/sampleRecorder.h"
 
 #include "audioFeatures.h"
 #include "pattern.h"
@@ -103,27 +102,27 @@ struct AudioLevelStats {
 
     // Lock-free: called from main audio thread
     void addRawSample(double sample) {
-        if (sample < active.minSample) active.minSample = sample;
-        if (sample > active.maxSample) active.maxSample = sample;
+        active.minSample = std::min(sample, active.minSample);
+        active.maxSample = std::max(sample, active.maxSample);
         double absSample = std::abs(sample);
         active.sumSquares += sample * sample;
         active.sumAbsolute += absSample;
-        if (absSample > active.peakLevel) active.peakLevel = absSample;
+        active.peakLevel = std::max(absSample, active.peakLevel);
         active.sampleCount++;
     }
 
     // Lock-free: called from main audio thread
     void addAfterAGCSample(double sample, double agcGain) {
-        if (sample < active.minAfterAGC) active.minAfterAGC = sample;
-        if (sample > active.maxAfterAGC) active.maxAfterAGC = sample;
+        active.minAfterAGC = std::min(sample, active.minAfterAGC);
+        active.maxAfterAGC = std::max(sample, active.maxAfterAGC);
         double absSample = std::abs(sample);
         active.sumSquaresAfterAGC += sample * sample;
-        if (absSample > active.peakAfterAGC) active.peakAfterAGC = absSample;
+        active.peakAfterAGC = std::max(absSample, active.peakAfterAGC);
         active.afterAGCCount++;
 
         active.lastAGCGain = agcGain;
-        if (agcGain < active.minAGCGain) active.minAGCGain = agcGain;
-        if (agcGain > active.maxAGCGain) active.maxAGCGain = agcGain;
+        active.minAGCGain = std::min(agcGain, active.minAGCGain);
+        active.maxAGCGain = std::max(agcGain, active.maxAGCGain);
         active.sumAGCGain += agcGain;
         active.agcGainCount++;
     }
