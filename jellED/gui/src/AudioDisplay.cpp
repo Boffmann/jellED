@@ -143,7 +143,7 @@ AudioDisplay::AudioDisplay(std::string microphone_device_id, int displaySeconds,
     jellED::UsbMicro::print_available_input_devices(SoundIoBackendCoreAudio);
 
     processorThread_ = new WaveformProcessor(sampleRate_, this);
-    connect(processorThread_, &WaveformProcessor::displayDataReady, 
+    connect(processorThread_, &WaveformProcessor::displayDataReady,
             this, &AudioDisplay::updateDisplay);
     processorThread_->start();
 
@@ -174,7 +174,7 @@ void AudioDisplay::setupUi() {
     QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
 
     mainLayout->addWidget(setupInfoPanel());
-    
+
     QWidget* waveformsAndIndicatorWidget = new QWidget(this);
     QHBoxLayout* waveformsAndIndicatorLayout = new QHBoxLayout(waveformsAndIndicatorWidget);
 
@@ -206,9 +206,7 @@ void AudioDisplay::setupUi() {
 
     patternSelector_ = new QComboBox(this);
     patternSelector_->addItem("Rainbow",        static_cast<int>(jellED::PatternType::RAINBOW));
-    patternSelector_->addItem("Breathing Glow", static_cast<int>(jellED::PatternType::BREATHING_GLOW));
     patternSelector_->addItem("Pulse Flash",    static_cast<int>(jellED::PatternType::PULSE_FLASH));
-    patternSelector_->addItem("Sparkle",        static_cast<int>(jellED::PatternType::SPARKLE));
     connect(patternSelector_, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &AudioDisplay::onPatternSelectionChanged);
 
@@ -241,7 +239,7 @@ QWidget* AudioDisplay::setupInfoPanel() {
         .arg(displaySeconds_)
         .arg(refreshRate_)
         .arg(sampleRate_ * displaySeconds_);
-    
+
     this->infoLabel_ = new QLabel(infoText, this);
     infoLayout->addWidget(this->infoLabel_);
     infoLayout->addStretch();
@@ -250,7 +248,7 @@ QWidget* AudioDisplay::setupInfoPanel() {
     clearButton_->setGeometry(QRect(10, 10, 100, 30));
     connect(clearButton_, &QPushButton::clicked, this, &AudioDisplay::onClearClicked);
     infoLayout->addWidget(clearButton_);
-    
+
     startStopButton_ = new QPushButton("Pause", this);
     startStopButton_->setGeometry(QRect(10, 10, 100, 30));
     connect(startStopButton_, &QPushButton::clicked, this, &AudioDisplay::onStartStopClicked);
@@ -266,7 +264,7 @@ QWidget* AudioDisplay::setupInfoPanel() {
     configureButton_->setGeometry(QRect(10, 10, 100, 30));
     connect(configureButton_, &QPushButton::clicked, this, &AudioDisplay::onConfigureClicked);
     infoLayout->addWidget(configureButton_);
-    
+
     return infoGroup;
 }
 
@@ -555,14 +553,14 @@ void AudioDisplay::updateStatusBar() {
     double currentSeconds = static_cast<double>(currentSamplesReceived_) / sampleRate_;
     double totalSeconds = static_cast<double>(totalSamplesReceived_) / sampleRate_;
 
-    
+
     QString status = QString("Samples in buffer: %1 (%2 sec) | Total samples received: %3 (%4 sec) | Current detected BPM: %5")
         .arg(currentSamplesReceived_, 8)
         .arg(currentSeconds, 7, 'f', 2)
         .arg(totalSamplesReceived_, 8)
         .arg(totalSeconds, 7, 'f', 2)
         .arg(currentDetectedBpm_, 7, 'f', 2);
-    
+
     statusLabel_->setText(status);
 }
 

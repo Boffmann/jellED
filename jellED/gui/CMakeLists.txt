@@ -66,9 +66,7 @@ set(SOURCES
     ../core/patternEngine/pattern/src/pattern.cpp
     ../core/patternEngine/pattern/src/patternBlueprint.cpp
     ../core/patternEngine/pattern/src/rainbowPattern.cpp
-    ../core/patternEngine/pattern/src/breathingGlowPattern.cpp
     ../core/patternEngine/pattern/src/pulseFlashPattern.cpp
-    ../core/patternEngine/pattern/src/sparklePattern.cpp
 )
 
 # Header files
@@ -93,7 +91,7 @@ target_include_directories(${PROJECT_NAME}
 )
 
 # Link libraries
-target_link_libraries(${PROJECT_NAME} 
+target_link_libraries(${PROJECT_NAME}
     PRIVATE
     Qt5::Widgets
     soundio

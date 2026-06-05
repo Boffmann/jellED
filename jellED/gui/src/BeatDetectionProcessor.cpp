@@ -34,16 +34,16 @@ static void logBeatTiming(double internalTime) {
         beatTimingStartTime = std::chrono::steady_clock::now();
         beatTimingStartTimeInitialized = true;
     }
-    
+
     auto now = std::chrono::steady_clock::now();
     auto wallClockMs = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
     auto relativeMs = std::chrono::duration_cast<std::chrono::milliseconds>(
         now - beatTimingStartTime).count();
-    
+
     beatTimingBeatCount++;
-    
-    std::cout << "[BEAT_MAC] beat#=" << beatTimingBeatCount 
+
+    std::cout << "[BEAT_MAC] beat#=" << beatTimingBeatCount
               << " wall_ms=" << wallClockMs
               << " rel_ms=" << relativeMs
               << " internal_t=" << std::fixed << std::setprecision(4) << internalTime << "s"
@@ -65,19 +65,19 @@ struct AudioLevelStats {
         double sumAbsolute = 0.0;
         double peakLevel = 0.0;
         uint32_t sampleCount = 0;
-        
+
         double minAfterAGC = 1.0;
         double maxAfterAGC = -1.0;
         double sumSquaresAfterAGC = 0.0;
         double peakAfterAGC = 0.0;
         uint32_t afterAGCCount = 0;
-        
+
         double lastAGCGain = 1.0;
         double minAGCGain = 10.0;
         double maxAGCGain = 0.1;
         double sumAGCGain = 0.0;
         uint32_t agcGainCount = 0;
-        
+
         void reset() {
             minSample = 1.0;
             maxSample = -1.0;
@@ -96,11 +96,11 @@ struct AudioLevelStats {
             agcGainCount = 0;
         }
     };
-    
+
     Stats active;    // Written by main thread (no lock needed - single writer)
     Stats snapshot;  // Copy for printing (protected by mutex)
     std::mutex snapshotMutex;
-    
+
     // Lock-free: called from main audio thread
     void addRawSample(double sample) {
         if (sample < active.minSample) active.minSample = sample;
@@ -111,7 +111,7 @@ struct AudioLevelStats {
         if (absSample > active.peakLevel) active.peakLevel = absSample;
         active.sampleCount++;
     }
-    
+
     // Lock-free: called from main audio thread
     void addAfterAGCSample(double sample, double agcGain) {
         if (sample < active.minAfterAGC) active.minAfterAGC = sample;
@@ -120,14 +120,14 @@ struct AudioLevelStats {
         active.sumSquaresAfterAGC += sample * sample;
         if (absSample > active.peakAfterAGC) active.peakAfterAGC = absSample;
         active.afterAGCCount++;
-        
+
         active.lastAGCGain = agcGain;
         if (agcGain < active.minAGCGain) active.minAGCGain = agcGain;
         if (agcGain > active.maxAGCGain) active.maxAGCGain = agcGain;
         active.sumAGCGain += agcGain;
         active.agcGainCount++;
     }
-    
+
     // Called from print thread - takes snapshot and resets active
     void reset() {
         std::lock_guard<std::mutex> lock(snapshotMutex);
@@ -169,7 +169,7 @@ void BeatDetectionProcessor::run() {
     jellED::AudioBuffer buffer;
 
     std::cout << "BeatDetectionProcessor running" << std::endl;
-    
+
     // Start audio level reporting thread (only once)
     if constexpr (ENABLE_AUDIO_LEVEL_DEBUG) {
         if (!audioLevelThreadStarted) {
@@ -203,7 +203,7 @@ void BeatDetectionProcessor::run() {
                     audioLevelStats.addRawSample(buffer.buffer[i]);
                 }
             }
-            
+
             jellED::AudioBuffer downsampledBuffer;
             downsampler_.downsample(buffer, downsampledBuffer);
             for (size_t i = 0; i < downsampledBuffer.num_samples; i++) {
@@ -216,12 +216,12 @@ void BeatDetectionProcessor::run() {
                 //     // File was written (target reached)
                 //     recorder.setEnabled(false);
                 // }
-                
+
                 // Collect audio level stats after AGC
                 if constexpr (ENABLE_AUDIO_LEVEL_DEBUG) {
                     audioLevelStats.addAfterAGCSample(sample, automaticGainControl_.getSectionGain());
                 }
-                
+
                 display_->addOriginalSample(sample);
 
                 const bool anyBeatDetected = this->beatDetector_->is_beat(sample);

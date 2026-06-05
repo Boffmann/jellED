@@ -5,9 +5,8 @@ namespace jellED {
 
 enum class PatternType : int {
     RAINBOW         = 0,
-    BREATHING_GLOW  = 1,
-    PULSE_FLASH     = 2,
-    SPARKLE         = 3,
+    PULSE_FLASH     = 1,
+
     _COUNT
 };
 

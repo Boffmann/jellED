@@ -1,8 +1,7 @@
 #include "patternEngine.h"
 #include "rainbowPattern.h"
-#include "breathingGlowPattern.h"
 #include "pulseFlashPattern.h"
-#include "sparklePattern.h"
+
 
 #include <stdlib.h>
 
@@ -23,12 +22,8 @@ PatternEngine::PatternEngine(IPlatformUtils& pUtils, int num_leds,
     this->allPatternBlueprints = (PatternBlueprint**) malloc(sizeof(PatternBlueprint*) * NUM_PATTERNS);
     this->allPatternBlueprints[PatternTypeCast::to_index(PatternType::RAINBOW)] =
         new RainbowPattern(this->current_time_micros, pattern_duration_micros, brightness_decay_micros);
-    this->allPatternBlueprints[PatternTypeCast::to_index(PatternType::BREATHING_GLOW)] =
-        new BreathingGlowPattern(this->current_time_micros, pattern_duration_micros);
     this->allPatternBlueprints[PatternTypeCast::to_index(PatternType::PULSE_FLASH)] =
         new PulseFlashPattern(this->current_time_micros, pattern_duration_micros);
-    this->allPatternBlueprints[PatternTypeCast::to_index(PatternType::SPARKLE)] =
-        new SparklePattern(this->current_time_micros, num_leds, pattern_duration_micros);
     this->currentPatternBlueprint = this->type_to_blueprint(PatternType::RAINBOW);
 }
 
