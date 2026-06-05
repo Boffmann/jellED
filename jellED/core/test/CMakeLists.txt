@@ -43,6 +43,13 @@ add_executable(osf_test
     beatDetection/osfBandNovelty_test.cpp
 )
 
+# UART protocol / framer tests. Header-only (uartProtocol.h lives at the core
+# root), so this target only needs the core include path and gtest.
+add_executable(uart_test
+    uartProtocol_test.cpp
+)
+target_include_directories(uart_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
 target_link_libraries(pattern_test
     GTest::gtest_main
     PatternEngine
@@ -70,8 +77,13 @@ target_link_libraries(osf_test
     BeatDetection
 )
 
+target_link_libraries(uart_test
+    GTest::gtest_main
+)
+
 gtest_discover_tests(pattern_test)
 gtest_discover_tests(beatDetection_test)
 gtest_discover_tests(dsp_test)
 gtest_discover_tests(tempoTracker_test)
 gtest_discover_tests(osf_test)
+gtest_discover_tests(uart_test)

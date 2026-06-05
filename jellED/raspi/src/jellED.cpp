@@ -252,8 +252,8 @@ int main() {
       readAudioTimeTotal += readAudioTimeUs;
       totalSamplesRead += buffer.num_samples;
       if (totalSamplesRead >= 48000) {
-        std::cout << "Read audio took: " << readAudioTimeTotal << " µs"
-                  << std::endl;
+        // std::cout << "Read audio took: " << readAudioTimeTotal << " µs"
+        //           << std::endl;
         readAudioTimeTotal = 0;
         totalSamplesRead = 0;
       }
@@ -286,7 +286,7 @@ int main() {
             beat_ready = true;
           }
           beat_ready_cv.notify_one();
-          std::cout << "Beat!" << std::endl;
+          // std::cout << "Beat!" << std::endl;
         }
 
         // Periodic volume update: keep latest_features current so the
@@ -312,9 +312,9 @@ int main() {
     samplesRecordedTimeTotal += beatDetectionTimeUs;
 
     if (samplesRecordedTime >= 6000) {
-      std::cout << "Beat detection time: "
-                << samplesRecordedTimeTotal / samplesRecordedTime
-                << " µs/sample" << std::endl;
+      // std::cout << "Beat detection time: "
+      //           << samplesRecordedTimeTotal / samplesRecordedTime
+      //           << " µs/sample" << std::endl;
       samplesRecordedTime = 0;
       samplesRecordedTimeTotal = 0;
     }

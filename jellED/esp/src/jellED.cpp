@@ -40,28 +40,32 @@ void setup() {
   espUart.flush();
 }
 
-// Attempt to read one complete 7-byte packet from the UART buffer.
-// Returns true and populates `out` on success; returns false if no valid
-// packet is available yet (not enough bytes, bad header, or bad checksum).
-static uint8_t rxBuf[jellED::UART_PACKET_SIZE];
+// Scratch buffer for pulling bytes out of the UART driver, and the persistent
+// framer state. The framer must survive across loop ticks: a packet can be
+// split between two reads, so its partial bytes have to be remembered.
+static uint8_t rxBuf[jellED::UART_PACKET_SIZE * 4];
+static jellED::UartFramer uartFramer;
 
-bool uart_read_packet(jellED::UartFeatures& out) {
-  if (espUart.available() < jellED::UART_PACKET_SIZE) return false;
-
-  int got = espUart.receive(rxBuf, jellED::UART_PACKET_SIZE);
-  espUart.flush(); // discard any bytes beyond one packet
-
-  if (got != jellED::UART_PACKET_SIZE) return false;
-  return jellED::uart_parse_packet(rxBuf, out);
-}
-
+// Drain every buffered byte through the self-synchronizing framer and keep the
+// most recent valid packet. Returns true and populates `out` if at least one
+// checksum-valid packet was assembled this call. A dropped or injected byte no
+// longer desyncs the stream permanently — the framer rescans for the 0xAA
+// header instead of blindly consuming fixed 7-byte chunks.
 bool uart_read_latest(jellED::UartFeatures& out) {
   bool got_any = false;
-  while (espUart.available() >= jellED::UART_PACKET_SIZE) {
-    int got = espUart.receive(rxBuf, jellED::UART_PACKET_SIZE);
-    if (got == jellED::UART_PACKET_SIZE && jellED::uart_parse_packet(rxBuf, out)) {
-      got_any = true;
+  int avail = espUart.available();
+  while (avail > 0) {
+    const int toRead = avail < static_cast<int>(sizeof(rxBuf))
+                           ? avail
+                           : static_cast<int>(sizeof(rxBuf));
+    const int got = espUart.receive(rxBuf, toRead);
+    if (got <= 0) break;
+    for (int i = 0; i < got; ++i) {
+      if (uartFramer.feed(rxBuf[i], out)) {
+        got_any = true; // overwrite with the latest valid packet
+      }
     }
+    avail = espUart.available();
   }
   return got_any;
 }

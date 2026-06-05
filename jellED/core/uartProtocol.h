@@ -57,6 +57,61 @@ inline bool uart_parse_packet(const uint8_t in[UART_PACKET_SIZE], UartFeatures& 
     return true;
 }
 
+// ── Self-synchronizing framer ────────────────────────────────────────────────
+// Reassembles packets from a raw byte stream that may have lost or gained bytes
+// (a UART glitch, or a stray single-byte event such as UART_BUTTON_PRESSED
+// injected on the same line). Feed bytes one at a time; `feed` returns true
+// exactly when a complete, checksum-valid packet has been assembled into `out`.
+//
+// Why this exists: reading the stream in fixed 7-byte chunks desyncs forever the
+// moment a single byte is dropped or injected — every later chunk is misaligned
+// by a fixed offset, the header/checksum never match, yet 7 bytes are consumed
+// each time, so it can never realign on its own.
+//
+// The framer keeps a header byte at index 0 (discarding anything that cannot
+// start a frame) and, on a checksum failure, drops only the leading byte and
+// rescans the bytes it already holds — one of them may be the true header. A
+// single corrupt/dropped byte therefore costs at most a packet or two of
+// resync, never a permanent desync. Fixed buffer, no heap, hot-path safe.
+struct UartFramer {
+    uint8_t buffer[UART_PACKET_SIZE] = {};
+    uint8_t length = 0; // bytes held; always in [0, UART_PACKET_SIZE) on return
+
+    void reset() { length = 0; }
+
+    bool feed(uint8_t byte, UartFeatures& out) {
+        buffer[length++] = byte;
+
+        // A frame can only begin with the header byte; drop anything else that
+        // ends up at the front (covers the initial hunt and post-failure rescan).
+        slideToHeader();
+        if (length < UART_PACKET_SIZE) return false;
+
+        // Full candidate frame, guaranteed to start with the header byte.
+        if (uart_parse_packet(buffer, out)) {
+            length = 0; // consumed cleanly
+            return true;
+        }
+
+        // Header matched but checksum failed: corruption somewhere in the frame.
+        // Drop ONLY the leading header byte and rescan the remaining six — one of
+        // them may be the real header. (Dropping all seven is the bug above.)
+        dropLeadingByte();
+        slideToHeader();
+        return false;
+    }
+
+private:
+    void dropLeadingByte() {
+        for (uint8_t i = 1; i < length; ++i) buffer[i - 1] = buffer[i];
+        --length;
+    }
+
+    void slideToHeader() {
+        while (length > 0 && buffer[0] != UART_PACKET_HEADER) dropLeadingByte();
+    }
+};
+
 } // namespace jellED
 
 #endif
